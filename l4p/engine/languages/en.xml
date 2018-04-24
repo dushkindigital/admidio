@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+	<string name="L4P_MEMBERSHIP">CantabNYC Membership Pending</string>
+	<string name="L4P_NO_PENDING_MEMBERS">No pending members awaiting processing</string>
+	
+	<!-- db -->
+	<string name="L4P_DB_CATEGORY">CantabNYC</string>
+	<string name="L4P_DB_DATA">CantabNYC User Fields</string>
+	<string name="L4P_DB_AFFILIATION">Affiliation</string>
+	<string name="L4P_DB_MATRICULATION">Matriculation</string>
+	<string name="L4P_DB_MEMBERSHIP">Membership</string>
+	<string name="L4P_DB_MESSAGE">Message</string>
+	<string name="L4P_DB_SCHOOL">School</string>
+	
+	<!-- preferences -->
+	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
+</resources>
