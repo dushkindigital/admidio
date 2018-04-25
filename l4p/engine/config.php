@@ -44,6 +44,9 @@ function get_configs() : \stdClass {
 			"Wolfson"
 		],
 		
+		# expiry of regstration (in days)
+		'expiry' => 7,
+		
 		# preference settings
 		'preference' => (object)array(
 			'registration_mode' => 100

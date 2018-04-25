@@ -29,7 +29,10 @@ function db_user_fields ( $db, $category_id ) {
 	$db->query($sql, true);
 	
 	# school
-	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT', 'L4P_DB_SCHOOL', 'L4P_DB_SCHOOL', '101', '1', NOW() )";
+	$school_value_list = \cantabnyc\get_configs()->colleges;
+	$school_value_list = \implode("\n", $school_value_list);
+	$school_value_list = \addslashes($school_value_list);
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_SCHOOL', 'L4P_DB_SCHOOL', '{$school_value_list}', '101', '1', NOW() )";
 	$db->query($sql, true);
 	
 	# affiliation
@@ -44,9 +47,18 @@ function db_user_fields ( $db, $category_id ) {
 	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT', 'L4P_DB_MESSAGE', 'L4P_DB_MESSAGE', '104', '1', NOW() )";
 	$db->query($sql, true);
 	
+	# state - NB not visible in forms
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`, `usf_disabled`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_STATE_REG', 'L4P_DB_STATE_REG', 'accepted\npending\nrejected', '105', '1', NOW(), '1' )";
+	$db->query($sql, true);
+	
+	# expiry - NB not visible in forms
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`, `usf_disabled`) VALUES ('{$category_id}', 'DATE', 'L4P_DB_EXPIRES', 'L4P_DB_EXPIRES', '106', '1', NOW(), '1' )";
+	$db->query($sql, true);
+	
 	# email
 	$sql = "UPDATE " . \TBL_USER_FIELDS . " SET `usf_description`='If you are applying as a Member, you must register with your school-issued cantab.net email ID. <a href=\"https://www.alumni.cam.ac.uk/benefits/email-for-life\" target=\"_blank\">more...</a>' WHERE `usf_name_intern`='EMAIL' AND `usf_name`='SYS_EMAIL'";
 	$db->query($sql, true);
+	
 }
 
 /**

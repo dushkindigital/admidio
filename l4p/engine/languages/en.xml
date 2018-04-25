@@ -11,7 +11,12 @@
 	<string name="L4P_DB_MEMBERSHIP">Membership</string>
 	<string name="L4P_DB_MESSAGE">Message</string>
 	<string name="L4P_DB_SCHOOL">School</string>
+	<string name="L4P_DB_STATE_REG">State Registration</string>
+	<string name="L4P_DB_EXPIRES">Expiry</string>
 	
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
+	
+	<!-- reg received -->
+	<string name="L4P_REGISTRATION_RECEIVED">Registration data received</string>
 </resources>
