@@ -3,58 +3,41 @@
  ***********************************************************************************************
  * Diese Klasse dient dazu Systemmails zu verschicken
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class SystemMail
  * Beside the methods of the parent class there are the following additional methods:
  *
- * getMailText($systemMailId, $user)
+ * getMailText($systemMailId, &$user)
  *                  - diese Methode liest den Mailtext aus der DB und ersetzt
  *                    vorkommende Platzhalter durch den gewuenschten Inhalt
  *
  * setVariable($number, $value)
  *                  - hier kann der Inhalt fuer zusaetzliche Variablen gesetzt werden
  *
- * sendSystemMail($systemMailId, $user)
+ * sendSystemMail($systemMailId, &$user)
  *                  - diese Methode sendet eine Systemmail nachdem der Mailtext
  *                    ausgelesen und Platzhalter ersetzt wurden
  */
 class SystemMail extends Email
 {
-    /**
-     * @var TableText
-     */
     private $smTextObject;
-    /**
-     * @var Organization
-     */
     private $smOrganization;
-    /**
-     * @var Database An object of the class Database for communication with the database
-     */
-    private $db;
-    /**
-     * @var string
-     */
+    private $db;                    ///< An object of the class Database for communication with the database
     private $smMailText;
-    /**
-     * @var string
-     */
     private $smMailHeader;
-    /**
-     * @var array<int,string> speichert zusaetzliche Variablen fuer den Mailtext
-     */
-    private $smVariables = array();
+    private $smVariables = array(); // speichert zusaetzliche Variablen fuer den Mailtext
 
     /**
      * Constructor that will create an object of a SystemMail to handle all system notifications.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
      */
-    public function __construct(Database $database)
+    public function __construct(&$database)
     {
         $this->db =& $database;
         $this->smTextObject = new TableText($this->db);
@@ -64,15 +47,15 @@ class SystemMail extends Email
     /**
      * diese Methode liest den Mailtext aus der DB und ersetzt vorkommende Platzhalter durch den gewuenschten Inhalt
      * @param string $systemMailId eindeutige Bezeichnung der entsprechenden Systemmail, entspricht adm_texts.txt_name
-     * @param User   $user         Benutzerobjekt, zu dem die Daten dann ausgelesen und in die entsprechenden Platzhalter gesetzt werden
+     * @param \User  $user         Benutzerobjekt, zu dem die Daten dann ausgelesen und in die entsprechenden Platzhalter gesetzt werden
      * @return string
      */
-    public function getMailText($systemMailId, User $user)
+    public function getMailText($systemMailId, &$user)
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         // create organization object of the organization the current user is assigned (at registration this can be every organization)
-        if(!$this->smOrganization instanceof Organization || (int) $this->smOrganization->getValue('org_id') !== $user->getOrganization())
+        if(!$this->smOrganization instanceof \Organization || (int) $this->smOrganization->getValue('org_id') !== $user->getOrganization())
         {
             $this->smOrganization = new Organization($this->db, $user->getOrganization());
         }
@@ -97,7 +80,7 @@ class SystemMail extends Email
             '/#user_last_name#/'          => $user->getValue('LAST_NAME', 'database'),
             '/#user_login_name#/'         => $user->getValue('usr_login_name'),
             '/#user_email#/'              => $user->getValue('EMAIL'),
-            '/#administrator_email#/'     => $gSettingsManager->getString('email_administrator'),
+            '/#administrator_email#/'     => $gPreferences['email_administrator'],
             '/#organization_short_name#/' => $this->smOrganization->getValue('org_shortname'),
             '/#organization_long_name#/'  => $this->smOrganization->getValue('org_longname'),
             '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage')
@@ -108,11 +91,11 @@ class SystemMail extends Email
         // zusaetzliche Variablen ersetzen
         foreach ($this->smVariables as $number => $value)
         {
-            $mailSrcText = str_replace('#variable'.$number.'#', $value, $mailSrcText);
+            $mailSrcText = preg_replace('/#variable'.$number.'#/', $value, $mailSrcText);
         }
 
         // Betreff und Inhalt anhand von Kennzeichnungen splitten oder ggf. Default-Inhalte nehmen
-        if(StringUtils::strContains($mailSrcText, '#subject#'))
+        if(strpos($mailSrcText, '#subject#') !== false)
         {
             $this->smMailHeader = trim(substr($mailSrcText, strpos($mailSrcText, '#subject#') + 9, strpos($mailSrcText, '#content#') - 9));
         }
@@ -121,7 +104,7 @@ class SystemMail extends Email
             $this->smMailHeader = 'Systemmail von '.$this->smOrganization->getValue('org_homepage');
         }
 
-        if(StringUtils::strContains($mailSrcText, '#content#'))
+        if(strpos($mailSrcText, '#content#') !== false)
         {
             $this->smMailText = trim(substr($mailSrcText, strpos($mailSrcText, '#content#') + 9));
         }
@@ -146,16 +129,16 @@ class SystemMail extends Email
     /**
      * diese Methode sendet eine Systemmail nachdem der Mailtext ausgelesen und Platzhalter ersetzt wurden
      * @param string $systemMailId eindeutige Bezeichnung der entsprechenden Systemmail, entspricht adm_texts.txt_name
-     * @param User   $user         Benutzerobjekt, zu dem die Daten dann ausgelesen und in die entsprechenden Platzhalter gesetzt werden
+     * @param \User  $user         Benutzerobjekt, zu dem die Daten dann ausgelesen und in die entsprechenden Platzhalter gesetzt werden
      * @throws AdmException SYS_EMAIL_NOT_SEND
      * @return true
      */
-    public function sendSystemMail($systemMailId, User $user)
+    public function sendSystemMail($systemMailId, &$user)
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         $this->getMailText($systemMailId, $user);
-        $this->setSender($gSettingsManager->getString('email_administrator'));
+        $this->setSender($gPreferences['email_administrator']);
         $this->setSubject($this->smMailHeader);
         $this->setText($this->smMailText);
 

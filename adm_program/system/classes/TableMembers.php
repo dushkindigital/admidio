@@ -1,39 +1,37 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Handle memberships of roles and manage it in the database table adm_members
+ * @class TableMembers
+ * @brief Handle memberships of roles and manage it in the database table adm_members
  *
- * The class search in the database table **adm_members** for role memberships of
+ * The class search in the database table @b adm_members for role memberships of
  * users. It has easy methods to start or stop a membership.
- *
- * **Code example:**
- * ```
- * // start membership without read data before
+ * @par Examples
+ * @code // start membership without read data before
  * $membership = new TableMembers($gDb);
  * $membership->startMembership($roleId, $userId);
  *
  * // read membership data and then stop membership
  * $membership = new TableMembers($gDb);
  * $membership->readDataByColumns(array('mem_rol_id' => $roleId, 'mem_usr_id' => $userId));
- * $membership->stopMembership();
- * ```
+ * $membership->stopMembership(); @endcode
  */
 class TableMembers extends TableAccess
 {
     /**
      * Constructor that will create an object of a recordset of the table adm_members.
      * If the id is set than the specific membership will be loaded.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $memId    The recordset of the membership with this id will be loaded. If id isn't set than an empty object of the table is created.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $memId    The recordset of the membership with this id will be loaded. If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $memId = 0)
+    public function __construct(&$database, $memId = 0)
     {
         // read also data of assigned category
         $this->connectAdditionalTable(TBL_ROLES, 'rol_id', 'mem_rol_id');
@@ -47,7 +45,7 @@ class TableMembers extends TableAccess
      * If the user is the current user then initiate a refresh of his role cache.
      * @param int $roleId Stops the membership of this role
      * @param int $userId The user who should loose the member of the role.
-     * @return bool Return **true** if the membership was successful deleted.
+     * @return bool Return @b true if the membership was successful deleted.
      */
     public function deleteMembership($roleId = 0, $userId = 0)
     {
@@ -80,7 +78,7 @@ class TableMembers extends TableAccess
      * a new record or if only an update is necessary. The update statement will only update
      * the changed columns. If the table has columns for creator or editor than these column
      * with their timestamp will be updated.
-     * @param bool $updateFingerPrint Default **true**. Will update the creator or editor of the recordset if table has columns like **usr_id_create** or **usr_id_changed**
+     * @param bool $updateFingerPrint Default @b true. Will update the creator or editor of the recordset if table has columns like @b usr_id_create or @b usr_id_changed
      * @return bool If an update or insert into the database was done then return true, otherwise false.
      */
     public function save($updateFingerPrint = true)
@@ -89,7 +87,7 @@ class TableMembers extends TableAccess
 
         $returnStatus = parent::save($updateFingerPrint);
 
-        if ($returnStatus && $gCurrentSession instanceof Session)
+        if ($returnStatus && $gCurrentSession instanceof \Session)
         {
             // renew user object of the affected user because of edited role assignment
             $gCurrentSession->renewUserObject($this->getValue('mem_usr_id'));
@@ -104,11 +102,10 @@ class TableMembers extends TableAccess
      * current user then initiate a refresh of his role cache.
      * @param int  $roleId Assign the membership to this role
      * @param int  $userId The user who should get a member of the role.
-     * @param bool $leader If value **1** then the user will be a leader of the role and get more rights.
-     * @param int  $approvalState Option for User to confirm and adjust the membership ( **1** = User confirmed membership but maybe disagreed, **2** = user accepted membership
-     * @return bool Return **true** if the assignment was successful.
+     * @param bool $leader If value @b 1 then the user will be a leader of the role and get more rights.
+     * @return bool Return @b true if the assignment was successful.
      */
-    public function startMembership($roleId = 0, $userId = 0, $leader = null, $approvalState = null)
+    public function startMembership($roleId = 0, $userId = 0, $leader = null)
     {
         global $gCurrentUser;
 
@@ -121,7 +118,7 @@ class TableMembers extends TableAccess
         if ($this->getValue('mem_rol_id') > 0 && $this->getValue('mem_usr_id') > 0)
         {
             // Beginn nicht ueberschreiben, wenn schon existiert
-            if ($this->newRecord || strcmp($this->getValue('mem_begin', 'Y-m-d'), DATE_NOW) > 0)
+            if ($this->new_record || strcmp($this->getValue('mem_begin', 'Y-m-d'), DATE_NOW) > 0)
             {
                 $this->setValue('mem_begin', DATE_NOW);
             }
@@ -129,7 +126,7 @@ class TableMembers extends TableAccess
             // Leiter sollte nicht ueberschrieben werden, wenn nicht uebergeben wird
             if ($leader === null)
             {
-                if ($this->newRecord)
+                if ($this->new_record)
                 {
                     $this->setValue('mem_leader', false);
                 }
@@ -140,12 +137,6 @@ class TableMembers extends TableAccess
             }
 
             $this->setValue('mem_end', DATE_MAX);
-
-            // User hat Rollenmitgliedschaft bestätigt bzw. angepasst
-            if ($approvalState > 0)
-            {
-                $this->setValue('mem_approved', $approvalState);
-            }
 
             if ($this->columnsValueChanged)
             {
@@ -171,7 +162,7 @@ class TableMembers extends TableAccess
      * @param int $roleId Stops the membership of this role
      * @param int $userId The user who should loose the member of the role.
      * @throws AdmException
-     * @return bool Return **true** if the membership removal was successful.
+     * @return bool Return @b true if the membership removal was successful.
      */
     public function stopMembership($roleId = 0, $userId = 0)
     {
@@ -183,11 +174,11 @@ class TableMembers extends TableAccess
             $this->readDataByColumns(array('mem_rol_id' => $roleId, 'mem_usr_id' => $userId));
         }
 
-        if (!$this->newRecord && $this->getValue('mem_rol_id') > 0 && $this->getValue('mem_usr_id') > 0)
+        if (!$this->new_record && $this->getValue('mem_rol_id') > 0 && $this->getValue('mem_usr_id') > 0)
         {
             // subtract one day, so that user leaves role immediately
-            $now = new \DateTime();
-            $oneDayOffset = new \DateInterval('P1D');
+            $now = new DateTime();
+            $oneDayOffset = new DateInterval('P1D');
             $nowDate = $now->format('Y-m-d');
             $endDate = $now->sub($oneDayOffset)->format('Y-m-d');
 
@@ -202,11 +193,10 @@ class TableMembers extends TableAccess
                 {
                     $sql = 'SELECT mem_id
                               FROM '.TBL_MEMBERS.'
-                             WHERE mem_rol_id  = ? -- $this->getValue(\'mem_rol_id\')
-                               AND mem_usr_id <> ? -- $this->getValue(\'mem_usr_id\')
-                               AND ? BETWEEN mem_begin AND mem_end';
-                    $queryParams = array($this->getValue('mem_rol_id'), $this->getValue('mem_usr_id'), DATE_NOW);
-                    $memberStatement = $this->db->queryPrepared($sql, $queryParams);
+                             WHERE mem_rol_id  = '.$this->getValue('mem_rol_id').'
+                               AND mem_usr_id <> '.$this->getValue('mem_usr_id').'
+                               AND \''.DATE_NOW.'\' BETWEEN mem_begin AND mem_end ';
+                    $memberStatement = $this->db->query($sql);
 
                     if ($memberStatement->rowCount() === 0)
                     {

@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Photo download
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -19,102 +19,109 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
 
 // Initialize and check the parameters
 $getPhotoId = admFuncVariableIsValid($_GET, 'pho_id',   'int');
 $getPhotoNr = admFuncVariableIsValid($_GET, 'photo_nr', 'int');
 
-// check if the module is enabled and disallow access if it's disabled
-if ((int) $gSettingsManager->get('enable_photo_module') === 0)
+// tempfolder
+// change this value if your provider requires the usage of special directories (e.g. HostEurope)
+//$tempfolder = "/is/htdocs/user_tmp/xxxxxx/";
+$tempfolder = sys_get_temp_dir();
+
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_photo_module'] == 0)
 {
+    // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
-elseif ((int) $gSettingsManager->get('enable_photo_module') === 2)
+elseif($gPreferences['enable_photo_module'] == 2)
 {
     // nur eingeloggte Benutzer duerfen auf das Modul zugreifen
-    require(__DIR__ . '/../../system/login_valid.php');
+    require_once('../../system/login_valid.php');
 }
 
 // check if download function is enabled
-if (!$gSettingsManager->getBool('photo_download_enabled'))
+if ($gPreferences['photo_download_enabled'] == 0)
 {
     // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('PHO_DOWNLOAD_DISABLED'));
     // => EXIT
 }
 
-// create photo album object
-$photoAlbum = new TablePhotos($gDb);
+// Fotoalbumobjekt anlegen
+$photo_album = new TablePhotos($gDb);
 
 // get id of album
-$photoAlbum->readDataById($getPhotoId);
+$photo_album->readDataById($getPhotoId);
 
-// check if the current user could view this photo album
-if(!$photoAlbum->isVisible())
+// check whether album belongs to the current organization
+if((int) $photo_album->getValue('pho_org_id') !== (int) $gCurrentOrganization->getValue('org_id'))
 {
     $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
     // => EXIT
 }
 
-if ((int) $photoAlbum->getValue('pho_quantity') === 0)
+// check whether album is locked
+if($photo_album->getValue('pho_locked') == 1 && !$gCurrentUser->editPhotoRight())
+{
+    $gMessage->show($gL10n->get('PHO_ALBUM_NOT_APPROVED'));
+    // => EXIT
+}
+
+$albumFolder = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photo_album->getValue('pho_begin', 'Y-m-d') . '_' . $photo_album->getValue('pho_id');
+
+if((int) $photo_album->getValue('pho_quantity') === 0)
 {
     $gMessage->show($gL10n->get('PHO_NO_ALBUM_CONTENT'));
     // => EXIT
 }
 
 // check whether to take original version instead of scaled one
-$takeOriginalsIfAvailable = $gSettingsManager->getBool('photo_keep_original');
-
-$albumFolder = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photoAlbum->getValue('pho_begin', 'Y-m-d') . '_' . $photoAlbum->getValue('pho_id');
+$takeOriginalsIfAvailable = false;
+if ($gPreferences['photo_keep_original'] == 1)
+{
+    $takeOriginalsIfAvailable = true;
+}
 
 // check folder vs single download
-if ($getPhotoNr == null)
+if($getPhotoNr == null)
 {
     // get number of photos in total
-    $quantity = $photoAlbum->getValue('pho_quantity');
+    $quantity = $photo_album->getValue('pho_quantity');
 
-    // tempfolder
-    // change this value if your provider requires the usage of special directories (e.g. HostEurope)
-    //$tempfolder = "/is/htdocs/user_tmp/xxxxxx/";
-    $tempFolder  = sys_get_temp_dir();
-    $zipTempName = tempnam($tempFolder, 'zip');
+    $zipname = tempnam($tempfolder, 'zip');
+    $nicename = $photo_album->getValue('pho_name').' - '.$photo_album->getValue('pho_photographers').'.zip';
 
-    $zip = new \ZipArchive();
-    $zipOpenCode = $zip->open($zipTempName, \ZipArchive::CREATE);
-
-    if ($zipOpenCode !== true)
-    {
-        $gMessage->show($gL10n->get('PHP_DOWNLOAD_ZIP_ERROR'));
-        // => EXIT
-    }
+    $zip = new ZipArchive();
+    $zip->open($zipname, ZipArchive::CREATE);
 
     for ($i = 1; $i <= $quantity; ++$i)
     {
         if ($takeOriginalsIfAvailable)
         {
             // try to find the original version if available, if not fallback to the scaled one
-            $path = $albumFolder . '/originals/' . $i;
-            if (is_file($path . '.jpg'))
+            $path = $albumFolder.'/originals/'.$i;
+            if(is_file($path.'.jpg'))
             {
                 $path .= '.jpg';
-                $zip->addFile($path, basename($path));
+                $zip->addFromString(basename($path),  file_get_contents($path));
                 continue;
             }
-            elseif (is_file($path . '.png'))
+            elseif(is_file($path.'.png'))
             {
                 $path .= '.png';
-                $zip->addFile($path, basename($path));
+                $zip->addFromString(basename($path),  file_get_contents($path));
                 continue;
             }
         }
 
-        $path = $albumFolder . '/' . $i . '.jpg';
-        if (is_file($path))
+        $path = $albumFolder.'/'.$i.'.jpg';
+        if(is_file($path))
         {
-            $zip->addFile($path, basename($path));
+            $zip->addFromString(basename($path),  file_get_contents($path));
         }
     }
 
@@ -123,101 +130,80 @@ if ($getPhotoNr == null)
     // get sub albums
     $sql = 'SELECT pho_id
               FROM '.TBL_PHOTOS.'
-             WHERE pho_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')';
-    $queryParams = array($gCurrentOrganization->getValue('org_id'));
-    if ($getPhotoId === 0)
+             WHERE pho_org_id = '.$gCurrentOrganization->getValue('org_id');
+    if($getPhotoId === 0)
     {
-        $sql .= '
-            AND (pho_pho_id_parent IS NULL)';
+        $sql .= ' AND (pho_pho_id_parent IS NULL) ';
     }
-    if ($getPhotoId > 0)
+    if($getPhotoId > 0)
     {
-        $sql .= '
-            AND pho_pho_id_parent = ? -- $getPhotoId';
-        $queryParams[] = $getPhotoId;
+        $sql .= ' AND pho_pho_id_parent = '.$getPhotoId.'';
     }
     if (!$gCurrentUser->editPhotoRight())
     {
-        $sql .= '
-            AND pho_locked = 0 ';
+        $sql .= ' AND pho_locked = 0 ';
     }
 
-    $sql .= '
-        ORDER BY pho_begin DESC';
-    $pdoStatement = $gDb->queryPrepared($sql, $queryParams);
+    $sql .= ' ORDER BY pho_begin DESC';
+    $pdoStatement = $gDb->query($sql);
 
     // number of sub albums
     $albums = $pdoStatement->rowCount();
 
-    for ($x = 0; $x < $albums; ++$x)
+    for($x = 0; $x < $albums; ++$x)
     {
         // get id of album
-        $photoAlbum->readDataById((int) $pdoStatement->fetchColumn());
+        $photo_album->readDataById((int) $pdoStatement->fetchColumn());
 
         // ignore locked albums owned by others
-        if ($photoAlbum->getValue('pho_locked') == 0 || $gCurrentUser->editPhotoRight())
+        if($photo_album->getValue('pho_locked') == 0 || $gCurrentUser->editPhotoRight())
         {
-            $albumFolder = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photoAlbum->getValue('pho_begin', 'Y-m-d') . '_' . $photoAlbum->getValue('pho_id');
+            $albumFolder = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photo_album->getValue('pho_begin', 'Y-m-d') . '_' . $photo_album->getValue('pho_id');
             // get number of photos in total
-            $quantity = $photoAlbum->getValue('pho_quantity');
-            $photoAlbumName = $photoAlbum->getValue('pho_name');
+            $quantity = $photo_album->getValue('pho_quantity');
+            $photo_album_name = $photo_album->getValue('pho_name');
             for ($i = 1; $i <= $quantity; ++$i)
             {
                 if ($takeOriginalsIfAvailable)
                 {
                     // try to find the original version if available, if not fallback to the scaled one
-                    $path = $albumFolder . '/originals/' . $i;
-                    if (is_file($path . '.jpg'))
+                    $path = $albumFolder.'/originals/'.$i;
+                    if(is_file($path.'.jpg'))
                     {
                         $path .= '.jpg';
-                        $zip->addFile($path, $photoAlbumName . '/' . basename($path));
+                        $zip->addFromString($photo_album_name.'/'.basename($path),  file_get_contents($path));
                         continue;
                     }
-                    elseif (is_file($path . '.png'))
+                    elseif(is_file($path.'.png'))
                     {
                         $path .= '.png';
-                        $zip->addFile($path, $photoAlbumName . '/' . basename($path));
+                        $zip->addFromString($photo_album_name.'/'.basename($path),  file_get_contents($path));
                         continue;
                     }
                 }
-                $path = $albumFolder . '/' . $i . '.jpg';
-                if (is_file($path))
+                $path = $albumFolder.'/'.$i.'.jpg';
+                if(is_file($path))
                 {
-                    $zip->addFile($path, $photoAlbumName . '/' . basename($path));
+                    $zip->addFromString($photo_album_name.'/'.basename($path),  file_get_contents($path));
                 }
             }
         }
     }
 
-    $zipCloseValue = $zip->close();
-    if ($zipCloseValue === false)
-    {
-        $gMessage->show($gL10n->get('PHP_DOWNLOAD_ZIP_ERROR'));
-        // => EXIT
-    }
-
-    $filename = $photoAlbum->getValue('pho_name').' - '.$photoAlbum->getValue('pho_photographers').'.zip';
-    $filename = FileSystemUtils::getSanitizedPathEntry($filename);
+    $zip->close();
 
     header('Content-Type: application/zip');
-    header('Content-Length: ' . filesize($zipTempName));
     header('Content-Description: File Transfer');
-    header('Content-Disposition: attachment; filename="'.$filename.'"');
+    header('Content-disposition: attachment; filename="'.$nicename.'"');
     header('Expires: 0');
     header('Content-Transfer-Encoding: binary');
     header('Cache-Control: private');
 
     // send the file, use fpassthru for chunkwise transport
-    $fp = fopen($zipTempName, 'rb');
+    $fp = fopen($zipname, 'rb');
     fpassthru($fp);
 
-    try
-    {
-        FileSystemUtils::deleteFileIfExists($zipTempName);
-    }
-    catch (\RuntimeException $exception)
-    {
-    }
+    unlink($zipname);
 }
 else
 {
@@ -231,33 +217,30 @@ else
     {
         // try to find the original version if available, if not fallback to the scaled one
         $path = $albumFolder.'/originals/'.$getPhotoNr;
-        if (is_file($path.'.jpg'))
+        if(is_file($path.'.jpg'))
         {
-            header('Content-Type: image/jpeg');
-            header('Content-Length: ' . filesize($path.'.jpg'));
-            header('Content-Disposition: attachment; filename="'.$getPhotoNr.'.jpg"');
+            header('Content-Type: application/jpeg');
+            header('Content-disposition: attachment; filename="'.$getPhotoNr.'.jpg"');
             $fp = fopen($path.'.jpg', 'rb');
             fpassthru($fp);
-            exit();
+            exit;
         }
-        elseif (is_file($path.'.png'))
+        elseif(is_file($path.'.png'))
         {
-            header('Content-Type: image/png');
-            header('Content-Length: ' . filesize($path.'.png'));
-            header('Content-Disposition: attachment; filename="'.$getPhotoNr.'.png"');
+            header('Content-Type: application/png');
+            header('Content-disposition: attachment; filename="'.$getPhotoNr.'.png"');
             $fp = fopen($path.'.png', 'rb');
             fpassthru($fp);
-            exit();
+            exit;
         }
     }
 
     $path = $albumFolder.'/'.$getPhotoNr.'.jpg';
 
-    if (is_file($path))
+    if(is_file($path))
     {
-        header('Content-Type: image/jpeg');
-        header('Content-Length: ' . filesize($path));
-        header('Content-Disposition: attachment; filename="'.$getPhotoNr.'.jpg"');
+        header('Content-Type: application/jpeg');
+        header('Content-disposition: attachment; filename="'.$getPhotoNr.'.jpg"');
         $fp = fopen($path, 'rb');
         fpassthru($fp);
     }

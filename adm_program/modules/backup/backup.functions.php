@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * backupDB() - Support Functions
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -32,10 +32,6 @@ if (!function_exists('getmicrotime'))
 }
 
 // begin: (from phpthumb.functions.php)
-/**
- * @param string $function
- * @return bool
- */
 function FunctionIsDisabled($function)
 {
     global $gLogger;
@@ -53,14 +49,16 @@ function FunctionIsDisabled($function)
         {
             $DisabledFunctions[$value] = 'global';
         }
+        // deprecated: Remove if PHP 5.3 dropped
+        if (@ini_get('safe_mode'))
+        {
+            $gLogger->warning('DEPRECATED: Safe-Mode is enabled!');
+            $DisabledFunctions['shell_exec'] = 'local';
+        }
     }
     return isset($DisabledFunctions[$function]);
 }
 
-/**
- * @param string $command
- * @return bool|string
- */
 function SafeExec($command)
 {
     static $AllowedExecFunctions = array();
@@ -102,9 +100,6 @@ function SafeExec($command)
 }
 // end: (from phpthumb.functions.php)
 
-/**
- * @return bool|null|string
- */
 function MySQLdumpVersion()
 {
     static $version = null;
@@ -120,9 +115,6 @@ function MySQLdumpVersion()
     return $version;
 }
 
-/**
- * @return bool|null|string
- */
 function gzipVersion()
 {
     static $version = null;
@@ -138,9 +130,6 @@ function gzipVersion()
     return $version;
 }
 
-/**
- * @return bool|null|string
- */
 function bzip2Version()
 {
     static $version = null;
@@ -162,8 +151,8 @@ function bzip2Version()
 
 // MFA Anpassungen
 /**
- * @param float $seconds
- * @param int   $precision
+ * @param int $seconds
+ * @param int $precision
  * @return string
  */
 function FormattedTimeRemaining($seconds, $precision = 1)
@@ -172,17 +161,17 @@ function FormattedTimeRemaining($seconds, $precision = 1)
 
     if ($seconds > 86400)
     {
-        return $gL10n->get('BAC_DAYS_VAR', array(number_format($seconds / 86400, $precision)));
+        return $gL10n->get('BAC_DAYS_VAR', number_format($seconds / 86400, $precision));
     }
     elseif ($seconds > 3600)
     {
-        return $gL10n->get('BAC_HOURS_VAR', array(number_format($seconds / 3600, $precision)));
+        return $gL10n->get('BAC_HOURS_VAR', number_format($seconds / 3600, $precision));
     }
     elseif ($seconds > 60)
     {
-        return $gL10n->get('BAC_MINUTES_VAR', array(number_format($seconds / 60, $precision)));
+        return $gL10n->get('BAC_MINUTES_VAR', number_format($seconds / 60, $precision));
     }
-    return $gL10n->get('BAC_SECONDS_VAR', array(number_format($seconds, $precision)));
+    return $gL10n->get('BAC_SECONDS_VAR', number_format($seconds, $precision));
 }
 // Ende : MFA
 

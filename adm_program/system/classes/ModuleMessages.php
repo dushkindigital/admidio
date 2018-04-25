@@ -1,21 +1,21 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Some functions for the messages module
+ * @class modulemessages
+ * @brief some functions for the messages module
  *
  * This class adds some functions that are used in the messages module to keep the
  * code easy to read and short
  *
- * **Code example:**
- * ```
- * // check the given Array for charecter and split it.
+ * @par Examples
+ * @code // check the given Array for charecter and split it.
  * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID'));
  *
  * // show a message and set a link to a page that should be shown after user click ok
@@ -24,8 +24,7 @@
  *
  * // show a message with yes and no button and set a link to a page that should be shown after user click yes
  * $gMessage->setForwardYesNo('https://www.example.com/mypage.php');
- * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID'));
- * ```
+ * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID')); @endcode
  */
 class ModuleMessages
 {
@@ -53,10 +52,10 @@ class ModuleMessages
                   FROM ' . TBL_ROLES . '
             INNER JOIN ' . TBL_CATEGORIES . '
                     ON cat_id = rol_cat_id
-                 WHERE rol_id = ? -- $groupInfo[\'id\']
-                   AND (  cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
+                 WHERE rol_id = ' . $groupInfo['id'] . '
+                   AND (  cat_org_id = ' . $gCurrentOrganization->getValue('org_id') . '
                        OR cat_org_id IS NULL)';
-        $statement = $gDb->queryPrepared($sql, array($groupInfo['id'], $gCurrentOrganization->getValue('org_id')));
+        $statement = $gDb->query($sql);
         $roleName = $statement->fetchColumn();
 
         switch ($groupInfo['status'])
@@ -75,7 +74,7 @@ class ModuleMessages
     /**
      * check for Group and give back a array with group ID[0] and if it is active, inactive or both [1].
      * @param string $groupString (e.g: "groupID: 4-2")
-     * @return array<string,string|int> Returns the groupId and status
+     * @return array Returns the groupId and status
      */
     public function msgGroupSplit($groupString)
     {
@@ -116,11 +115,10 @@ class ModuleMessages
 
         $sql = 'SELECT msg_id, msg_usr_id_receiver AS user
                   FROM ' . TBL_MESSAGES . '
-                 WHERE msg_type = \'EMAIL\'
-                   AND msg_usr_id_sender = ? -- $userId
+                 WHERE msg_type = \'EMAIL\' AND msg_usr_id_sender = ' . $userId . '
               ORDER BY msg_id DESC';
 
-        return $gDb->queryPrepared($sql, array($userId));
+        return $gDb->query($sql);
     }
 
     /**
@@ -135,11 +133,10 @@ class ModuleMessages
         $sql = 'SELECT msg_id, msg_usr_id_sender, msg_usr_id_receiver
                   FROM ' . TBL_MESSAGES . '
                  WHERE msg_type = \'PM\'
-                   AND msg_usr_id_receiver = ? -- $userId
-                   AND msg_read = 1
+                   AND msg_usr_id_receiver LIKE \'' . $userId . '\' AND msg_read = 1
               ORDER BY msg_id DESC';
 
-        return $gDb->queryPrepared($sql, array($userId));
+        return $gDb->query($sql);
     }
 
     /**
@@ -154,11 +151,11 @@ class ModuleMessages
         $sql = 'SELECT msg_id, msg_usr_id_sender, msg_usr_id_receiver
                   FROM ' . TBL_MESSAGES . '
                  WHERE msg_type = \'PM\'
-                   AND ( (msg_usr_id_receiver = ? AND msg_read <> 1) -- $userId
-                       OR (msg_usr_id_sender  = ? AND msg_read < 2)) -- $userId
+                   AND ( (msg_usr_id_receiver LIKE \'' . $userId . '\' AND msg_read <> 1)
+                       OR (msg_usr_id_sender = ' . $userId . ' AND msg_read < 2))
               ORDER BY msg_id DESC';
 
-        return $gDb->queryPrepared($sql, array($userId, $userId));
+        return $gDb->query($sql);
     }
 
     /**
@@ -172,8 +169,9 @@ class ModuleMessages
         $sql = 'SELECT msg_id
                   FROM ' . TBL_MESSAGES . '
                  WHERE msg_type = \'CHAT\'';
-        $statement = $gDb->queryPrepared($sql);
+        $statement = $gDb->query($sql);
 
         return (int) $statement->fetchColumn();
     }
+
 }

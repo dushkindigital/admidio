@@ -1,14 +1,15 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * This class gets information about participants and leaders of dates.
+ * @class Participants
+ * @brief This class gets information about participants and leaders of dates.
  *
  * This function is developed, to  read the participants and leaders of dates from database.
  * Participants and leaders can be counted or be written in an array with surname, firstname and leader-status.
@@ -21,39 +22,22 @@
  */
 class Participants
 {
-    /**
-     * @var int Counter of participants of the date in current object.
-     */
-    private $count = -1;
-    /**
-     * @var int The number of leaders of the date in the current object
-     */
-    private $leader = -1;
-    /**
-     * @var int RolId of the current date of this object.
-     */
-    private $rolId = -1;
-    /**
-     * @var string SQL order of results. Parameter 'ASC'/'DESC' (Default: 'ASC')
-     */
-    private $order = '';
-    /**
-     * @var array<int,array<string,string,int,bool>> Array with surname, firstname of all participants of the date in current object.
-     */
-    private $memberDate = array();
-    /**
-     * @var Database db object must public because of session handling
-     */
-    private $db;
+    private $rolId;                 ///< RolId of the current date of this object.
+    private $leader;                ///< The number of leaders of the date in the current object
+    private $count;                 ///< Counter of participants of the date in current object.
+    private $order;                 ///< SQL order of results. Parameter 'ASC'/'DESC' (Default: 'ASC')
+    public $memberDate;             ///< Array with surname, firstname of all participants of the date in current object.
+    public $mDb;                    ///< db object must public because of session handling
 
     /**
      * Constructor that will initialize variables and check if $rolId is numeric
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $rolId    The role ID of a date
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $rolId    The role ID of a date
      */
-    public function __construct(Database $database, $rolId = 0)
+    public function __construct(&$database, $rolId = 0)
     {
-        $this->db =& $database;
+        $this->mDb =& $database;
+        $this->clear();
         $this->checkId($rolId);
     }
 
@@ -84,60 +68,50 @@ class Participants
         $this->leader     = -1;
         $this->rolId      = -1;
         $this->order      = '';
-        $this->memberDate = array();
+        $this->memberDate = '';
     }
 
     /**
      * Count participants of the date.
      * @param int $rolId
-     * @return int Returns the result of count participants as numeric value in current object. Leaders are not counted!
+     * @return int Returns the result of counted participants as numeric value in current object. Leaders are not counted!
      */
     public function getCount($rolId = 0)
     {
-        if ($rolId !== 0)
+        if($rolId !== 0)
         {
             $this->clear();
             $this->checkId($rolId);
         }
 
-        $sql = 'SELECT DISTINCT mem_usr_id, mem_leader, mem_approved, mem_count_guests
+        $sql = 'SELECT DISTINCT mem_usr_id, mem_leader
                   FROM '.TBL_MEMBERS.'
-                 WHERE mem_rol_id = ? -- $this->rolId
-                   AND mem_end   >= ? -- DATE_NOW
-                   AND (mem_approved IS NULL
-                            OR mem_approved < 3)';
-
-        $membersStatement = $this->db->queryPrepared($sql, array($this->rolId, DATE_NOW));
+                 WHERE mem_rol_id = '.$this->rolId.'
+                   AND mem_end   >= \''.DATE_NOW.'\'';
+        $membersStatement = $this->mDb->query($sql);
 
         // Write all member Id´s and leader status in an array
         $numParticipants = array();
 
         while ($row = $membersStatement->fetch())
         {
-            $numParticipants[] = array(
-                'member'            => (int) $row['mem_usr_id'],
-                'leader'            => (bool) $row['mem_leader'],
-                'count_guests'      => (int) $row['mem_count_guests']
-            );
+            $numParticipants [] = array('member' => $row['mem_usr_id'], 'leader' => $row['mem_leader']);
         }
 
-        // count total number of participants and leaders of the date
+        // count the number of leaders of the date
         $leader = 0;
-        $totalCount = 0;
         foreach ($numParticipants as $member)
         {
-            if($member['leader'])
+            if($member['leader'] != 0)
             {
                 ++$leader;
             }
-
-            $totalCount = $totalCount + $member['count_guests'] + 1;
         }
         // check if class variables $count and $leader are set to default flag.
         if($this->count === -1 && $this->leader === -1)
         {
-            // Then store the results in class variables.
-            $this->count = $totalCount;
+            // Then Store the results in class variables.
+            $this->count = count($numParticipants);
             $this->leader = $leader;
         }
 
@@ -179,10 +153,10 @@ class Participants
     }
 
     /**
-     * Return all participants with surname,firstname, leader and approval status as array
+     * Return all participants with surname,firstname and leader status as array
      * @param int    $roleId
      * @param string $order Values ASC/DESC Default: 'ASC'
-     * @return false|array<int,array<string,string|int|bool>> Returns all participants in an array with fieldnames ['usrId'], ['surname'], ['firstname'], ['leader'], ['approved'].
+     * @return array|false Returns all participants in an array with fieldnames ['surname'], ['firstname'], ['leader'].
      */
     public function getParticipantsArray($roleId = 0, $order = 'ASC')
     {
@@ -198,60 +172,29 @@ class Participants
         $this->order = $order;
 
         $sql = 'SELECT DISTINCT
-                       surname.usd_value AS surname, firstname.usd_value AS firstname, mem_leader, mem_usr_id, mem_approved
+                       surname.usd_value AS surname, firstname.usd_value AS firstname, mem_leader
                   FROM '.TBL_MEMBERS.'
-             LEFT JOIN '.TBL_USER_DATA.' AS surname
+             LEFT JOIN '. TBL_USER_DATA .' surname
                     ON surname.usd_usr_id = mem_usr_id
-                   AND surname.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
-             LEFT JOIN '.TBL_USER_DATA.' AS firstname
+                   AND surname.usd_usf_id = '.$gProfileFields->getProperty('LAST_NAME', 'usf_id').'
+             LEFT JOIN '. TBL_USER_DATA .' firstname
                     ON firstname.usd_usr_id = mem_usr_id
-                   AND firstname.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
-                 WHERE mem_rol_id = ? -- $this->rolId
+                   AND firstname.usd_usf_id = '.$gProfileFields->getProperty('FIRST_NAME', 'usf_id').'
+                 WHERE mem_rol_id = '.$this->rolId.'
               ORDER BY surname '.$this->order;
-        $queryParams = array(
-            (int) $gProfileFields->getProperty('LAST_NAME', 'usf_id'),
-            (int) $gProfileFields->getProperty('FIRST_NAME', 'usf_id'),
-            $this->rolId
-        );
-        $membersStatement = $this->db->queryPrepared($sql, $queryParams);
+        $membersStatement = $this->mDb->query($sql);
 
         $participants = array();
         while ($row = $membersStatement->fetch())
         {
-            $participants[(int) $row['mem_usr_id']] = array(
-                'usrId'     => (int) $row['mem_usr_id'],
+            $participants[] = array(
                 'surname'   => $row['surname'],
                 'firstname' => $row['firstname'],
-                'leader'    => (bool) $row['mem_leader'],
-                'approved'  => (int) $row['mem_approved']
+                'leader'    => $row['mem_leader']
             );
         }
         $this->memberDate = $participants;
 
         return $this->memberDate;
-    }
-
-    /**
-     * Look for an user ID exists in the current participants array. If the user Id exists the check the approval state of the user. If not disagreed ( Integer 3 ) User is member of the event role
-     * @param int    $userId
-     * @return bool Returns true if userID is found and approval state is not set to disagreement (value: 3)
-     */
-    public function isMemberOfEvent($userId)
-    {
-        // Read participants of current event role
-        $eventMember = $this->getParticipantsArray($this->rolId);
-        // Search for user in array
-        foreach($eventMember as $participant)
-        {
-            if ($participant['usrId'] === (int) $userId)
-            {
-                // is member of the event
-                if ($participant['usrId']['approved'] !== 3)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

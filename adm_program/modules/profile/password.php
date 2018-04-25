@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Change password
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -14,8 +14,8 @@
  *           change : Change password in database
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 header('Content-type: text/html; charset=utf-8');
 
@@ -30,18 +30,18 @@ if($getMode === 'change')
 }
 else
 {
-    $gMessage->showInModalWindow();
+    $gMessage->showInModaleWindow();
 }
 
 $user = new User($gDb, $gProfileFields, $getUserId);
-$currUsrId = (int) $gCurrentUser->getValue('usr_id');
+$currUserId = (int) $gCurrentUser->getValue('usr_id');
 
 // only the own password could be individual set.
 // Administrator could only send a generated password or set a password if no password was set before
 if((int) $gCurrentUser->getValue('usr_id') !== $getUserId
 && (!isMember($getUserId)
-|| (!$gCurrentUser->isAdministrator() && $currUsrId !== $getUserId)
-|| ($gCurrentUser->isAdministrator() && $user->getValue('EMAIL') !== '' && $gSettingsManager->getBool('enable_system_mails'))))
+|| (!$gCurrentUser->isAdministrator() && $currUserId !== $getUserId)
+|| ($gCurrentUser->isAdministrator() && $user->getValue('EMAIL') !== '' && $gPreferences['enable_system_mails'] == 1)))
 {
     $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
     // => EXIT
@@ -49,7 +49,7 @@ if((int) $gCurrentUser->getValue('usr_id') !== $getUserId
 
 if($getMode === 'change')
 {
-    if($gCurrentUser->isAdministrator() && $currUsrId !== $getUserId)
+    if($gCurrentUser->isAdministrator() && $currUserId !== $getUserId)
     {
         $oldPassword = '';
     }
@@ -69,21 +69,21 @@ if($getMode === 'change')
     {
         if(strlen($newPassword) >= PASSWORD_MIN_LENGTH)
         {
-            if (PasswordUtils::passwordStrength($newPassword, $user->getPasswordUserData()) >= $gSettingsManager->getInt('password_min_strength'))
+            if (PasswordHashing::passwordStrength($newPassword, $user->getPasswordUserData()) >= $gPreferences['password_min_strength'])
             {
                 if ($newPassword === $newPasswordConfirm)
                 {
                     // check if old password is correct.
                     // Administrator could change password of other users without this verification.
-                    if (PasswordUtils::verify($oldPassword, $user->getValue('usr_password'))
-                    || ($gCurrentUser->isAdministrator() && $currUsrId !== $getUserId))
+                    if (PasswordHashing::verify($oldPassword, $user->getValue('usr_password'))
+                    || ($gCurrentUser->isAdministrator() && $currUserId !== $getUserId))
                     {
                         $user->saveChangesWithoutRights();
                         $user->setPassword($newPassword);
                         $user->save();
 
                         // if password of current user changed, then update value in current session
-                        if ($currUsrId === (int) $user->getValue('usr_id'))
+                        if ($currUserId === (int) $user->getValue('usr_id'))
                         {
                             $gCurrentUser->setPassword($newPassword);
                         }
@@ -126,14 +126,14 @@ elseif($getMode === 'html')
     $zxcvbnUserInputs = json_encode($user->getPasswordUserData(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     $passwordStrengthLevel = 1;
-    if ($gSettingsManager->getInt('password_min_strength'))
+    if ($gPreferences['password_min_strength'])
     {
-        $passwordStrengthLevel = $gSettingsManager->getInt('password_min_strength');
+        $passwordStrengthLevel = $gPreferences['password_min_strength'];
     }
 
     echo '<script type="text/javascript">
         $(function() {
-            $("body").on("shown.bs.modal", ".modal", function() {
+            $("body").on("shown.bs.modal", ".modal", function () {
                 $("#password_form:first *:input[type!=hidden]:first").focus();
 
                 $("#admidio-password-strength-minimum").css("margin-left", "calc(" + $("#admidio-password-strength").css("width") + " / 4 * '.$passwordStrengthLevel.')");
@@ -163,13 +163,13 @@ elseif($getMode === 'html')
                         passwordFormAlert.attr("class", "alert alert-success form-alert");
                         passwordFormAlert.html("<span class=\"glyphicon glyphicon-ok\"></span><strong>'.$gL10n->get('PRO_PASSWORD_CHANGED').'</strong>");
                         passwordFormAlert.fadeIn("slow");
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $("#admidio_modal").modal("hide");
                         }, 2000);
                     } else {
                         passwordFormAlert.attr("class", "alert alert-danger form-alert");
                         passwordFormAlert.fadeIn();
-                        passwordFormAlert.html("<span class=\"glyphicon glyphicon-exclamation-sign\"></span>" + data);
+                        passwordFormAlert.html("<span class=\"glyphicon glyphicon-exclamation-sign\"></span>"+data);
                     }
                 });
             });
@@ -182,36 +182,20 @@ elseif($getMode === 'html')
     </div>
     <div class="modal-body">';
         // show form
-        $form = new HtmlForm('password_form', safeUrl(ADMIDIO_URL. FOLDER_MODULES.'/profile/password.php', array('usr_id' => $getUserId, 'mode' => 'change')));
-        if($currUsrId === $getUserId)
+        $form = new HtmlForm('password_form', ADMIDIO_URL. FOLDER_MODULES.'/profile/password.php?usr_id='.$getUserId.'&amp;mode=change');
+        if($currUserId === $getUserId)
         {
             // to change own password user must enter the valid old password for verification
             // TODO Future: 'minLength' => PASSWORD_MIN_LENGTH
-            $form->addInput(
-                'old_password', $gL10n->get('PRO_CURRENT_PASSWORD'), '',
-                array('type' => 'password', 'property' => HtmlForm::FIELD_REQUIRED)
-            );
+            $form->addInput('old_password', $gL10n->get('PRO_CURRENT_PASSWORD'), null, array('type' => 'password', 'property' => FIELD_REQUIRED));
             $form->addLine();
         }
         $form->addInput(
-            'new_password', $gL10n->get('PRO_NEW_PASSWORD'), '',
-            array(
-                'type'             => 'password',
-                'property'         => HtmlForm::FIELD_REQUIRED,
-                'minLength'        => PASSWORD_MIN_LENGTH,
-                'passwordStrength' => true,
-                'passwordUserData' => $user->getPasswordUserData(),
-                'helpTextIdInline' => 'PRO_PASSWORD_DESCRIPTION'
-            )
+            'new_password', $gL10n->get('PRO_NEW_PASSWORD'), null,
+            array('type' => 'password', 'property' => FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH, 'passwordStrength' => true, 'passwordUserData' => $user->getPasswordUserData(), 'helpTextIdInline' => 'PRO_PASSWORD_DESCRIPTION')
         );
-        $form->addInput(
-            'new_password_confirm', $gL10n->get('SYS_REPEAT'), '',
-            array('type' => 'password', 'property' => HtmlForm::FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH)
-        );
-        $form->addSubmitButton(
-            'btn_save', $gL10n->get('SYS_SAVE'),
-            array('icon' => THEME_URL.'/icons/disk.png', 'class' => ' col-sm-offset-3')
-        );
-        echo $form->show();
+        $form->addInput('new_password_confirm', $gL10n->get('SYS_REPEAT'), null, array('type' => 'password', 'property' => FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH));
+        $form->addSubmitButton('btn_save', $gL10n->get('SYS_SAVE'), array('icon' => THEME_URL.'/icons/disk.png', 'class' => ' col-sm-offset-3'));
+        $form->show();
     echo '</div>';
 }

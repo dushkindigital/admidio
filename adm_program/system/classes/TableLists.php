@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Class manages access to database table adm_lists
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class TableLists
  * Diese Klasse dient dazu ein Listenobjekt zu erstellen.
  * Eine Liste kann ueber diese Klasse in der Datenbank verwaltet werden
  *
@@ -22,10 +23,10 @@ class TableLists extends TableAccess
     /**
      * Constructor that will create an object of a recordset of the table adm_lists.
      * If the id is set than the specific list will be loaded.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $lstId    The recordset of the list with this id will be loaded. If id isn't set than an empty object of the table is created.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $lstId    The recordset of the list with this id will be loaded. If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $lstId = 0)
+    public function __construct(&$database, $lstId = 0)
     {
         parent::__construct($database, TBL_LISTS, 'lst', $lstId);
     }
@@ -34,31 +35,25 @@ class TableLists extends TableAccess
      * Deletes the selected list with all associated fields.
      * After that the class will be initialize.
      * @throws AdmException LST_ERROR_DELETE_DEFAULT_LIST
-     * @return bool **true** if no error occurred
+     * @return bool @b true if no error occurred
      */
     public function delete()
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         $lstId = (int) $this->getValue('lst_id');
 
         // if this list is the default configuration than it couldn't be deleted
-        if ($lstId === $gSettingsManager->getInt('lists_default_configuration'))
+        if ($lstId === (int) $gPreferences['lists_default_configuration'])
         {
             throw new AdmException('LST_ERROR_DELETE_DEFAULT_LIST', $this->getValue('lst_name'));
-        }
-        // if this list is the default configuration for particpation list than it couldn't be deleted
-        if ($lstId === $gSettingsManager->getInt('dates_default_list_configuration'))
-        {
-            throw new AdmException('DAT_ERROR_DELETE_DEFAULT_LIST', $this->getValue('lst_name'));
         }
 
         $this->db->startTransaction();
 
         // Delete all columns of the list
-        $sql = 'DELETE FROM '.TBL_LIST_COLUMNS.'
-                      WHERE lsc_lst_id = ? -- $lstId';
-        $this->db->queryPrepared($sql, array($lstId));
+        $sql = 'DELETE FROM '.TBL_LIST_COLUMNS.' WHERE lsc_lst_id = '.$lstId;
+        $this->db->query($sql);
 
         $return = parent::delete();
 
@@ -73,7 +68,7 @@ class TableLists extends TableAccess
      * the changed columns. If the table has columns for creator or editor than these column
      * with their timestamp will be updated.
      * Per default the organization, user and timestamp will be set.
-     * @param bool $updateFingerPrint Default **true**. Will update the creator or editor of the recordset if table has columns like **usr_id_create** or **usr_id_changed**
+     * @param bool $updateFingerPrint Default @b true. Will update the creator or editor of the recordset if table has columns like @b usr_id_create or @b usr_id_changed
      * @return bool If an update or insert into the database was done then return true, otherwise false.
      */
     public function save($updateFingerPrint = true)
@@ -85,7 +80,7 @@ class TableLists extends TableAccess
         $this->setValue('lst_timestamp', DATETIME_NOW);
         $this->setValue('lst_usr_id', $gCurrentUser->getValue('usr_id'));
 
-        if ($this->newRecord && empty($orgId))
+        if ($this->new_record && empty($orgId))
         {
             $this->setValue('lst_org_id', $gCurrentOrganization->getValue('org_id'));
         }

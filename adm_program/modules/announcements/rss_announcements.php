@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * RSS feed of announcements
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -21,13 +21,13 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // Initialize and check the parameters
 $getHeadline = admFuncVariableIsValid($_GET, 'headline', 'string', array('defaultValue' => $gL10n->get('ANN_ANNOUNCEMENTS')));
 
 // Nachschauen ob RSS ueberhaupt aktiviert ist...
-if (!$gSettingsManager->getBool('enable_rss'))
+if ($gPreferences['enable_rss'] != 1)
 {
     $gMessage->setForwardUrl($gHomepage);
     $gMessage->show($gL10n->get('SYS_RSS_DISABLED'));
@@ -35,7 +35,7 @@ if (!$gSettingsManager->getBool('enable_rss'))
 }
 
 // Nachschauen ob RSS ueberhaupt aktiviert ist bzw. das Modul oeffentlich zugaenglich ist
-if ((int) $gSettingsManager->get('enable_announcements_module') !== 1)
+if ($gPreferences['enable_announcements_module'] != 1)
 {
     // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
@@ -45,37 +45,35 @@ if ((int) $gSettingsManager->get('enable_announcements_module') !== 1)
 // Objekt anlegen
 $announcements = new ModuleAnnouncements();
 
-// ab hier wird der RSS-Feed zusammengestellt
-$orgLongname = $gCurrentOrganization->getValue('org_longname');
+/*** ab hier wird der RSS-Feed zusammengestellt**/
 
 // create RSS feed object with channel information
-$rss = new RssFeed(
-    $orgLongname.' - '.$getHeadline,
-    $gCurrentOrganization->getValue('org_homepage'),
-    $gL10n->get('ANN_RECENT_ANNOUNCEMENTS_OF_ORGA', array($orgLongname)),
-    $orgLongname
-);
+$rss = new RSSfeed($gCurrentOrganization->getValue('org_longname').' - '.$getHeadline,
+            $gCurrentOrganization->getValue('org_homepage'),
+            $gL10n->get('ANN_RECENT_ANNOUNCEMENTS_OF_ORGA', $gCurrentOrganization->getValue('org_longname')),
+            $gCurrentOrganization->getValue('org_longname'));
 
 // Wenn Ankündigungen vorhanden laden
 if($announcements->getDataSetCount() > 0)
 {
     $announcement = new TableAnnouncement($gDb);
     $rows = $announcements->getDataSet(0, 10);
-    // Dem RssFeed-Objekt jetzt die RSSitems zusammenstellen und hinzufuegen
+    // Dem RSSfeed-Objekt jetzt die RSSitems zusammenstellen und hinzufuegen
     foreach ($rows['recordset'] as $row)
     {
         // ausgelesene Ankuendigungsdaten in Announcement-Objekt schieben
         $announcement->clear();
         $announcement->setArray($row);
 
+        // set data for attributes of this entry
+        $title       = $announcement->getValue('ann_headline');
+        $description = $announcement->getValue('ann_description');
+        $link        = ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php?id='.$announcement->getValue('ann_id').'&headline='.$getHeadline;
+        $author      = $row['create_name'];
+        $pubDate     = date('r', strtotime($announcement->getValue('ann_timestamp_create')));
+
         // add entry to RSS feed
-        $rss->addItem(
-            $announcement->getValue('ann_headline'),
-            $announcement->getValue('ann_description'),
-            safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php', array('id' => $announcement->getValue('ann_id'), 'headline' => $getHeadline)),
-            $row['create_name'],
-            \DateTime::createFromFormat('Y-m-d H:i:s', $announcement->getValue('ann_timestamp_create', 'Y-m-d H:i:s'))->format('r')
-        );
+        $rss->addItem($title, $description, $link, $author, $pubDate);
     }
 }
 

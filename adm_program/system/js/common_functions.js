@@ -2,7 +2,7 @@
  ***********************************************************************************************
  * Common JavaScript functions that are used in multiple Admidio scripts.
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -12,7 +12,7 @@
  * The function can be used to show or hide a element. Therefore a small
  * caret is used that will change his orientation if the element is hidden.
  * @param {string} elementId This is the id of the element you must click to show or hide another element.
- *                           The elements have the same id but the element to click has a prefix **group_**
+ *                           The elements have the same id but the element to click has a prefix @b group_
  */
 function showHideBlock(elementId) {
     var showHideElementId = elementId.substring(6);
@@ -131,21 +131,4 @@ function formatPhpToMoment(format) {
     return format.replace(formatEx, function(phpStr) {
         return formatMap[phpStr];
     });
-}
-
-function redirectPost(url, data) {
-    var form = document.createElement("form");
-    document.body.appendChild(form);
-    form.method = "post";
-    form.action = url;
-    for (var name in data) {
-        if (data.hasOwnProperty(name)) {
-            var input = document.createElement("input");
-            input.type = "hidden";
-            input.name = name;
-            input.value = data[name];
-            form.appendChild(input);
-        }
-    }
-    form.submit();
 }

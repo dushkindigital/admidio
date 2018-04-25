@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Save profile/registration data
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -20,7 +20,7 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // Initialize and check the parameters
 $getUserId  = admFuncVariableIsValid($_GET, 'user_id',  'int');
@@ -49,7 +49,7 @@ if($getNewUser === 2 || $getNewUser === 3)
 {
     // create user registration object and set requested organization
     $user = new UserRegistration($gDb, $gProfileFields, $getUserId);
-    $user->setOrganization((int) $_POST['reg_org_id']);
+    $user->setOrganization($_POST['reg_org_id']);
 }
 else
 {
@@ -80,7 +80,7 @@ switch($getNewUser)
     case 2:
     case 3:
         // Registrierung deaktiviert, also auch diesen Modus sperren
-        if(!$gSettingsManager->getBool('registration_enable_module'))
+        if($gPreferences['registration_mode'] == 0)
         {
             $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
             // => EXIT
@@ -97,13 +97,13 @@ if($getNewUser === 2)
 {
     if($_POST['usr_login_name'] === '')
     {
-        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_USERNAME'))));
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_USERNAME')));
         // => EXIT
     }
 
     if($_POST['usr_password'] === '')
     {
-        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_PASSWORD'))));
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_PASSWORD')));
         // => EXIT
     }
 
@@ -121,75 +121,65 @@ if($getNewUser === 2)
         // => EXIT
     }
 
-    if(PasswordUtils::passwordStrength($_POST['usr_password'], $user->getPasswordUserData()) < $gSettingsManager->getInt('password_min_strength'))
+    if(PasswordHashing::passwordStrength($_POST['usr_password'], $user->getPasswordUserData()) < $gPreferences['password_min_strength'])
     {
         $gMessage->show($gL10n->get('PRO_PASSWORD_NOT_STRONG_ENOUGH'));
         // => EXIT
     }
 }
 
-// now check all profile fields
-foreach($gProfileFields->getProfileFields() as $field)
+// nun alle Profilfelder pruefen
+foreach($gProfileFields->mProfileFields as $field)
 {
-    $postId    = 'usf-'. $field->getValue('usf_id');
-    $showField = false;
-
-    // at registration check if the field is enabled for registration
-    if($getNewUser === 2 && $field->getValue('usf_registration') == 1)
-    {
-        $showField = true;
-    }
-    // only allow to edit viewable fields, check for edit profile was done before
-    elseif($getNewUser !== 2 && $gCurrentUser->allowedViewProfileField($user, $field->getValue('usf_name_intern')))
-    {
-        $showField = true;
-    }
+    $post_id = 'usf-'. $field->getValue('usf_id');
 
     // check and save only fields that aren't disabled
-    if ($showField
-    && ($field->getValue('usf_disabled') == 0
-       || ($field->getValue('usf_disabled') == 1 && $gCurrentUser->hasRightEditProfile($user, false))
-       || ($field->getValue('usf_disabled') == 1 && $getNewUser > 0)))
+    if ($field->getValue('usf_disabled') == 0
+    || ($field->getValue('usf_disabled') == 1 && $gCurrentUser->hasRightEditProfile($user, false))
+    || ($field->getValue('usf_disabled') == 1 && $getNewUser > 0))
     {
-        if(isset($_POST[$postId]))
+        if(isset($_POST[$post_id]))
         {
             // Pflichtfelder muessen gefuellt sein
             // E-Mail bei Registrierung immer !!!
-            if((strlen($_POST[$postId]) === 0 && $field->getValue('usf_mandatory') == 1)
-            || (strlen($_POST[$postId]) === 0 && $field->getValue('usf_name_intern') === 'EMAIL' && $getNewUser === 2))
+            if((strlen($_POST[$post_id]) === 0 && $field->getValue('usf_mandatory') == 1)
+            || (strlen($_POST[$post_id]) === 0 && $field->getValue('usf_name_intern') === 'EMAIL' && $getNewUser === 2))
             {
-                $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($field->getValue('usf_name'))));
+                $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $field->getValue('usf_name')));
                 // => EXIT
             }
 
             // if social network then extract username from url
-            if(in_array($field->getValue('usf_name_intern'), array('FACEBOOK', 'GOOGLE_PLUS', 'TWITTER', 'XING'), true))
+            if($field->getValue('usf_name_intern') === 'FACEBOOK'
+            || $field->getValue('usf_name_intern') === 'GOOGLE_PLUS'
+            || $field->getValue('usf_name_intern') === 'TWITTER'
+            || $field->getValue('usf_name_intern') === 'XING')
             {
-                if(strValidCharacters($_POST[$postId], 'url') && StringUtils::strContains($_POST[$postId], '/'))
+                if(strValidCharacters($_POST[$post_id], 'url') && strpos($_POST[$post_id], '/') !== false)
                 {
-                    if(strrpos($_POST[$postId], '/profile.php?id=') > 0)
+                    if(strrpos($_POST[$post_id], '/profile.php?id=') > 0)
                     {
                         // extract facebook id (not facebook unique name) from url
-                        $_POST[$postId] = substr($_POST[$postId], strrpos($_POST[$postId], '/profile.php?id=') + 16);
+                        $_POST[$post_id] = substr($_POST[$post_id], strrpos($_POST[$post_id], '/profile.php?id=') + 16);
                     }
                     else
                     {
-                        if(strrpos($_POST[$postId], '/posts') > 0)
+                        if(strrpos($_POST[$post_id], '/posts') > 0)
                         {
-                            $_POST[$postId] = substr($_POST[$postId], 0, strrpos($_POST[$postId], '/posts'));
+                            $_POST[$post_id] = substr($_POST[$post_id], 0, strrpos($_POST[$post_id], '/posts'));
                         }
 
-                        $_POST[$postId] = substr($_POST[$postId], strrpos($_POST[$postId], '/') + 1);
-                        if(strrpos($_POST[$postId], '?') > 0)
+                        $_POST[$post_id] = substr($_POST[$post_id], strrpos($_POST[$post_id], '/') + 1);
+                        if(strrpos($_POST[$post_id], '?') > 0)
                         {
-                            $_POST[$postId] = substr($_POST[$postId], 0, strrpos($_POST[$postId], '?'));
+                            $_POST[$post_id] = substr($_POST[$post_id], 0, strrpos($_POST[$post_id], '?'));
                         }
                     }
                 }
             }
 
             // Wert aus Feld in das User-Klassenobjekt schreiben
-            $returnCode = $user->setValue($field->getValue('usf_name_intern'), $_POST[$postId]);
+            $returnCode = $user->setValue($field->getValue('usf_name_intern'), $_POST[$post_id]);
 
             // Ausgabe der Fehlermeldung je nach Datentyp
             if(!$returnCode)
@@ -201,24 +191,24 @@ foreach($gProfileFields->getProfileFields() as $field)
                         // => EXIT
                         break;
                     case 'DATE':
-                        $gMessage->show($gL10n->get('SYS_DATE_INVALID', array($field->getValue('usf_name'), $gSettingsManager->getString('system_date'))));
+                        $gMessage->show($gL10n->get('SYS_DATE_INVALID', $field->getValue('usf_name'), $gPreferences['system_date']));
                         // => EXIT
                         break;
                     case 'EMAIL':
-                        $gMessage->show($gL10n->get('SYS_EMAIL_INVALID', array($field->getValue('usf_name'))));
+                        $gMessage->show($gL10n->get('SYS_EMAIL_INVALID', $field->getValue('usf_name')));
                         // => EXIT
                         break;
                     case 'NUMBER':
                     case 'DECIMAL':
-                        $gMessage->show($gL10n->get('PRO_FIELD_NUMERIC', array($field->getValue('usf_name'))));
+                        $gMessage->show($gL10n->get('PRO_FIELD_NUMERIC', $field->getValue('usf_name')));
                         // => EXIT
                         break;
                     case 'PHONE':
-                        $gMessage->show($gL10n->get('SYS_PHONE_INVALID_CHAR', array($field->getValue('usf_name'))));
+                        $gMessage->show($gL10n->get('SYS_PHONE_INVALID_CHAR', $field->getValue('usf_name')));
                         // => EXIT
                         break;
                     case 'URL':
-                        $gMessage->show($gL10n->get('SYS_URL_INVALID_CHAR', array($field->getValue('usf_name'))));
+                        $gMessage->show($gL10n->get('SYS_URL_INVALID_CHAR', $field->getValue('usf_name')));
                         // => EXIT
                         break;
                 }
@@ -233,7 +223,7 @@ foreach($gProfileFields->getProfileFields() as $field)
             }
             elseif($field->getValue('usf_mandatory') == 1)
             {
-                $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($field->getValue('usf_name'))));
+                $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $field->getValue('usf_name')));
                 // => EXIT
             }
         }
@@ -250,19 +240,22 @@ if($gCurrentUser->isAdministrator() || $getNewUser > 0)
             // pruefen, ob der Benutzername bereits vergeben ist
             $sql = 'SELECT usr_id
                       FROM '.TBL_USERS.'
-                     WHERE usr_login_name = ?';
-            $pdoStatement = $gDb->queryPrepared($sql, array($_POST['usr_login_name']));
+                     WHERE usr_login_name LIKE \''. $_POST['usr_login_name']. '\'';
+            $pdoStatement = $gDb->query($sql);
 
-            if($pdoStatement->rowCount() > 0 && $pdoStatement->fetchColumn() !== $getUserId)
+            if($pdoStatement->rowCount() > 0)
             {
-                $gMessage->show($gL10n->get('PRO_LOGIN_NAME_EXIST'));
-                // => EXIT
+                if(strcmp($pdoStatement->fetchColumn(), $getUserId) !== 0)
+                {
+                    $gMessage->show($gL10n->get('PRO_LOGIN_NAME_EXIST'));
+                    // => EXIT
+                }
             }
         }
 
         if(!$user->setValue('usr_login_name', $_POST['usr_login_name']))
         {
-            $gMessage->show($gL10n->get('SYS_FIELD_INVALID_CHAR', array($gL10n->get('SYS_USERNAME'))));
+            $gMessage->show($gL10n->get('SYS_FIELD_INVALID_CHAR', $gL10n->get('SYS_USERNAME')));
             // => EXIT
         }
     }
@@ -274,7 +267,7 @@ if($getNewUser === 2)
     $user->setPassword($_POST['usr_password']);
 
     // At user registration with activated captcha check the captcha input
-    if ($gSettingsManager->getBool('enable_registration_captcha'))
+    if ($gPreferences['enable_registration_captcha'] == 1)
     {
         try
         {
@@ -283,7 +276,6 @@ if($getNewUser === 2)
         catch(AdmException $e)
         {
             $e->showHtml();
-            // => EXIT
         }
     }
 }
@@ -303,7 +295,6 @@ catch(AdmException $e)
     $gMessage->setForwardUrl($gNavigation->getPreviousUrl());
     $gNavigation->deleteLastUrl();
     $e->showHtml();
-    // => EXIT
 }
 
 $gDb->endTransaction();
@@ -337,7 +328,6 @@ if($getNewUser === 1 || $getNewUser === 3)
         {
             $gMessage->setForwardUrl($gNavigation->getPreviousUrl());
             $e->showHtml();
-            // => EXIT
         }
     }
     else
@@ -352,7 +342,7 @@ if($getNewUser === 1 || $getNewUser === 3)
     // otherwise go to previous url (default roles are assigned automatically)
     if($gCurrentUser->assignRoles())
     {
-        admRedirect(safeUrl(ADMIDIO_URL . FOLDER_MODULES.'/profile/roles.php', array('usr_id' => $user->getValue('usr_id'), 'new_user' => $getNewUser)));
+        admRedirect(ADMIDIO_URL . FOLDER_MODULES.'/profile/roles.php?usr_id=' . $user->getValue('usr_id') . '&new_user=' . $getNewUser);
         // => EXIT
     }
     else

@@ -3,12 +3,12 @@
  ***********************************************************************************************
  * easy chat system
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // check for valid login
 if (!$gValidLogin)
@@ -18,7 +18,7 @@ if (!$gValidLogin)
 }
 
 // check if the call of the page was allowed by settings
-if (!$gSettingsManager->getBool('enable_chat_module'))
+if ($gPreferences['enable_chat_module'] != 1)
 {
     // message if the Chat is not allowed
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
@@ -34,7 +34,7 @@ $gNavigation->addUrl(CURRENT_URL, $headline);
 $page = new HtmlPage($headline);
 
 $page->addCssFile(THEME_URL.'/css/chat.css');
-$page->addJavascriptFile(ADMIDIO_URL . FOLDER_MODULES . '/messages/chat.js');
+$page->addJavascriptFile('adm_program/modules/messages/chat.js');
 
 $page->addJavascript('
     var chat = new Chat("#sendie", "#chat-area");
@@ -49,10 +49,10 @@ $page->addHtml('<div id="chat-wrap"><div id="chat-area"></div></div>');
 // show form
 $form = new HtmlForm('send-message-area', '', $page, array('enableFileUpload' => true));
 
-$form->addMultilineTextInput('sendie', 'Enter Message:', '', 2, array('maxLength' => 100));
+$form->addMultilineTextInput('sendie', 'Enter Message:', null, 2, array('maxLength' => 100));
 
 // add form to html page
-$page->addHtml($form->show());
+$page->addHtml($form->show(false));
 
 // show page
 $page->show();

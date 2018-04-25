@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Create or edit a user profile
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -19,20 +19,36 @@
  *              3 - assign/accept a registration
  * lastname   : (Optional) Lastname could be set and will than be preassigned for new users
  * firstname  : (Optional) First name could be set and will than be preassigned for new users
- * copy       : true - The user of the user_id will be copied and the base for this new user
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // Initialize and check the parameters
 $getUserId    = admFuncVariableIsValid($_GET, 'user_id',  'int');
 $getNewUser   = admFuncVariableIsValid($_GET, 'new_user', 'int');
 $getLastname  = stripslashes(admFuncVariableIsValid($_GET, 'lastname',  'string'));
 $getFirstname = stripslashes(admFuncVariableIsValid($_GET, 'firstname', 'string'));
-$getCopy      = admFuncVariableIsValid($_GET, 'copy',     'bool');
 
 $registrationOrgId = $gCurrentOrganization->getValue('org_id');
+
+// set headline of the script
+if($getNewUser === 1)
+{
+    $headline = $gL10n->get('PRO_ADD_USER');
+}
+elseif($getNewUser === 2)
+{
+    $headline = $gL10n->get('SYS_REGISTRATION');
+}
+elseif($getUserId === (int) $gCurrentUser->getValue('usr_id'))
+{
+    $headline = $gL10n->get('PRO_EDIT_MY_PROFILE');
+}
+else
+{
+    $headline = $gL10n->get('PRO_EDIT_PROFILE');
+}
 
 // if current user has no login then only show registration dialog
 if(!$gValidLogin)
@@ -55,32 +71,6 @@ if($getUserId > 0 && $getNewUser !== 0 && $getNewUser !== 3)
 
 // read user data
 $user = new User($gDb, $gProfileFields, $getUserId);
-
-// set headline of the script
-if($getCopy)
-{
-    // if we want to copy the user than set id = 0
-    $user->setValue('usr_id', 0);
-    $getUserId = 0;
-    $getNewUser = 1;
-    $headline = $gL10n->get('SYS_COPY_VAR', array($user->getValue('FIRST_NAME') . ' ' . $user->getValue('LAST_NAME')));
-}
-elseif($getNewUser === 1)
-{
-    $headline = $gL10n->get('PRO_ADD_USER');
-}
-elseif($getNewUser === 2)
-{
-    $headline = $gL10n->get('SYS_REGISTRATION');
-}
-elseif($getUserId === (int) $gCurrentUser->getValue('usr_id'))
-{
-    $headline = $gL10n->get('PRO_EDIT_MY_PROFILE');
-}
-else
-{
-    $headline = $gL10n->get('PRO_EDIT_PROFILE');
-}
 
 // pruefen, ob Modul aufgerufen werden darf
 switch($getNewUser)
@@ -110,7 +100,7 @@ switch($getNewUser)
     case 2:
     case 3:
         // Registrierung deaktiviert, also auch diesen Modus sperren
-        if(!$gSettingsManager->getBool('registration_enable_module'))
+        if($gPreferences['registration_mode'] == 0)
         {
             $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
             // => EXIT
@@ -125,12 +115,12 @@ if(isset($_SESSION['profile_request']))
 {
     $user->noValueCheck();
 
-    foreach($gProfileFields->getProfileFields() as $field)
+    foreach($gProfileFields->mProfileFields as $field)
     {
-        $fieldName = 'usf-'. $field->getValue('usf_id');
-        if(isset($_SESSION['profile_request'][$fieldName]))
+        $field_name = 'usf-'. $field->getValue('usf_id');
+        if(isset($_SESSION['profile_request'][$field_name]))
         {
-            $user->setProfileFieldsValue($field->getValue('usf_name_intern'), stripslashes($_SESSION['profile_request'][$fieldName]));
+            $user->mProfileFieldsData->setValue($field->getValue('usf_name_intern'), stripslashes($_SESSION['profile_request'][$field_name]));
         }
     }
 
@@ -149,33 +139,42 @@ if(isset($_SESSION['profile_request']))
 // create html page object
 $page = new HtmlPage($headline);
 $page->enableModal();
-$page->addJavascriptFile(ADMIDIO_URL . FOLDER_LIBS_CLIENT . '/zxcvbn/dist/zxcvbn.js');
+$page->addJavascriptFile('adm_program/libs/zxcvbn/dist/zxcvbn.js');
 
 // add back link to module menu
 $profileEditMenu = $page->getMenu();
 $profileEditMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 
 // create html form
-$form = new HtmlForm('edit_profile_form', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/profile/profile_save.php', array('user_id' => $getUserId, 'new_user' => $getNewUser)), $page);
+$form = new HtmlForm('edit_profile_form', ADMIDIO_URL.FOLDER_MODULES.'/profile/profile_save.php?user_id='.$getUserId.'&amp;new_user='.$getNewUser, $page);
 
 // *******************************************************************************
-// Loop over all categories and profile fields
+// Loop over all categories and profile fields except the category 'master data'
 // *******************************************************************************
 
 $category = '';
 
-foreach($gProfileFields->getProfileFields() as $field)
+foreach($gProfileFields->mProfileFields as $field)
 {
     $showField = false;
 
-    // at registration check if the field is enabled for registration
-    if($getNewUser === 2 && $field->getValue('usf_registration') == 1)
+    // bei schneller Registrierung duerfen nur die Pflichtfelder ausgegeben werden
+    // E-Mail ist Ausnahme und muss immer angezeigt werden
+    if($getNewUser === 2 && $gPreferences['registration_mode'] == 1
+    && ($field->getValue('usf_mandatory') == 1 || $field->getValue('usf_name_intern') === 'EMAIL'))
     {
         $showField = true;
     }
-    // only allow to edit viewable fields, check for edit profile was done before
-    elseif($getNewUser !== 2 && $gCurrentUser->allowedViewProfileField($user, $field->getValue('usf_name_intern')))
+    elseif($getNewUser === 2 && $gPreferences['registration_mode'] == 2)
     {
+        // bei der vollstaendigen Registrierung alle Felder anzeigen
+        $showField = true;
+    }
+    elseif($getNewUser !== 2
+    && ($getUserId === (int) $gCurrentUser->getValue('usr_id') || $gCurrentUser->hasRightEditProfile($user)))
+    {
+        // bei fremden Profilen duerfen versteckte Felder nur berechtigten Personen angezeigt werden
+        // Leiter duerfen dies nicht !!!
         $showField = true;
     }
 
@@ -198,53 +197,37 @@ foreach($gProfileFields->getProfileFields() as $field)
             if($getUserId > 0 || $getNewUser === 2)
             {
                 // add username to form
-                $fieldProperty = HtmlForm::FIELD_DEFAULT;
+                $fieldProperty = FIELD_DEFAULT;
                 $fieldHelpId   = 'PRO_USERNAME_DESCRIPTION';
 
                 if(!$gCurrentUser->isAdministrator() && $getNewUser === 0)
                 {
-                    $fieldProperty = HtmlForm::FIELD_DISABLED;
+                    $fieldProperty = FIELD_DISABLED;
                     $fieldHelpId   = '';
                 }
                 elseif($getNewUser > 0)
                 {
-                    $fieldProperty = HtmlForm::FIELD_REQUIRED;
+                    $fieldProperty = FIELD_REQUIRED;
                 }
 
-                $form->addInput(
-                    'usr_login_name', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'),
-                    array('maxLength' => 35, 'property' => $fieldProperty, 'helpTextIdLabel' => $fieldHelpId, 'class' => 'form-control-small')
-                );
+                $form->addInput('usr_login_name', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'), array('maxLength' => 35, 'property' => $fieldProperty, 'helpTextIdLabel' => $fieldHelpId, 'class' => 'form-control-small'));
 
                 if($getNewUser === 2)
                 {
                     // at registration add password and password confirm to form
                     $form->addInput(
-                        'usr_password', $gL10n->get('SYS_PASSWORD'), '',
-                        array(
-                            'type'             => 'password',
-                            'property'         => HtmlForm::FIELD_REQUIRED,
-                            'minLength'        => PASSWORD_MIN_LENGTH,
-                            'passwordStrength' => true,
-                            'helpTextIdLabel'  => 'PRO_PASSWORD_DESCRIPTION',
-                            'class'            => 'form-control-small'
-                        )
+                        'usr_password', $gL10n->get('SYS_PASSWORD'), null,
+                        array('type' => 'password', 'property' => FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH, 'passwordStrength' => true, 'helpTextIdLabel' => 'PRO_PASSWORD_DESCRIPTION', 'class' => 'form-control-small')
                     );
-                    $form->addInput(
-                        'password_confirm', $gL10n->get('SYS_CONFIRM_PASSWORD'), '',
-                        array('type' => 'password', 'property' => HtmlForm::FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH, 'class' => 'form-control-small')
-                    );
+                    $form->addInput('password_confirm', $gL10n->get('SYS_CONFIRM_PASSWORD'), null, array('type' => 'password', 'property' => FIELD_REQUIRED, 'minLength' => PASSWORD_MIN_LENGTH, 'class' => 'form-control-small'));
 
                     // show selectbox with all organizations of database
-                    if($gSettingsManager->getBool('system_organization_select'))
+                    if($gPreferences['system_organization_select'] == 1)
                     {
                         $sql = 'SELECT org_id, org_longname
                                   FROM '.TBL_ORGANIZATIONS.'
                               ORDER BY org_longname ASC, org_shortname ASC';
-                        $form->addSelectBoxFromSql(
-                            'reg_org_id', $gL10n->get('SYS_ORGANIZATION'), $gDb, $sql,
-                            array('property' => HtmlForm::FIELD_REQUIRED, 'defaultValue' => $registrationOrgId)
-                        );
+                        $form->addSelectBoxFromSql('reg_org_id', $gL10n->get('SYS_ORGANIZATION'), $gDb, $sql, array('property' => FIELD_REQUIRED, 'defaultValue' => $registrationOrgId));
                     }
                 }
                 else
@@ -259,7 +242,7 @@ foreach($gProfileFields->getProfileFields() as $field)
                     {
                         $form->addCustomContent($gL10n->get('SYS_PASSWORD'), '
                             <a id="password_link" class="btn" data-toggle="modal" data-target="#admidio_modal"
-                                href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/profile/password.php', array('usr_id' => $getUserId)).'"><img src="'. THEME_URL. '/icons/key.png"
+                                href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/password.php?usr_id='.$getUserId.'"><img src="'. THEME_URL. '/icons/key.png"
                                 alt="'.$gL10n->get('SYS_CHANGE_PASSWORD').'" title="'.$gL10n->get('SYS_CHANGE_PASSWORD').'" />'.$gL10n->get('SYS_CHANGE_PASSWORD').'</a>');
                     }
                 }
@@ -272,7 +255,7 @@ foreach($gProfileFields->getProfileFields() as $field)
     if($showField)
     {
         // add profile fields to form
-        $fieldProperty = HtmlForm::FIELD_DEFAULT;
+        $fieldProperty = FIELD_DEFAULT;
         $helpId        = '';
         $usfNameIntern = $field->getValue('usf_name_intern');
 
@@ -280,12 +263,12 @@ foreach($gProfileFields->getProfileFields() as $field)
         && !$gCurrentUser->hasRightEditProfile($user, false) && $getNewUser === 0)
         {
             // disable field if this is configured in profile field configuration
-            $fieldProperty = HtmlForm::FIELD_DISABLED;
+            $fieldProperty = FIELD_DISABLED;
         }
         elseif($gProfileFields->getProperty($usfNameIntern, 'usf_mandatory') == 1)
         {
             // set mandatory field
-            $fieldProperty = HtmlForm::FIELD_REQUIRED;
+            $fieldProperty = FIELD_REQUIRED;
         }
 
         if(strlen($gProfileFields->getProperty($usfNameIntern, 'usf_description')) > 0)
@@ -315,9 +298,9 @@ foreach($gProfileFields->getProfileFields() as $field)
                 $arrListValues = $gL10n->getCountries();
                 $defaultValue  = null;
 
-                if((int) $user->getValue('usr_id') === 0 && strlen($gSettingsManager->getString('default_country')) > 0)
+                if((int) $user->getValue('usr_id') === 0 && strlen($gPreferences['default_country']) > 0)
                 {
-                    $defaultValue = $gSettingsManager->getString('default_country');
+                    $defaultValue = $gPreferences['default_country'];
                 }
                 elseif($user->getValue('usr_id') > 0 && strlen($user->getValue($usfNameIntern)) > 0)
                 {
@@ -419,16 +402,8 @@ foreach($gProfileFields->getProfileFields() as $field)
                 $maxlength = '50';
             }
 
-            $form->addInput(
-                'usf-'. $gProfileFields->getProperty($usfNameIntern, 'usf_id'), $gProfileFields->getProperty($usfNameIntern, 'usf_name'), $user->getValue($usfNameIntern),
-                array(
-                    'type'            => $fieldType,
-                    'maxLength'       => $maxlength,
-                    'property'        => $fieldProperty,
-                    'helpTextIdLabel' => $helpId,
-                    'icon'            => $gProfileFields->getProperty($usfNameIntern, 'usf_icon', 'database')
-                )
-            );
+            $form->addInput('usf-'. $gProfileFields->getProperty($usfNameIntern, 'usf_id'), $gProfileFields->getProperty($usfNameIntern, 'usf_name'), $user->getValue($usfNameIntern),
+                array('type' => $fieldType, 'maxLength' => $maxlength, 'property' => $fieldProperty, 'helpTextIdLabel' => $helpId, 'icon' => $gProfileFields->getProperty($usfNameIntern, 'usf_icon', 'database')));
         }
     }
 }
@@ -437,7 +412,7 @@ foreach($gProfileFields->getProfileFields() as $field)
 $form->closeGroupBox();
 
 // if captchas are enabled then visitors of the website must resolve this
-if($getNewUser === 2 && $gSettingsManager->getBool('enable_registration_captcha'))
+if($getNewUser === 2 && $gPreferences['enable_registration_captcha'] == 1)
 {
     $form->openGroupBox('gb_confirmation_of_input', $gL10n->get('SYS_CONFIRMATION_OF_INPUT'));
     $form->addCaptcha('captcha_code');
@@ -458,11 +433,8 @@ else
 if($getNewUser === 0)
 {
     // show information about user who creates the recordset and changed it
-    $form->addHtml(admFuncShowCreateChangeInfoById(
-        (int) $user->getValue('usr_usr_id_create'), $user->getValue('usr_timestamp_create'),
-        (int) $user->getValue('usr_usr_id_change'), $user->getValue('usr_timestamp_change')
-    ));
+    $form->addHtml(admFuncShowCreateChangeInfoById($user->getValue('usr_usr_id_create'), $user->getValue('usr_timestamp_create'), $user->getValue('usr_usr_id_change'), $user->getValue('usr_timestamp_change')));
 }
 
-$page->addHtml($form->show());
+$page->addHtml($form->show(false));
 $page->show();

@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Various functions for rooms handling
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -14,7 +14,7 @@
  *           2 - delete room
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // Initialize and check the parameters
 $getRoomId = admFuncVariableIsValid($_GET, 'room_id', 'int');
@@ -40,12 +40,12 @@ if ($getMode === 1)
 
     if (!array_key_exists('room_name', $_POST) || $_POST['room_name'] === '')
     {
-        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_ROOM'))));
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_ROOM')));
         // => EXIT
     }
     if (!array_key_exists('room_capacity', $_POST) || $_POST['room_capacity'] === '')
     {
-        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('ROO_CAPACITY'))));
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('ROO_CAPACITY')));
         // => EXIT
     }
 
@@ -53,9 +53,9 @@ if ($getMode === 1)
     $_POST['room_description'] = admFuncVariableIsValid($_POST, 'room_description', 'html');
 
     // POST Variablen in das Termin-Objekt schreiben
-    foreach ($_POST as $key => $value) // TODO possible security issue
+    foreach ($_POST as $key => $value)
     {
-        if (StringUtils::strStartsWith($key, 'room_'))
+        if (strpos($key, 'room_') === 0)
         {
             $room->setValue($key, $value);
         }
@@ -72,10 +72,10 @@ if ($getMode === 1)
 // Löschen des Raums
 elseif ($getMode === 2)
 {
-    $sql = 'SELECT 1
+    $sql = 'SELECT *
               FROM '.TBL_DATES.'
-             WHERE dat_room_id = ?';
-    $statement = $gDb->queryPrepared($sql, array($getRoomId));
+             WHERE dat_room_id = '.$getRoomId;
+    $statement = $gDb->query($sql);
 
     if($statement->rowCount() === 0)
     {

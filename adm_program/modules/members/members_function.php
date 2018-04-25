@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * User-Funktionen
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -22,8 +22,8 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 // Initialize and check the parameters
 $getUserId = admFuncVariableIsValid($_GET, 'usr_id', 'int', array('requireValue' => true));
@@ -39,11 +39,11 @@ if(!$gCurrentUser->editUsers())
 // nun erst einmal allgemein pruefen, ob der User zur aktuellen Orga gehoert
 if(isMember($getUserId))
 {
-    $thisOrga = true;
+    $this_orga = true;
 }
 else
 {
-    $thisOrga = false;
+    $this_orga = false;
 }
 
 if($getMode !== 1)
@@ -56,11 +56,11 @@ if($getMode !== 1)
         INNER JOIN '.TBL_CATEGORIES.'
                 ON cat_id = rol_cat_id
              WHERE rol_valid   = 1
-               AND cat_org_id <> ? -- $gCurrentOrganization->getValue(\'org_id\')
-               AND mem_begin  <= ? -- DATE_NOW
-               AND mem_end     > ? -- DATE_NOW
-               AND mem_usr_id  = ? -- $getUserId';
-    $statement = $gDb->queryPrepared($sql, array($gCurrentOrganization->getValue('org_id'), DATE_NOW, DATE_NOW, $getUserId));
+               AND cat_org_id <> '. $gCurrentOrganization->getValue('org_id'). '
+               AND mem_begin  <= \''.DATE_NOW.'\'
+               AND mem_end     > \''.DATE_NOW.'\'
+               AND mem_usr_id  = '. $getUserId;
+    $statement = $gDb->query($sql);
     $otherOrgaCount = $statement->rowCount();
 
     // User-Objekt anlegen
@@ -82,15 +82,15 @@ if($getMode === 1)
             <img src="'.THEME_URL.'/icons/profile.png" alt="'.$gL10n->get('SYS_FORMER').'" />
             '.$gL10n->get('MEM_MAKE_FORMER').'<br /><br />
             <img src="'.THEME_URL.'/icons/delete.png" alt="'.$gL10n->get('MEM_REMOVE_USER').'" />
-            '.$gL10n->get('MEM_REMOVE_USER_DESC', array($gL10n->get('SYS_DELETE'))).'
+            '.$gL10n->get('MEM_REMOVE_USER_DESC', $gL10n->get('SYS_DELETE')).'
         </p>
 
         <button id="btnFormer" type="button" class="btn btn-primary"
-            onclick="self.location.href=\''.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 2)).'\'"><img
+            onclick="self.location.href=\''.ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php?usr_id='.$getUserId.'&mode=2\'"><img
             src="'.THEME_URL.'/icons/profile.png" alt="'.$gL10n->get('SYS_FORMER').'" />&nbsp;'.$gL10n->get('SYS_FORMER').'</button>
         &nbsp;&nbsp;&nbsp;&nbsp;
         <button id="btnDelete" type="button" class="btn btn-primary"
-            onclick="self.location.href=\''.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 3)).'\'"><img
+            onclick="self.location.href=\''.ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php?usr_id='. $getUserId. '&mode=3\'"><img
             src="'.THEME_URL.'/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" />&nbsp;'.$gL10n->get('SYS_DELETE').'</button>
     </div>');
 
@@ -110,7 +110,7 @@ elseif($getMode === 2)
 
     // User muss zur aktuellen Orga dazugehoeren
     // kein Suizid ermoeglichen
-    if(!$thisOrga || (int) $gCurrentUser->getValue('usr_id') === $getUserId)
+    if(!$this_orga || (int) $gCurrentUser->getValue('usr_id') === $getUserId)
     {
         $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
         // => EXIT
@@ -125,12 +125,12 @@ elseif($getMode === 2)
         INNER JOIN '.TBL_CATEGORIES.'
                 ON cat_id = rol_cat_id
              WHERE rol_valid  = 1
-               AND (  cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
+               AND (  cat_org_id = '. $gCurrentOrganization->getValue('org_id'). '
                    OR cat_org_id IS NULL )
-               AND mem_begin <= ? -- DATE_NOW
-               AND mem_end    > ? -- DATE_NOW
-               AND mem_usr_id = ? -- $getUserId';
-    $mglStatement = $gDb->queryPrepared($sql, array($gCurrentOrganization->getValue('org_id'), DATE_NOW, DATE_NOW, $getUserId));
+               AND mem_begin <= \''.DATE_NOW.'\'
+               AND mem_end    > \''.DATE_NOW.'\'
+               AND mem_usr_id = '. $getUserId;
+    $mglStatement = $gDb->query($sql);
 
     while($row = $mglStatement->fetch())
     {
@@ -140,14 +140,14 @@ elseif($getMode === 2)
     }
 
     $gMessage->setForwardUrl($gNavigation->getUrl(), 2000);
-    $gMessage->show($gL10n->get('MEM_REMOVE_MEMBERSHIP_OK', array($user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $gCurrentOrganization->getValue('org_longname'))));
+    $gMessage->show($gL10n->get('MEM_REMOVE_MEMBERSHIP_OK', $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $gCurrentOrganization->getValue('org_longname')));
     // => EXIT
 }
 elseif($getMode === 3)
 {
     // User aus der Datenbank loeschen
 
-    // only administrators are allowed to do this
+        // only administrators are allowed to do this
     if(!$gCurrentUser->isAdministrator())
     {
         $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
@@ -172,18 +172,18 @@ elseif($getMode === 4)
     // only administrators are allowed to send new login data
     // nur ausfuehren, wenn E-Mails vom Server unterstuetzt werden
     // nur an Mitglieder der eigenen Organisation schicken
-    if(!$gCurrentUser->isAdministrator() || !$gSettingsManager->getBool('enable_system_mails') || !$thisOrga)
+    if(!$gCurrentUser->isAdministrator() || $gPreferences['enable_system_mails'] != 1 || !$this_orga)
     {
         $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
         // => EXIT
     }
 
-    if($gSettingsManager->getBool('enable_system_mails'))
+    if($gPreferences['enable_system_mails'] == 1)
     {
         try
         {
             // neues Passwort generieren und abspeichern
-            $password = PasswordUtils::genRandomPassword(PASSWORD_GEN_LENGTH, PASSWORD_GEN_CHARS);
+            $password = PasswordHashing::genRandomPassword(PASSWORD_GEN_LENGTH, PASSWORD_GEN_CHARS);
             $user->setPassword($password);
             $user->save();
 
@@ -207,32 +207,32 @@ elseif($getMode === 4)
 elseif($getMode === 5)
 {
     // Fragen, ob Zugangsdaten verschickt werden sollen
-    $gMessage->setForwardYesNo(safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 4)));
-    $gMessage->show($gL10n->get('MEM_SEND_NEW_LOGIN', array($user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'))));
+    $gMessage->setForwardYesNo(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php?usr_id='. $getUserId. '&mode=4');
+    $gMessage->show($gL10n->get('MEM_SEND_NEW_LOGIN', $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME')));
     // => EXIT
 }
 elseif($getMode === 6)
 {
-    if($thisOrga && $otherOrgaCount === 0 && $gCurrentUser->isAdministrator())
+    if($this_orga && $otherOrgaCount === 0 && $gCurrentUser->isAdministrator())
     {
         // only administrators are allowed to do this
         // User ist NUR Mitglied der aktuellen Orga -> dann fragen, ob Ehemaliger oder ganz loeschen
-        admRedirect(safeUrl(ADMIDIO_URL . FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 1)));
+        admRedirect(ADMIDIO_URL . FOLDER_MODULES.'/members/members_function.php?usr_id=' . $getUserId . '&mode=1');
         // => EXIT
     }
-    elseif(!$thisOrga && $otherOrgaCount === 0 && $gCurrentUser->isAdministrator())
+    elseif(!$this_orga && $otherOrgaCount === 0 && $gCurrentUser->isAdministrator())
     {
         // only administrators are allowed to do this
         // User ist in keiner Orga mehr Mitglied -> kann komplett geloescht werden
-        $gMessage->setForwardYesNo(safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 3)));
-        $gMessage->show($gL10n->get('MEM_USER_DELETE', array($user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'))), $gL10n->get('SYS_DELETE'));
+        $gMessage->setForwardYesNo(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php?usr_id='. $getUserId. '&mode=3');
+        $gMessage->show($gL10n->get('MEM_USER_DELETE', $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME')), $gL10n->get('SYS_DELETE'));
         // => EXIT
     }
     else
     {
         // User kann nur aus dieser Orga entfernt werden
-        $gMessage->setForwardYesNo(safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php', array('usr_id' => $getUserId, 'mode' => 2)));
-        $gMessage->show($gL10n->get('MEM_REMOVE_MEMBERSHIP', array($user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $gCurrentOrganization->getValue('org_longname'))), $gL10n->get('SYS_REMOVE'));
+        $gMessage->setForwardYesNo(ADMIDIO_URL.FOLDER_MODULES.'/members/members_function.php?usr_id='. $getUserId. '&mode=2');
+        $gMessage->show($gL10n->get('MEM_REMOVE_MEMBERSHIP', $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $gCurrentOrganization->getValue('org_longname')), $gL10n->get('SYS_REMOVE'));
         // => EXIT
     }
 }

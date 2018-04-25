@@ -1,9 +1,9 @@
 <?php
 /**
  ***********************************************************************************************
- * Show list with available backup files and button to create a new backup
+ * Show list with avaiable backup files and button to create a new backup
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -21,8 +21,8 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
-require_once(__DIR__ . '/backup.functions.php');
+require_once('../../system/common.php');
+require_once('backup.functions.php');
 
 // Initialize and check the parameters
 $getMode = admFuncVariableIsValid($_GET, 'mode', 'string', array('defaultValue' => 'show_list', 'validValues' => array('show_list', 'create_backup')));
@@ -35,20 +35,17 @@ if(!$gCurrentUser->isAdministrator())
 }
 
 // module not available for other databases except MySQL
-if(DB_ENGINE !== Database::PDO_ENGINE_MYSQL)
+if($gDbType !== 'mysql')
 {
     $gMessage->show($gL10n->get('BAC_ONLY_MYSQL'));
     // => EXIT
 }
 
 // check backup path in adm_my_files and create it if necessary
-try
+$myFilesBackup = new MyFiles('BACKUP');
+if(!$myFilesBackup->checkSettings())
 {
-    FileSystemUtils::createDirectoryIfNotExists(ADMIDIO_PATH . FOLDER_DATA . '/backup');
-}
-catch (\RuntimeException $exception)
-{
-    $gMessage->show($exception->getMessage());
+    $gMessage->show($gL10n->get($myFilesBackup->errorText, $myFilesBackup->errorPath, '<a href="mailto:'.$gPreferences['email_administrator'].'">', '</a>'));
     // => EXIT
 }
 
@@ -58,7 +55,7 @@ $headline = $gL10n->get('BAC_DATABASE_BACKUP');
 $page = new HtmlPage($headline);
 $page->enableModal();
 
-$backupAbsolutePath = ADMIDIO_PATH . FOLDER_DATA . '/backup/'; // make sure to include trailing slash
+$backupAbsolutePath = $myFilesBackup->getFolder().'/'; // make sure to include trailing slash
 
 if($getMode === 'show_list')
 {
@@ -98,10 +95,8 @@ if($getMode === 'show_list')
     $backupMenu = $page->getMenu();
 
     // show link to create new backup
-    $backupMenu->addItem(
-        'admMenuItemNewBackup', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/backup/backup.php', array('mode' => 'create_backup')),
-        $gL10n->get('BAC_START_BACKUP'), 'database_save.png'
-    );
+    $backupMenu->addItem('admMenuItemNewBackup', ADMIDIO_URL.FOLDER_MODULES.'/backup/backup.php?mode=create_backup',
+                         $gL10n->get('BAC_START_BACKUP'), 'database_save.png');
 
     // Define table
     $table = new HtmlTable('tableList', $page, true);
@@ -112,33 +107,32 @@ if($getMode === 'show_list')
         $gL10n->get('BAC_BACKUP_FILE'),
         $gL10n->get('BAC_CREATION_DATE'),
         $gL10n->get('SYS_SIZE'),
-        $gL10n->get('SYS_DELETE')
-    );
+        $gL10n->get('SYS_DELETE'));
     $table->setColumnAlignByArray(array('left', 'left', 'right', 'center'));
     $table->addRowHeadingByArray($columnHeading);
 
-    $backupSizeSum = 0;
+    $backup_size_sum = 0;
 
-    foreach($existingBackupFiles as $key => $oldBackupFile)
+    foreach($existingBackupFiles as $key => $old_backup_file)
     {
-        $fileSize = filesize($backupAbsolutePath.$oldBackupFile);
-        $backupSizeSum += $fileSize;
-
         // create array with all column values
         $columnValues = array(
-            '<a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/backup/backup_file_function.php', array('job' => 'get_file', 'filename' => $oldBackupFile)). '"><img
-                src="'. THEME_URL. '/icons/page_white_compressed.png" alt="'. $oldBackupFile. '" title="'. $oldBackupFile. '" />'. $oldBackupFile. '</a>',
-            date($gSettingsManager->getString('system_date').' '.$gSettingsManager->getString('system_time'), filemtime($backupAbsolutePath.$oldBackupFile)),
-            round($fileSize / 1024). ' kB',
+            '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/backup/backup_file_function.php?job=get_file&amp;filename='. $old_backup_file. '"><img
+                src="'. THEME_URL. '/icons/page_white_compressed.png" alt="'. $old_backup_file. '" title="'. $old_backup_file. '" />'. $old_backup_file. '</a>',
+            date($gPreferences['system_date'].' '.$gPreferences['system_time'], filemtime($backupAbsolutePath.$old_backup_file)),
+            round(filesize($backupAbsolutePath.$old_backup_file) / 1024). ' kB',
             '<a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
-                href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'bac', 'element_id' => 'row_file_'.$key, 'name' => $oldBackupFile, 'database_id' => $oldBackupFile)).'"><img
+                href="'.ADMIDIO_URL.'/adm_program/system/popup_message.php?type=bac&amp;element_id=row_file_'.
+                $key.'&amp;name='.urlencode($old_backup_file).'&amp;database_id='.$old_backup_file.'"><img
                 src="'. THEME_URL. '/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>');
         $table->addRowByArray($columnValues, 'row_file_'.$key);
+
+        $backup_size_sum += round(filesize($backupAbsolutePath.$old_backup_file) / 1024);
     }
 
     if(count($existingBackupFiles) > 0)
     {
-        $columnValues = array('&nbsp;', $gL10n->get('BAC_SUM'), round($backupSizeSum / 1024) .' kB', '&nbsp;');
+        $columnValues = array('&nbsp;', $gL10n->get('BAC_SUM'), $backup_size_sum .' kB', '&nbsp;');
         $table->addRowByArray($columnValues);
     }
 
@@ -147,19 +141,14 @@ if($getMode === 'show_list')
 elseif($getMode === 'create_backup')
 {
     ob_start();
-    require_once(__DIR__ . '/backup_script.php');
-    $fileContent = ob_get_contents();
+    include(ADMIDIO_PATH. FOLDER_MODULES.'/backup/backup_script.php');
+    $page->addHtml(ob_get_contents());
     ob_end_clean();
-
-    $page->addHtml($fileContent);
 
     // show button with link to backup list
     $form = new HtmlForm('show_backup_list_form', ADMIDIO_URL.FOLDER_MODULES.'/backup/backup.php', $page);
-    $form->addSubmitButton(
-        'btn_update_overview', $gL10n->get('BAC_BACK_TO_BACKUP_PAGE'),
-        array('icon' => THEME_URL.'/icons/back.png')
-    );
-    $page->addHtml($form->show());
+    $form->addSubmitButton('btn_update_overview', $gL10n->get('BAC_BACK_TO_BACKUP_PAGE'), array('icon' => THEME_URL.'/icons/back.png'));
+    $page->addHtml($form->show(false));
 
 }
 

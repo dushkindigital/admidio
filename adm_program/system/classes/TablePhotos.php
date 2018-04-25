@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Class manages access to database table adm_photos
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class TablePhotos
  * Diese Klasse dient dazu ein Fotoveranstaltungsobjekt zu erstellen.
  * Eine Fotoveranstaltung kann ueber diese Klasse in der Datenbank verwaltet werden.
  *
@@ -27,19 +28,18 @@
  */
 class TablePhotos extends TableAccess
 {
-    /**
-     * @var bool|null Flag if this album has child albums
-     */
-    protected $hasChildAlbums;
+    protected $hasChildAlbums; ///< Flag if this album has child albums
 
     /**
      * Constructor that will create an object of a recordset of the table adm_photos.
      * If the id is set than the specific photo album will be loaded.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $phoId    The recordset of the photo album with this id will be loaded. If id isn't set than an empty object of the table is created.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $phoId    The recordset of the photo album with this id will be loaded. If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $phoId = 0)
+    public function __construct(&$database, $phoId = 0)
     {
+        $this->hasChildAlbums = null;
+
         parent::__construct($database, TBL_PHOTOS, 'pho', $phoId);
     }
 
@@ -63,9 +63,9 @@ class TablePhotos extends TableAccess
         // Get all sub-albums
         $sql = 'SELECT pho_id, pho_quantity
                   FROM '.TBL_PHOTOS.'
-                 WHERE pho_pho_id_parent = ? -- $phoId
+                 WHERE pho_pho_id_parent = '.$phoId.'
                    AND pho_locked = 0';
-        $childAlbumsStatement = $this->db->queryPrepared($sql, array($phoId));
+        $childAlbumsStatement = $this->db->query($sql);
 
         while ($phoRow = $childAlbumsStatement->fetch())
         {
@@ -77,21 +77,27 @@ class TablePhotos extends TableAccess
 
     /**
      * Legt den Ordner fuer die Veranstaltung im Dateisystem an
-     * @return array<string,string>|null
+     * @return string[]|null
      */
     public function createFolder()
     {
-        // Ordner fuer die Veranstaltung anlegen
-        $folderName = $this->getValue('pho_begin', 'Y-m-d') . '_' . $this->getValue('pho_id');
-        try
+        // Pfad in adm_my_files pruefen und ggf. anlegen
+        $myFilesPhotos = new MyFiles('PHOTOS');
+        if (!$myFilesPhotos->checkSettings())
         {
-            FileSystemUtils::createDirectoryIfNotExists(ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $folderName);
+            return array(
+                'text' => $myFilesPhotos->errorText,
+                'path' => $myFilesPhotos->errorPath
+            );
         }
-        catch (\RuntimeException $exception)
+
+        // nun den Ordner fuer die Veranstaltung anlegen
+        $folderName = $this->getValue('pho_begin', 'Y-m-d') . '_' . $this->getValue('pho_id');
+        if (!$myFilesPhotos->createFolder($folderName, true))
         {
             return array(
                 'text' => 'SYS_FOLDER_NOT_CREATED',
-                'path' => 'adm_my_files/photos/' . $folderName
+                'path' => 'adm_my_files/photos/'.$folderName
             );
         }
 
@@ -101,7 +107,7 @@ class TablePhotos extends TableAccess
     /**
      * Deletes the selected photo album and all sub photo albums.
      * After that the class will be initialize.
-     * @return bool **true** if no error occurred
+     * @return bool @b true if no error occurred
      */
     public function delete()
     {
@@ -127,8 +133,8 @@ class TablePhotos extends TableAccess
         // erst einmal rekursiv zur tiefsten Tochterveranstaltung gehen
         $sql = 'SELECT pho_id
                   FROM '.TBL_PHOTOS.'
-                 WHERE pho_pho_id_parent = ? -- $photoId';
-        $childAlbumStatement = $this->db->queryPrepared($sql, array($photoId));
+                 WHERE pho_pho_id_parent = '.$photoId;
+        $childAlbumStatement = $this->db->query($sql);
 
         while ($phoId = $childAlbumStatement->fetchColumn())
         {
@@ -145,20 +151,20 @@ class TablePhotos extends TableAccess
             $folder = ADMIDIO_PATH . FOLDER_DATA. '/photos/'.$this->getValue('pho_begin', 'Y-m-d').'_'.$photoId;
 
             // aktuellen Ordner incl. Unterordner und Dateien loeschen, falls er existiert
-            try
+            if (is_dir($folder))
             {
-                $dirDeleted = FileSystemUtils::deleteDirectoryIfExists($folder, true);
-
-                if ($dirDeleted)
-                {
-                    // Veranstaltung jetzt in DB loeschen
-                    $sql = 'DELETE FROM '.TBL_PHOTOS.'
-                             WHERE pho_id = ? -- $photoId';
-                    $this->db->queryPrepared($sql, array($photoId));
-                }
+                // nun erst rekursiv den Ordner im Dateisystem loeschen
+                $myFilesPhotos = new MyFiles('PHOTOS');
+                $myFilesPhotos->setFolder($folder);
+                $returnValue = $myFilesPhotos->delete($folder);
             }
-            catch (\RuntimeException $exception)
+
+            if ($returnValue)
             {
+                // Veranstaltung jetzt in DB loeschen
+                $sql = 'DELETE FROM '.TBL_PHOTOS.'
+                         WHERE pho_id = '.$photoId;
+                $this->db->query($sql);
             }
         }
 
@@ -169,7 +175,7 @@ class TablePhotos extends TableAccess
 
     /**
      * Check if this album has one or more child albums.
-     * @return bool Return **true** if child albums exists.
+     * @return bool Return @b true if child albums exists.
      */
     public function hasChildAlbums()
     {
@@ -177,50 +183,20 @@ class TablePhotos extends TableAccess
         {
             $sql = 'SELECT COUNT(*) AS count
                       FROM '.TBL_PHOTOS.'
-                     WHERE pho_pho_id_parent = ? -- $this->getValue(\'pho_id\')';
-            $countChildAlbums = $this->db->queryPrepared($sql, array($this->getValue('pho_id')));
+                     WHERE pho_pho_id_parent = '.$this->getValue('pho_id');
+            $countChildAlbums = $this->db->query($sql);
 
-            $this->hasChildAlbums = $countChildAlbums->fetchColumn() > 0;
+            if ($countChildAlbums->fetchColumn() > 0)
+            {
+                $this->hasChildAlbums = true;
+            }
+            else
+            {
+                $this->hasChildAlbums = false;
+            }
         }
 
         return $this->hasChildAlbums;
-    }
-
-    /**
-     * This method checks if the current user is allowed to edit this photo album. Therefore
-     * the photo album must be visible to the user and must be of the current organization.
-     * The user must be a member of at least one role that have the right to manage photo albums.
-     * @return bool Return true if the current user is allowed to edit this photo album
-     */
-    public function isEditable()
-    {
-        global $gCurrentUser;
-
-        return $gCurrentUser->editPhotoRight() && ($this->isVisible() || (int) $this->getValue('pho_id') === 0);
-    }
-
-    /**
-     * This method checks if the current user is allowed to view this photo album. Therefore
-     * the album must be from the current organization and should not be locked or the user
-     * is a module administrator.
-     * @return bool Return true if the current user is allowed to view this photo album
-     */
-    public function isVisible()
-    {
-        global $gCurrentOrganization, $gCurrentUser;
-
-        // current photo album must belong to current organization
-        if($this->getValue('pho_id') > 0 && (int) $this->getValue('pho_org_id') !== (int) $gCurrentOrganization->getValue('org_id'))
-        {
-            return false;
-        }
-        // locked photo album could only be viewed by module administrators
-        elseif((int) $this->getValue('pho_locked') === 1 && !$gCurrentUser->editPhotoRight())
-        {
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -229,14 +205,14 @@ class TablePhotos extends TableAccess
      * the changed columns. If the table has columns for creator or editor than these column
      * with their timestamp will be updated.
      * The current organization will be set per default.
-     * @param bool $updateFingerPrint Default **true**. Will update the creator or editor of the recordset if table has columns like **usr_id_create** or **usr_id_changed**
+     * @param bool $updateFingerPrint Default @b true. Will update the creator or editor of the recordset if table has columns like @b usr_id_create or @b usr_id_changed
      * @return bool If an update or insert into the database was done then return true, otherwise false.
      */
     public function save($updateFingerPrint = true)
     {
         global $gCurrentOrganization;
 
-        if ($this->newRecord)
+        if ($this->new_record)
         {
             $this->setValue('pho_org_id', $gCurrentOrganization->getValue('org_id'));
         }
@@ -272,10 +248,10 @@ class TablePhotos extends TableAccess
             // kein Bild vorhanden, dann in einem Unteralbum suchen
             $sql = 'SELECT pho_id, pho_begin, pho_quantity
                       FROM '.TBL_PHOTOS.'
-                     WHERE pho_pho_id_parent = ? -- $phoId
+                     WHERE pho_pho_id_parent = '.$phoId.'
                        AND pho_locked = 0
                   ORDER BY pho_quantity DESC';
-            $childAlbumsStatement = $this->db->queryPrepared($sql, array($phoId));
+            $childAlbumsStatement = $this->db->query($sql);
 
             while ($phoRow = $childAlbumsStatement->fetch())
             {

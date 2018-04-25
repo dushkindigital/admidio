@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Various functions for download module
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -19,12 +19,13 @@
  * file_id   : Id of the file in the database
  * name      : Name of the file/folder that should be added to the database
  ***********************************************************************************************/
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
-// check if the module is enabled and disallow access if it's disabled
-if (!$gSettingsManager->getBool('enable_download_module'))
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_download_module'] != 1)
 {
+    // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
@@ -38,13 +39,10 @@ $getName     = admFuncVariableIsValid($_GET, 'name',      'file');
 $_SESSION['download_request'] = $_POST;
 
 // Pfad in adm_my_files pruefen und ggf. anlegen
-try
+$myFilesDownload = new MyFiles('DOWNLOAD');
+if(!$myFilesDownload->checkSettings())
 {
-    FileSystemUtils::createDirectoryIfNotExists(ADMIDIO_PATH . FOLDER_DATA . '/' . TableFolder::getRootFolderName());
-}
-catch (\RuntimeException $exception)
-{
-    $gMessage->show($exception->getMessage());
+    $gMessage->show($gL10n->get($myFilesDownload->errorText, $myFilesDownload->errorPath, '<a href="mailto:'.$gPreferences['email_administrator'].'">', '</a>'));
     // => EXIT
 }
 
@@ -110,9 +108,9 @@ elseif ($getMode === 3)
         $folder->getFolderForDownload($getFolderId);
 
         // Test ob der Ordner schon existiert im Filesystem
-        if (is_dir($folder->getFullFolderPath() . '/' . $newFolderName))
+        if (is_dir($folder->getCompletePathOfFolder(). '/'.$newFolderName))
         {
-            $gMessage->show($gL10n->get('DOW_FOLDER_EXISTS', array($newFolderName)));
+            $gMessage->show($gL10n->get('DOW_FOLDER_EXISTS', $newFolderName));
             // => EXIT
         }
         else
@@ -122,36 +120,34 @@ elseif ($getMode === 3)
 
             if($error === null)
             {
-                $folId = (int) $folder->getValue('fol_id');
-
                 // Jetzt noch den Ordner der DB hinzufuegen...
                 $newFolder = new TableFolder($gDb);
 
-                $newFolder->setValue('fol_fol_id_parent', $folId);
+                $newFolder->setValue('fol_fol_id_parent', $folder->getValue('fol_id'));
                 $newFolder->setValue('fol_type', 'DOWNLOAD');
                 $newFolder->setValue('fol_name', $newFolderName);
                 $newFolder->setValue('fol_description', $newFolderDescription);
-                $newFolder->setValue('fol_path', $folder->getFolderPath());
+                $newFolder->setValue('fol_path', $folder->getValue('fol_path'). '/'.$folder->getValue('fol_name'));
                 $newFolder->setValue('fol_locked', $folder->getValue('fol_locked'));
                 $newFolder->setValue('fol_public', $folder->getValue('fol_public'));
                 $newFolder->save();
 
                 // get roles rights of parent folder
-                $rightParentFolderView = new RolesRights($gDb, 'folder_view', $folId);
+                $rightParentFolderView = new RolesRights($gDb, 'folder_view', $folder->getValue('fol_id'));
                 $newFolder->addRolesOnFolder('folder_view', $rightParentFolderView->getRolesIds());
-                $rightParentFolderUpload = new RolesRights($gDb, 'folder_upload', $folId);
+                $rightParentFolderUpload = new RolesRights($gDb, 'folder_upload', $folder->getValue('fol_id'));
                 $newFolder->addRolesOnFolder('folder_upload', $rightParentFolderUpload->getRolesIds());
             }
             else
             {
                 // der entsprechende Ordner konnte nicht angelegt werden
                 $gMessage->setForwardUrl(ADMIDIO_URL.FOLDER_MODULES.'/downloads/downloads.php');
-                $gMessage->show($gL10n->get($error['text'], array($error['path'], '<a href="mailto:'.$gSettingsManager->getString('email_administrator').'">', '</a>')));
+                $gMessage->show($gL10n->get($error['text'], $error['path'], '<a href="mailto:'.$gPreferences['email_administrator'].'">', '</a>'));
                 // => EXIT
             }
 
             $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
-            $gMessage->show($gL10n->get('DOW_FOLDER_CREATED', array($newFolderName)));
+            $gMessage->show($gL10n->get('DOW_FOLDER_CREATED', $newFolderName));
             // => EXIT
         }
     }
@@ -161,12 +157,11 @@ elseif ($getMode === 3)
         {
             $e->setNewMessage('SYS_FIELD_EMPTY', $gL10n->get('SYS_NAME'));
         }
-        if($e->getMessage() === 'SYS_FILENAME_INVALID')
+        if($e->getMessage() === 'BAC_FILE_NAME_INVALID')
         {
             $e->setNewMessage('DOW_FOLDER_NAME_INVALID');
         }
         $e->showHtml();
-        // => EXIT
     }
 }
 
@@ -191,42 +186,37 @@ elseif ($getMode === 4)
             $file = new TableFile($gDb);
             $file->getFileForDownload($getFileId);
 
-            $oldFile = $file->getFullFilePath();
-            $newPath = $file->getFullFolderPath() . '/';
-            $newFile = $newName . '.' . pathinfo($oldFile, PATHINFO_EXTENSION);
+            $oldFile = $file->getCompletePathOfFile();
+            $newFile = $newName. '.'. pathinfo($oldFile, PATHINFO_EXTENSION);
 
-            // check if file already exists in filesystem
-            if ($newFile !== $file->getValue('fil_name') && is_file($newPath . $newFile))
+            // Test ob die Datei schon existiert im Filesystem
+            if ($newFile !== $file->getValue('fil_name')
+            && is_file(ADMIDIO_PATH. $file->getValue('fol_path'). '/'. $file->getValue('fol_name'). '/'.$newFile))
             {
-                $gMessage->show($gL10n->get('DOW_FILE_EXIST', array($newFile)));
+                $gMessage->show($gL10n->get('DOW_FILE_EXIST', $newFile));
                 // => EXIT
             }
             else
             {
                 $oldName = $file->getValue('fil_name');
 
-                if($newFile !== $file->getValue('fil_name'))
-                {    
-                    // rename file in filesystem and database
-                    try
-                    {
-                        FileSystemUtils::moveFile($oldFile, $newPath . $newFile);
-                    }
-                    catch (\RuntimeException $exception)
-                    {
-                        $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
-                        $gMessage->show($gL10n->get('DOW_FILE_RENAME_ERROR', array($oldName)));
-                        // => EXIT
-                    }
+                // Datei umbenennen im Filesystem und in der Datenbank
+                if (rename($oldFile, ADMIDIO_PATH. $file->getValue('fol_path'). '/'. $file->getValue('fol_name'). '/'.$newFile))
+                {
+                    $file->setValue('fil_name', $newFile);
+                    $file->setValue('fil_description', $newDescription);
+                    $file->save();
+
+                    $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
+                    $gMessage->show($gL10n->get('DOW_FILE_RENAME', $oldName));
+                    // => EXIT
                 }
-
-                $file->setValue('fil_name', $newFile);
-                $file->setValue('fil_description', $newDescription);
-                $file->save();
-
-                $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
-                $gMessage->show($gL10n->get('DOW_FILE_RENAME', array($oldName)));
-                // => EXIT
+                else
+                {
+                    $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
+                    $gMessage->show($gL10n->get('DOW_FILE_RENAME_ERROR', $oldName));
+                    // => EXIT
+                }
             }
         }
         elseif($getFolderId > 0)
@@ -234,43 +224,36 @@ elseif ($getMode === 4)
             // get recordset of current folder from database and throw exception if necessary
             $folder->getFolderForDownload($getFolderId);
 
-            $oldFolder = $folder->getFullFolderPath();
+            $oldFolder = $folder->getCompletePathOfFolder();
             $newFolder = $newName;
 
-            // check if folder already exists in filesystem
+            // Test ob der Ordner schon existiert im Filesystem
             if ($newFolder !== $folder->getValue('fol_name')
             && is_dir(ADMIDIO_PATH. $folder->getValue('fol_path'). '/'.$newFolder))
             {
-                $gMessage->show($gL10n->get('DOW_FOLDER_EXISTS', array($newFolder)));
+                $gMessage->show($gL10n->get('DOW_FOLDER_EXISTS', $newFolder));
                 // => EXIT
             }
             else
             {
                 $oldName = $folder->getValue('fol_name');
 
-                if($newFolder !== $folder->getValue('fol_name'))
-                {    
-                    // rename folder in filesystem and database
-                    try
-                    {
-                        FileSystemUtils::moveDirectory($oldFolder, ADMIDIO_PATH. $folder->getValue('fol_path'). '/'.$newFolder);
+                // Ordner umbenennen im Filesystem und in der Datenbank
+                if (rename($oldFolder, ADMIDIO_PATH. $folder->getValue('fol_path'). '/'.$newFolder))
+                {
+                    $folder->setValue('fol_description', $newDescription);
+                    $folder->rename($newFolder, $folder->getValue('fol_path'));
 
-                        $folder->rename($newFolder, $folder->getValue('fol_path'));
-                    }
-                    catch (\RuntimeException $exception)
-                    {
-                        $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
-                        $gMessage->show($gL10n->get('DOW_FOLDER_RENAME_ERROR', array($oldName)));
-                        // => EXIT
-                    }
+                    $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
+                    $gMessage->show($gL10n->get('DOW_FOLDER_RENAME', $oldName));
+                    // => EXIT
                 }
-
-                $folder->setValue('fol_description', $newDescription);
-                $folder->save();
-
-                $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
-                $gMessage->show($gL10n->get('DOW_FOLDER_RENAME', array($oldName)));
-                // => EXIT
+                else
+                {
+                    $gMessage->setForwardUrl(ADMIDIO_URL.'/adm_program/system/back.php');
+                    $gMessage->show($gL10n->get('DOW_FOLDER_RENAME_ERROR', $oldName));
+                    // => EXIT
+                }
             }
         }
     }
@@ -281,12 +264,11 @@ elseif ($getMode === 4)
         {
             $e->setNewMessage('SYS_FIELD_EMPTY', $gL10n->get('DOW_NEW_NAME'));
         }
-        if($e->getMessage() === 'SYS_FILENAME_INVALID' && $getFolderId > 0)
+        if($e->getMessage() === 'BAC_FILE_NAME_INVALID' && $getFolderId > 0)
         {
             $e->setNewMessage('DOW_FOLDER_NAME_INVALID');
         }
         $e->showHtml();
-        // => EXIT
     }
 }
 
@@ -349,22 +331,17 @@ elseif ($getMode === 6)
     catch(AdmException $e)
     {
         $e->showHtml();
-        // => EXIT
     }
 
-    $newObjectPath = $folder->getFullFolderPath() . '/' . $getName;
-
-    $folId = (int) $folder->getValue('fol_id');
-
     // Pruefen ob das neue Element eine Datei order ein Ordner ist.
-    if (is_file($newObjectPath))
+    if (is_file($folder->getCompletePathOfFolder(). '/'. $getName))
     {
         // Datei hinzufuegen
         $newFile = new TableFile($gDb);
-        $newFile->setValue('fil_fol_id', $folId);
+        $newFile->setValue('fil_fol_id', $folder->getValue('fol_id'));
         $newFile->setValue('fil_name', $getName);
         $newFile->setValue('fil_locked', $folder->getValue('fol_locked'));
-        $newFile->setValue('fil_counter', 0);
+        $newFile->setValue('fil_counter', '0');
         $newFile->save();
 
         // Zurueck zur letzten Seite
@@ -373,23 +350,23 @@ elseif ($getMode === 6)
         admRedirect(ADMIDIO_URL . '/adm_program/system/back.php');
         // => EXIT
     }
-    elseif (is_dir($newObjectPath))
+    elseif (is_dir($folder->getCompletePathOfFolder(). '/'. $getName))
     {
 
         // Ordner der DB hinzufuegen
         $newFolder = new TableFolder($gDb);
-        $newFolder->setValue('fol_fol_id_parent', $folId);
+        $newFolder->setValue('fol_fol_id_parent', $folder->getValue('fol_id'));
         $newFolder->setValue('fol_type', 'DOWNLOAD');
         $newFolder->setValue('fol_name', $getName);
-        $newFolder->setValue('fol_path', $folder->getFolderPath());
+        $newFolder->setValue('fol_path', $folder->getValue('fol_path'). '/'.$folder->getValue('fol_name'));
         $newFolder->setValue('fol_locked', $folder->getValue('fol_locked'));
         $newFolder->setValue('fol_public', $folder->getValue('fol_public'));
         $newFolder->save();
 
         // get roles rights of parent folder
-        $rightParentFolderView = new RolesRights($gDb, 'folder_view', $folId);
+        $rightParentFolderView = new RolesRights($gDb, 'folder_view', $folder->getValue('fol_id'));
         $newFolder->addRolesOnFolder('folder_view', $rightParentFolderView->getRolesIds());
-        $rightParentFolderUpload = new RolesRights($gDb, 'folder_upload', $folId);
+        $rightParentFolderUpload = new RolesRights($gDb, 'folder_upload', $folder->getValue('fol_id'));
         $newFolder->addRolesOnFolder('folder_upload', $rightParentFolderUpload->getRolesIds());
 
         // Zurueck zur letzten Seite
@@ -405,14 +382,13 @@ elseif ($getMode === 7)
 {
     if(!isset($_POST['adm_roles_view_right']))
     {
-        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_VISIBLE_FOR'))));
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('DAT_VISIBLE_TO')));
         // => EXIT
     }
     if(!isset($_POST['adm_roles_upload_right']))
     {
-        // upload right need not to be set because download module administrators still
-        // have the right, so initialize the parameter
-        $_POST['adm_roles_upload_right'] = array();
+        $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('DOW_UPLOAD_FILES')));
+        // => EXIT
     }
 
     if ($getFolderId === 0 || !is_array($_POST['adm_roles_view_right']) || !is_array($_POST['adm_roles_upload_right']))
@@ -431,9 +407,6 @@ elseif ($getMode === 7)
 
     try
     {
-        $postIntRolesViewRight   = array_map('intval', $_POST['adm_roles_view_right']);
-        $postIntRolesUploadRight = array_map('intval', $_POST['adm_roles_upload_right']);
-
         // get recordset of current folder from database
         $folder->getFolderForDownload($getFolderId);
 
@@ -441,22 +414,14 @@ elseif ($getMode === 7)
         {
             // get recordset of parent folder from database
             $parentFolder = new TableFolder($gDb);
-            $parentFolder->getFolderForDownload((int) $folder->getValue('fol_fol_id_parent'));
+            $parentFolder->getFolderForDownload($folder->getValue('fol_fol_id_parent'));
         }
 
-        // Read current view roles rights of the folder
+        // Read current roles rights of the folder
         $rightFolderView = new RolesRights($gDb, 'folder_view', $getFolderId);
         $rolesFolderView = $rightFolderView->getRolesIds();
 
-        // Read current upload roles rights of the folder
-        $rightFolderUpload = new RolesRights($gDb, 'folder_upload', $getFolderId);
-        $rolesFolderUpload = $rightFolderUpload->getRolesIds();
-
-        // get new roles and removed roles
-        $addUploadRoles = array_diff($postIntRolesUploadRight, $rolesFolderUpload);
-        $removeUploadRoles = array_diff($rolesFolderUpload, $postIntRolesUploadRight);
-
-        if(in_array(0, $postIntRolesViewRight, true))
+        if(in_array('0', $_POST['adm_roles_view_right'], true))
         {
             // set flag public for this folder and all child folders
             $folder->editPublicFlagOnFolder(true);
@@ -469,18 +434,23 @@ elseif ($getMode === 7)
             $folder->editPublicFlagOnFolder(false);
 
             // get new roles and removed roles
-            $addViewRoles = array_unique(array_merge(array_diff($postIntRolesViewRight, $rolesFolderView), $postIntRolesUploadRight, $rolesFolderUpload));
-            $removeViewRoles = array_diff($rolesFolderView, $postIntRolesViewRight);
+            $addRoles = array_diff($_POST['adm_roles_view_right'], $rolesFolderView);
+            $removeRoles = array_diff($rolesFolderView, $_POST['adm_roles_view_right']);
 
-            $folder->addRolesOnFolder('folder_view', $addViewRoles);
-            $folder->removeRolesOnFolder('folder_view', $removeViewRoles);
-
-            // upload right should not contain removed view roles
-            $removeUploadRoles = array_merge($removeUploadRoles, $removeViewRoles);
+            $folder->addRolesOnFolder('folder_view', $addRoles);
+            $folder->removeRolesOnFolder('folder_view', $removeRoles);
         }
 
-        $folder->addRolesOnFolder('folder_upload', $addUploadRoles);
-        $folder->removeRolesOnFolder('folder_upload', $removeUploadRoles);
+        // save upload right
+        $rightFolderUpload = new RolesRights($gDb, 'folder_upload', $getFolderId);
+        $rolesFolderUpload = $rightFolderUpload->getRolesIds();
+
+        // get new roles and removed roles
+        $addRoles = array_diff($_POST['adm_roles_upload_right'], $rolesFolderUpload);
+        $removeRoles = array_diff($rolesFolderUpload, $_POST['adm_roles_upload_right']);
+
+        $folder->addRolesOnFolder('folder_upload', $addRoles);
+        $folder->removeRolesOnFolder('folder_upload', $removeRoles);
 
         $folder->save();
 
@@ -491,6 +461,5 @@ elseif ($getMode === 7)
     catch(AdmException $e)
     {
         $e->showHtml();
-        // => EXIT
     }
 }

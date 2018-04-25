@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Ecard functions
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -20,7 +20,7 @@ class FunctionClass
     public $emailString              = '';
 
     /**
-     * @param Language $gL10n
+     * @param \Language $gL10n
      */
     public function __construct(Language $gL10n)
     {
@@ -36,20 +36,26 @@ class FunctionClass
 
     /**
      * @param string $directory Path of the directory with the template files
-     * @return array<int,string> Returns an array of the template filenames
+     * @return string[] Returns an array of the template filenames
      */
     public function getFileNames($directory)
     {
-        try
-        {
-            $directoryFiles = FileSystemUtils::getDirectoryContent($directory, false, false, array(FileSystemUtils::CONTENT_TYPE_FILE));
+        $files = array();
 
-            return array_keys($directoryFiles);
-        }
-        catch (\RuntimeException $exception)
+        $dirHandle = @opendir($directory);
+        if($dirHandle)
         {
-            return array();
+            while (($entry = readdir($dirHandle)) !== false)
+            {
+                if($entry !== '.' && $entry !== '..' && is_file($directory.'/'.$entry))
+                {
+                    $files[] = $entry;
+                }
+            }
+            closedir($dirHandle);
         }
+
+        return $files;
     }
 
     /**
@@ -62,15 +68,15 @@ class FunctionClass
     {
         if ($tplFolder === '')
         {
-            $tplFolder = THEME_PATH . '/ecard_templates/';
+            $tplFolder = THEME_ADMIDIO_PATH.'/ecard_templates/';
         }
 
-        if (!is_file($tplFolder . $tplFilename))
+        if (!is_file($tplFolder.$tplFilename))
         {
             return null;
         }
 
-        $fileHandle = @fopen($tplFolder . $tplFilename, 'rb');
+        $fileHandle = @fopen($tplFolder.$tplFilename, 'rb');
         if ($fileHandle)
         {
             $fileData = '';
@@ -110,19 +116,19 @@ class FunctionClass
         global $gCurrentUser;
 
         // Falls der Name des Empfaenger nicht vorhanden ist wird er fuer die Vorschau ersetzt
-        if (strip_tags(trim($recipientName)) === '')
+        if(strip_tags(trim($recipientName)) === '')
         {
             $recipientName = '< '.$this->nameRecipientString.' >';
         }
 
         // Falls die Email des Empfaenger nicht vorhanden ist wird sie fuer die Vorschau ersetzt
-        if (strip_tags(trim($recipientEmail)) === '')
+        if(strip_tags(trim($recipientEmail)) === '')
         {
             $recipientEmail = '< '.$this->emailRecipientString.' >';
         }
 
         // Falls die Nachricht nicht vorhanden ist wird sie fuer die Vorschau ersetzt
-        if (trim($ecardMessage) === '')
+        if(trim($ecardMessage) === '')
         {
             $ecardMessage = '< '.$this->yourMessageString.' >';
         }
@@ -134,7 +140,7 @@ class FunctionClass
         // Hier wird der Pfad zum aktuellen Template Verzeichnis ersetzt
         $pregRepArray['/<%theme_root_path%>/']            = THEME_URL;
         // Hier wird der Sender Name, Email und Id ersetzt
-        $pregRepArray['/<%ecard_sender_id%>/']            = (int) $gCurrentUser->getValue('usr_id');
+        $pregRepArray['/<%ecard_sender_id%>/']            = $gCurrentUser->getValue('usr_id');
         $pregRepArray['/<%ecard_sender_email%>/']         = $gCurrentUser->getValue('EMAIL');
         $pregRepArray['/<%ecard_sender_name%>/']          = $gCurrentUser->getValue('FIRST_NAME').' '.$gCurrentUser->getValue('LAST_NAME');
         // Hier wird der Empfaenger Name und Email ersetzt
@@ -171,7 +177,7 @@ class FunctionClass
      */
     public function sendEcard($senderName, $senderEmail, $ecardHtmlData, $recipientName, $recipientEmail, $photoServerPath)
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         $imgPhotoPath = '';
         $returnCode = true;
@@ -182,54 +188,54 @@ class FunctionClass
         $email->addRecipient($recipientEmail, $recipientName);
 
         // alle Bilder werden aus dem Template herausgeholt, damit diese als Anhang verschickt werden koennen
-        if (preg_match_all('/(<img .*src=")(.*)(".*>)/Uim', $ecardHtmlData, $matchArray))
+        if (preg_match_all('/(<img.*src=")(.*)(".*>)/Uim', $ecardHtmlData, $matchArray))
         {
-            foreach (array_unique($matchArray[2]) as $match)
+            //$matchArray[0] = $this->deleteDoubleEntries($matchArray[0]);
+            //$matchArray[2] = $this->deleteDoubleEntries($matchArray[2]);
+            $matchArray[0] = array_unique($matchArray[0]);
+            $matchArray[2] = array_unique($matchArray[2]);
+
+            for ($i = 0, $iMax = count($matchArray[0]); $i < $iMax; ++$i)
             {
                 // anstelle der URL muss nun noch der Server-Pfad gesetzt werden
-                $replaces = array(
-                    THEME_URL   => THEME_ADMIDIO_PATH,
-                    ADMIDIO_URL => ADMIDIO_PATH
-                );
-                $imgServerPath = StringUtils::strMultiReplace($match, $replaces);
+                $imgServerPath = str_replace(THEME_URL, THEME_ADMIDIO_PATH, $matchArray[2][$i]);
+                $imgServerPath = str_replace(ADMIDIO_URL, ADMIDIO_PATH, $imgServerPath);
 
                 // wird das Bild aus photo_show.php generiert, dann den uebergebenen Pfad zum Bild einsetzen
-                if (StringUtils::strContains($imgServerPath, 'photo_show.php'))
+                if(strpos($imgServerPath, 'photo_show.php') !== false)
                 {
                     $imgServerPath = $photoServerPath;
                 }
-
                 // Bildnamen und Typ ermitteln
-                $imagePathInfo = pathinfo($imgServerPath);
-                $imgName = $imagePathInfo['basename'];
-                $imgType = $imagePathInfo['extension'];
+                $imgName = substr(strrchr($imgServerPath, '/'), 1);
+                $imgType = substr(strrchr($imgName, '.'), 1);
 
                 // das zu versendende eigentliche Bild, muss noch auf das entsprechende Format angepasst werden
-                if (StringUtils::strContains($match, 'photo_show.php'))
+                if(strpos($matchArray[2][$i], 'photo_show.php') !== false)
                 {
-                    $imgName = 'picture.' . $imgType;
-                    $imgNameIntern = substr(md5(uniqid($imgName . time(), true)), 0, 8) . '.' . $imgType;
+                    $imgName = 'picture.'. $imgType;
+                    $imgNameIntern = substr(md5(uniqid($imgName.time(), true)), 0, 8). '.'. $imgType;
                     $imgServerPath = ADMIDIO_PATH . FOLDER_DATA . '/photos/'. $imgNameIntern;
                     $imgPhotoPath  = $imgServerPath;
 
                     $imageSized = new Image($photoServerPath);
-                    $imageSized->scale($gSettingsManager->getInt('ecard_card_picture_width'), $gSettingsManager->getInt('ecard_card_picture_height'));
+                    $imageSized->scale($gPreferences['ecard_card_picture_width'], $gPreferences['ecard_card_picture_height']);
                     $imageSized->copyToFile(null, $imgServerPath);
                 }
 
                 // Bild als Anhang an die Mail haengen
-                if ($imgName !== 'none.jpg' && $imgName !== '')
+                if($imgName !== 'none.jpg' && $imgName !== '')
                 {
-                    $uid = md5(uniqid($imgName . time(), true));
+                    $uid = md5(uniqid($imgName.time(), true));
                     try
                     {
-                        $email->addEmbeddedImage($imgServerPath, $uid, $imgName, 'base64', 'image/' . $imgType);
+                        $email->addEmbeddedImage($imgServerPath, $uid, $imgName, $encoding = 'base64', 'image/'.$imgType);
                     }
                     catch (phpmailerException $e)
                     {
                         $returnCode = $e->errorMessage();
                     }
-                    $ecardHtmlData = str_replace($match, 'cid:' . $uid, $ecardHtmlData);
+                    $ecardHtmlData = str_replace($matchArray[2][$i], 'cid:'.$uid, $ecardHtmlData);
                 }
             }
         }
@@ -237,19 +243,13 @@ class FunctionClass
         $email->setText($ecardHtmlData);
         $email->sendDataAsHtml();
 
-        if ($returnCode)
+        if($returnCode)
         {
             $returnCode = $email->sendEmail();
         }
 
         // nun noch das von der Groesse angepasste Bild loeschen
-        try
-        {
-            FileSystemUtils::deleteFileIfExists($imgPhotoPath);
-        }
-        catch (\RuntimeException $exception)
-        {
-        }
+        unlink($imgPhotoPath);
 
         return $returnCode;
     }

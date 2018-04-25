@@ -3,25 +3,25 @@
  ***********************************************************************************************
  * Configuration file of Admidio
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 // Select your database system for example 'mysql' or 'pgsql'
-$gDbType = '%DB_ENGINE%';
-
-// Access to the database of the SQL-Server
-$g_adm_srv  = '%DB_HOST%';     // Host
-$g_adm_port = '%DB_PORT%';     // Port
-$g_adm_db   = '%DB_NAME%';     // Database-Name
-$g_adm_usr  = '%DB_USERNAME%'; // Username
-$g_adm_pw   = '%DB_PASSWORD%'; // Password
+$gDbType = '%DB_TYPE%';
 
 // Table prefix for Admidio-Tables in database
 // Example: 'adm'
-$g_tbl_praefix = '%TABLE_PREFIX%';
+$g_tbl_praefix = '%PREFIX%';
+
+// Access to the database of the MySQL-Server
+$g_adm_srv  = '%SERVER%';      // Server
+$g_adm_port = '%PORT%';        // Port
+$g_adm_usr  = '%USER%';        // User
+$g_adm_pw   = '%PASSWORD%';    // Password
+$g_adm_db   = '%DATABASE%';    // Database
 
 // URL to this Admidio installation
 // Example: 'https://www.admidio.org/example'

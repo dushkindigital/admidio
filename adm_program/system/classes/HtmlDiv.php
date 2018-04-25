@@ -1,24 +1,23 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Create html div elements
+ * @class HtmlDiv
+ * @brief  Create html div elements
  *
  * This class creates html div elements.
  * Create an instance of an div element and nest the inline elements.
  * The class supports nesting of several div elements and allows you to configure all attributes programatically.
  * The parsed div object with inline elements is returned as string.
  *
- * **Code example:**
- * ```
- * // Creating a div element
- *
+ * @par Example: Creating a div element
+ * @code
  * $testArray = array('Test_1', 'Test_2','Test_3');
  * // Get the Instance for a new division element
  * $div = new HtmlDiv('ID_Wrapper', 'Class_Wrapper');
@@ -46,14 +45,11 @@
  * $div->addInline('p', '', 'P_IN_3RD-DIVLEVEL', $testArray);
  * // get the parsed block element -> all opened divs are closed automatically !
  * echo $div->getHtmlDiv();
- * ```
+ * @endcode
  */
 class HtmlDiv extends HtmlElement
 {
-    /**
-     * @var int Integer value for the depth of nested div elements starting with level 1 for the main element
-     */
-    protected $level = 1;
+    protected $level; ///< Integer value for the depth of nested div elements starting with level 1 for the main element
 
     /**
      * Constructor creates the element
@@ -74,6 +70,9 @@ class HtmlDiv extends HtmlElement
         {
             $this->addAttribute('class', $class);
         }
+
+        // set div level to 1
+        $this->level = 1;
     }
 
     /**
@@ -142,7 +141,8 @@ class HtmlDiv extends HtmlElement
      */
     public function closeParentElement($parentElement)
     {
-        // count entries in array
+        // initialize position and count entries in array
+        $position = null;
         $totalCount = count($this->arrParentElements);
 
         if ($totalCount === 0)
@@ -150,15 +150,22 @@ class HtmlDiv extends HtmlElement
             return false;
         }
 
-        // find position in log array
-        $position = array_search($parentElement, $this->arrParentElements, true);
-
-        if (is_int($position))
+        if (in_array($parentElement, $this->arrParentElements, true))
         {
+            // find position in log array
+            foreach ($this->arrParentElements as $key => $value)
+            {
+                if ($value === $parentElement)
+                {
+                    $position = $key;
+                    break;
+                }
+            }
+
             // if last position set Endtag in string and remove from array
             if ($position === $totalCount)
             {
-                $this->htmlString .= '</' . $this->arrParentElements[$position] . '>';
+                $this->htmlString .= '</' . $this->arrParentElements[$totalCount] . '>';
                 unset($this->arrParentElements[$position]);
             }
             else

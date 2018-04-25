@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Create the backup
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -15,9 +15,9 @@
  * available at http://www.silisoftware.com/scripts/index.php?scriptname=backupDB
  *********************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
-require_once(__DIR__ . '/backup.functions.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
+require_once('backup.functions.php');
 
 // only administrators are allowed to create backups
 if(!$gCurrentUser->isAdministrator())
@@ -27,7 +27,7 @@ if(!$gCurrentUser->isAdministrator())
 }
 
 // module not available for other databases except MySQL
-if(DB_ENGINE !== Database::PDO_ENGINE_MYSQL)
+if($gDbType !== 'mysql')
 {
     $gMessage->show($gL10n->get('BAC_ONLY_MYSQL'));
     // => EXIT
@@ -35,10 +35,10 @@ if(DB_ENGINE !== Database::PDO_ENGINE_MYSQL)
 
 // set db in non-strict mode so that table names and field names get a single quote
 // in ANSI mode they get double quote and than some dbs got errors during import
-$gDb->queryPrepared('SET SQL_MODE = \'\'');
+$gDb->query('SET SQL_MODE = \'\'');
 
 // Some Defines
-define('ADMIN_EMAIL', $gSettingsManager->getString('email_administrator')); // eg: admin@example.com
+define('ADMIN_EMAIL', $gPreferences['email_administrator']); // eg: admin@example.com
 
 define('BACKTICKCHAR',             '`');
 define('QUOTECHAR',                '\'');
@@ -79,18 +79,15 @@ $newfullfilename = $backupabsolutepath.$fullbackupfilename;
 unset($SelectedTables, $tables);
 
 // create a list with all tables with configured table prefix
-$sql = 'SELECT table_name
-          FROM information_schema.tables
-         WHERE table_schema = ?
-           AND table_name LIKE ?';
-$statement = $gDb->queryPrepared($sql, array(DB_NAME, TABLE_PREFIX . '_%'));
+$sql = 'SHOW TABLES LIKE \''.$g_tbl_praefix.'\_%\'';
+$statement = $gDb->query($sql);
 $tables = array();
-while($tableName = $statement->fetchColumn())
+while($table = $statement->fetch())
 {
-    $tables[] = $tableName;
+    $tables[] = $table[0];
 }
 
-$SelectedTables[DB_NAME] = $tables;
+$SelectedTables[$g_adm_db] = $tables;
 
 $starttime = getmicrotime();
 
@@ -117,8 +114,8 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
 {
 
     $fileheaderline  = '-- Admidio v'.ADMIDIO_VERSION_TEXT.' (https://www.admidio.org)'.LINE_TERMINATOR;
-    $fileheaderline .= '-- '.$gL10n->get('BAC_BACKUP_FROM', array(date('d.m.Y'), date('G:i:s'))).LINE_TERMINATOR.LINE_TERMINATOR;
-    $fileheaderline .= '-- '.$gL10n->get('SYS_DATABASE').': '.DB_NAME.LINE_TERMINATOR.LINE_TERMINATOR;
+    $fileheaderline .= '-- '.$gL10n->get('BAC_BACKUP_FROM', date('d.m.Y'), date('G:i:s')).LINE_TERMINATOR.LINE_TERMINATOR;
+    $fileheaderline .= '-- '.$gL10n->get('SYS_DATABASE').': '.$g_adm_db.LINE_TERMINATOR.LINE_TERMINATOR;
     $fileheaderline .= '-- '.$gL10n->get('SYS_USER').': '.$gCurrentUser->getValue('FIRST_NAME', 'database'). ' '. $gCurrentUser->getValue('LAST_NAME', 'database').LINE_TERMINATOR.LINE_TERMINATOR;
     $fileheaderline .= 'SET FOREIGN_KEY_CHECKS=0;'.LINE_TERMINATOR.LINE_TERMINATOR;
     if (OUTPUT_COMPRESSION_TYPE === 'bzip2')
@@ -165,7 +162,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
     {
         for ($t = 0, $tMax = count($SelectedTables[$dbname]); $t < $tMax; ++$t)
         {
-            PhpIniUtils::startNewExecutionTimeLimit(60);
+            @set_time_limit(60);
             OutputInformation('statusinfo', 'Creating structure for <strong>'.noHTML($dbname.'.'.$SelectedTables[$dbname][$t]).'</strong>');
 
             $fieldnames = array();
@@ -305,7 +302,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
                     $structurelines[] = $structureline;
                 }
 
-                $SQLquery  = 'SHOW TABLE STATUS = '.$gDb->escapeString($SelectedTables[$dbname][$t]);
+                $SQLquery  = 'SHOW TABLE STATUS LIKE '.$gDb->escapeString($SelectedTables[$dbname][$t]);
                 $tablestatusStatement = $gDb->query($SQLquery);
                 if (!($TableStatusRow = $tablestatusStatement->fetch()))
                 {
@@ -351,7 +348,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
         $processedrows = 0;
         foreach ($SelectedTables as $dbname => $value)
         {
-            PhpIniUtils::startNewExecutionTimeLimit(60);
+            @set_time_limit(60);
             for ($t = 0, $tMax = count($SelectedTables[$dbname]); $t < $tMax; ++$t)
             {
                 $SQLquery  = 'SELECT *';
@@ -387,7 +384,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
                 }
                 $currentrow       = 0;
                 $thistableinserts = '';
-                while ($row = $statement->fetch(\PDO::FETCH_NUM))
+                while ($row = $statement->fetch())
                 {
                     unset($valuevalues);
                     foreach ($fieldnames as $key => $val)
@@ -412,7 +409,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
                                         $hexstring = '0x';
                                         for ($i = 0; $i < $data_len; ++$i)
                                         {
-                                            $hexstring .= str_pad(dechex(ord($data[$i])), 2, '0', STR_PAD_LEFT);
+                                            $hexstring .= str_pad(dechex(ord($data{$i})), 2, '0', STR_PAD_LEFT);
                                         }
                                         $valuevalues[] = $hexstring;
                                     }
@@ -475,7 +472,7 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
                     }
                     if ((++$currentrow % STATS_INTERVAL) == 0)
                     {
-                        PhpIniUtils::startNewExecutionTimeLimit(60);
+                        @set_time_limit(60);
                         if ($DHTMLenabled)
                         {
                             OutputInformation('rows_'.$dbname.'_'.$SelectedTables[$dbname][$t], '<strong>'.noHTML($SelectedTables[$dbname][$t]).' ('.number_format($rows[$t]).' records, ['.number_format(($currentrow / $rows[$t])*100).'%])</strong>');
@@ -495,9 +492,9 @@ if ((OUTPUT_COMPRESSION_TYPE === 'gzip'  && ($zp = @gzopen($backupabsolutepath.$
                         // reconnect to database
                         try
                         {
-                            $gDb = Database::createDatabaseInstance();
+                            $gDb = new Database($gDbType, $g_adm_srv, $g_adm_port, $g_adm_db, $g_adm_usr, $g_adm_pw);
                         }
-                        catch (AdmException $e)
+                        catch(AdmException $e)
                         {
                             OutputInformation('topprogress', $e->getText());
                             exit();
@@ -574,9 +571,9 @@ else
 // End original backupDB
 
 echo '<div class="alert alert-success form-alert"><span class="glyphicon glyphicon-ok"></span><strong>'.
-    $gL10n->get('BAC_BACKUP_COMPLETED', array(FormattedTimeRemaining(getmicrotime() - $starttime, 2))).'.</strong><br /><br />
+    $gL10n->get('BAC_BACKUP_COMPLETED', FormattedTimeRemaining(getmicrotime() - $starttime, 2)).'.</strong><br /><br />
 
-'.$gL10n->get('BAC_BACKUP_FILE').' <a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/backup/backup_file_function.php', array('job' => 'get_file', 'filename' => basename($newfullfilename))).'">'.basename($newfullfilename).'</a>
+'.$gL10n->get('BAC_BACKUP_FILE').' <a href="'.ADMIDIO_URL.FOLDER_MODULES.'/backup/backup_file_function.php?job=get_file&amp;filename='.basename($newfullfilename).'">'.basename($newfullfilename).'</a>
 ('.FileSizeNiceDisplay(filesize($newfullfilename), 2).')</div>';
 
 OutputInformation('cancel_link', '');

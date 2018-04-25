@@ -1,27 +1,26 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
+require_once(ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/jquery-file-upload/server/php/UploadHandler.php');
 
 /**
- * Improved checks and update of database after upload of files.
+ * @class UploadHandlerDownload
+ * @brief Improved checks and update of database after upload of files.
  *
  * This class extends the UploadHandler of the jquery-file-upload library. After
  * the upload of the file we do some checks on the file and if no check fails then
  * the Admidio database will be updated. If you want do upload files for the download
  * module just create an instance of this class.
- *
- * **Code example:**
- * ```
- * // create object and do upload
+ * @par Examples
+ * @code // create object and do upload
  * $uploadHandler = new UploadHandlerDownload(array('upload_dir' => $uploadDir,
  *                                                  'upload_url' => $uploadUrl,
- *                                                  'image_versions' => array()));
- * ```
+ *                                                  'image_versions' => array())); @endcode
  */
 class UploadHandlerDownload extends UploadHandler
 {
@@ -35,23 +34,23 @@ class UploadHandlerDownload extends UploadHandler
      * @param        $type
      * @param        $error
      * @param        $index
-     * @param        $contentRange
+     * @param        $content_range
      * @return \stdClass
      */
-    protected function handle_file_upload($uploadedFile, $name, $size, $type, $error, $index = null, $contentRange = null)
+    protected function handle_file_upload($uploadedFile, $name, $size, $type, $error, $index = null, $content_range = null)
     {
-        global $gSettingsManager, $gL10n, $gDb, $getId, $gCurrentOrganization, $gCurrentUser;
+        global $gPreferences, $gL10n, $gDb, $getId, $gCurrentOrganization, $gCurrentUser;
 
-        $file = parent::handle_file_upload($uploadedFile, $name, $size, $type, $error, $index, $contentRange);
+        $file = parent::handle_file_upload($uploadedFile, $name, $size, $type, $error, $index, $content_range);
 
         if(!isset($file->error))
         {
             try
             {
                 // check filesize against module settings
-                if ($file->size > $gSettingsManager->getInt('max_file_upload_size') * 1024 * 1024)
+                if ($file->size > $gPreferences['max_file_upload_size'] * 1024 * 1024)
                 {
-                    throw new AdmException('DOW_FILE_TO_LARGE', $gSettingsManager->getInt('max_file_upload_size'));
+                    throw new AdmException('DOW_FILE_TO_LARGE', $gPreferences['max_file_upload_size']);
                 }
 
                 // check filename and throw exception if something is wrong
@@ -66,40 +65,18 @@ class UploadHandlerDownload extends UploadHandler
                 $newFile->setValue('fil_fol_id', $targetFolder->getValue('fol_id'));
                 $newFile->setValue('fil_name', $file->name);
                 $newFile->setValue('fil_locked', $targetFolder->getValue('fol_locked'));
-                $newFile->setValue('fil_counter', 0);
+                $newFile->setValue('fil_counter', '0');
                 $newFile->save();
 
                 // Benachrichtigungs-Email für neue Einträge
-                $fullName = $gCurrentUser->getValue('FIRST_NAME') . ' ' . $gCurrentUser->getValue('LAST_NAME');
-                $message = $gL10n->get(
-                    'DOW_EMAIL_NOTIFICATION_MESSAGE',
-                    array(
-                        $gCurrentOrganization->getValue('org_longname'),
-                        $file->name,
-                        $fullName,
-                        date($gSettingsManager->getString('system_date'))
-                    )
-                );
+                $message = $gL10n->get('DOW_EMAIL_NOTIFICATION_MESSAGE', $gCurrentOrganization->getValue('org_longname'), $file->name, $gCurrentUser->getValue('FIRST_NAME').' '.$gCurrentUser->getValue('LAST_NAME'), date($gPreferences['system_date'], time()));
                 $notification = new Email();
-                $notification->adminNotification(
-                    $gL10n->get('DOW_EMAIL_NOTIFICATION_TITLE'),
-                    $message,
-                    $fullName,
-                    $gCurrentUser->getValue('EMAIL')
-                );
+                $notification->adminNotfication($gL10n->get('DOW_EMAIL_NOTIFICATION_TITLE'), $message, $gCurrentUser->getValue('FIRST_NAME').' '.$gCurrentUser->getValue('LAST_NAME'), $gCurrentUser->getValue('EMAIL'));
             }
             catch(AdmException $e)
             {
                 $file->error = $e->getText();
-
-                try
-                {
-                    FileSystemUtils::deleteFileIfExists($this->options['upload_dir'].$file->name);
-                }
-                catch (\RuntimeException $exception)
-                {
-                }
-
+                unlink($this->options['upload_dir'].$file->name);
                 return $file;
             }
         }

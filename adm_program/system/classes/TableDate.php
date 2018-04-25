@@ -1,49 +1,36 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * Class manages access to database table adm_dates
+ *
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Creates an event object from the database table adm_dates
+ * @class TableDate
+ * Diese Klasse dient dazu ein Terminobjekt zu erstellen.
+ * Ein Termin kann ueber diese Klasse in der Datenbank verwaltet werden
  *
- * With the given id an event object is created from the data in the database table **adm_dates**.
- * The class will handle the communication with the database and give easy access to the data. New
- * event could be created or existing event could be edited. Special properties of
- * data like save urls, checks for evil code or timestamps of last changes will be handled within this class.
+ * Beside the methods of the parent class there are the following additional methods:
  *
- * **Code examples:**
- * ```
- * // get data from an existing event
- * $event       = new TableDate($gDb, $dateId);
- * $headline    = $event->getValue('dat_headline');
- * $description = $event->getValue('dat_description');
- *
- * // change existing event
- * $event = new TableDate($gDb, $dateId);
- * $event->setValue('dat_headline', 'My new headling');
- * $event->setValue('dat_description', 'This is the new description.');
- * $event->save();
- *
- * // create new event
- * $event = new TableDate($gDb);
- * $event->setValue('dat_headline', 'My new headling');
- * $event->setValue('dat_description', 'This is the new description.');
- * $event->save();
- * ```
+ * getIcal($domain)  - gibt String mit dem Termin im iCal-Format zurueck
+ * editRight()       - prueft, ob der Termin von der aktuellen Orga bearbeitet werden darf
  */
 class TableDate extends TableAccess
 {
+    protected $visibleRoles = array();
+    protected $changeVisibleRoles;
+
     /**
      * Constructor that will create an object of a recordset of the table adm_dates.
      * If the id is set than the specific date will be loaded.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $datId    The recordset of the date with this id will be loaded. If id isn't set than an empty object of the table is created.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $datId    The recordset of the date with this id will be loaded. If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $datId = 0)
+    public function __construct(&$database, $datId = 0)
     {
         // read also data of assigned category
         $this->connectAdditionalTable(TBL_CATEGORIES, 'cat_id', 'dat_cat_id');
@@ -52,42 +39,20 @@ class TableDate extends TableAccess
     }
 
     /**
-     * Check if the current user is allowed to participate to this event.
-     * Therefore we check if the user is member of a role that is assigned to
-     * the right event_participation.
-     * @return bool Return true if the current user is allowed to participate to the event.
+     * Additional to the parent method visible roles array and flag will be initialized.
      */
-    public function allowedToParticipate()
+    public function clear()
     {
-        global $gCurrentUser;
+        parent::clear();
 
-        if($this->getValue('dat_rol_id') > 0)
-        {
-            $eventParticipationRoles = new RolesRights($this->db, 'event_participation', (int) $this->getValue('dat_id'));
-
-            if(count(array_intersect($gCurrentUser->getRoleMemberships(), $eventParticipationRoles->getRolesIds())) > 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the deadline is in the future than return false or
-     * if the deadline is in the past than return true.
-     * @return bool Return true if the deadline is exceeded.
-     */
-    public function deadlineExceeded()
-    {
-        return $this->getValidDeadline() < DATETIME_NOW;
+        $this->visibleRoles = array();
+        $this->changeVisibleRoles = false;
     }
 
     /**
      * Deletes the selected record of the table and all references in other tables.
      * After that the class will be initialize.
-     * @return bool **true** if no error occurred
+     * @return bool @b true if no error occurred
      */
     public function delete()
     {
@@ -96,44 +61,50 @@ class TableDate extends TableAccess
 
         $this->db->startTransaction();
 
-        // delete all roles assignments that could participate to the event
-        $eventParticipationRoles = new RolesRights($this->db, 'event_participation', $datId);
-        $eventParticipationRoles->delete();
+        $sql = 'DELETE FROM '.TBL_DATE_ROLE.'
+                 WHERE dtr_dat_id = '.$datId;
+        $this->db->query($sql);
 
         // if date has participants then the role with their memberships must be deleted
         if ($datRoleId > 0)
         {
             $sql = 'UPDATE '.TBL_DATES.'
                        SET dat_rol_id = NULL
-                     WHERE dat_id = ? -- $datId';
-            $this->db->queryPrepared($sql, array($datId));
+                     WHERE dat_id = '.$datId;
+            $this->db->query($sql);
 
             $dateRole = new TableRoles($this->db, $datRoleId);
             $dateRole->delete(); // TODO Exception handling
         }
 
-        // now delete event
         parent::delete();
 
         return $this->db->endTransaction();
     }
 
     /**
-     * @param string $text
-     * @return string
+     * prueft, ob der Termin von der aktuellen Orga bearbeitet werden darf
+     * @return bool
      */
-    private function escapeIcalText($text)
+    public function editRight()
     {
-        $replaces = array(
-            '\\' => '\\\\',
-            ';'  => '\;',
-            ','  => '\,',
-            "\n" => '\n',
-            "\r" => '',
-            '<br />' => '\n' // workaround
-        );
+        global $gCurrentOrganization;
 
-        return trim(StringUtils::strMultiReplace($text, $replaces));
+        $catOrgId = (int) $this->getValue('cat_org_id');
+
+        // Termine der eigenen Orga darf bearbeitet werden
+        if ($catOrgId === (int) $gCurrentOrganization->getValue('org_id'))
+        {
+            return true;
+        }
+
+        // Termine von Kinder-Orgas darf bearbeitet werden, wenn diese als global definiert wurden
+        if ($this->getValue('dat_global') && $gCurrentOrganization->isChildOrganization($catOrgId))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -219,7 +190,7 @@ class TableDate extends TableAccess
         // Semicolons herausfiltern
         $iCalVEvent[] = 'UID:' . $this->getValue('dat_timestamp_create', $dateTimeFormat) . '+' . $this->getValue('dat_usr_id_create') . '@' . $domain;
         $iCalVEvent[] = 'SUMMARY:' . $this->escapeIcalText($this->getValue('dat_headline'));
-        $iCalVEvent[] = 'DESCRIPTION:' . strStripTags($this->escapeIcalText(html_entity_decode($this->getValue('dat_description'), ENT_QUOTES, 'UTF-8')));
+        $iCalVEvent[] = 'DESCRIPTION:' . $this->escapeIcalText($this->getValue('dat_description', 'database'));
         $iCalVEvent[] = 'DTSTAMP:' . date($dateTimeFormat);
         $iCalVEvent[] = 'LOCATION:' . $this->escapeIcalText($this->getValue('dat_location'));
 
@@ -227,8 +198,8 @@ class TableDate extends TableAccess
         {
             // das Ende-Datum bei mehrtaegigen Terminen muss im iCal auch + 1 Tag sein
             // Outlook und Co. zeigen es erst dann korrekt an
-            $dateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $this->getValue('dat_end', 'Y-m-d H:i:s'));
-            $oneDayOffset = new \DateInterval('P1D');
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $this->getValue('dat_end', 'Y-m-d H:i:s'));
+            $oneDayOffset = new DateInterval('P1D');
 
             $iCalVEvent[] = 'DTSTART;VALUE=DATE:' . $this->getValue('dat_begin', 'Ymd');
             $iCalVEvent[] = 'DTEND;VALUE=DATE:' . $dateTime->add($oneDayOffset)->format('Ymd');
@@ -245,15 +216,31 @@ class TableDate extends TableAccess
     }
 
     /**
+     * @param string $text
+     * @return string
+     */
+    private function escapeIcalText($text)
+    {
+        $searchReplace = array(
+            '\\'   => '\\\\',
+            ','    => '\,',
+            ';'    => '\;',
+            "\r\n" => "\n"
+        );
+
+        return trim(str_replace(array_keys($searchReplace), array_values($searchReplace), $text));
+    }
+
+    /**
      * Get the value of a column of the database table.
-     * If the value was manipulated before with **setValue** than the manipulated value is returned.
+     * If the value was manipulated before with @b setValue than the manipulated value is returned.
      * @param string $columnName The name of the database column whose value should be read
      * @param string $format     For date or timestamp columns the format should be
-     *                           the date/time format e.g. **d.m.Y = '02.04.2011'**.
-     *                           For text columns the format can be **database** that would return
+     *                           the date/time format e.g. @b d.m.Y = '02.04.2011'. @n
+     *                           For text columns the format can be @b database that would return
      *                           the original database value without any transformations
      * @return int|string|bool Returns the value of the database column.
-     *                         If the value was manipulated before with **setValue** than the manipulated value is returned.
+     *                         If the value was manipulated before with @b setValue than the manipulated value is returned.
      */
     public function getValue($columnName, $format = '')
     {
@@ -267,8 +254,8 @@ class TableDate extends TableAccess
             }
 
             // bei ganztaegigen Terminen wird das Enddatum immer 1 Tag zurueckgesetzt
-            $dateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $this->dbColumns['dat_end']);
-            $oneDayOffset = new \DateInterval('P1D');
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $this->dbColumns['dat_end']);
+            $oneDayOffset = new DateInterval('P1D');
             $value = $dateTime->sub($oneDayOffset)->format($format);
         }
         elseif ($columnName === 'dat_description')
@@ -296,12 +283,15 @@ class TableDate extends TableAccess
             if ($columnName === 'dat_country' && $value !== '')
             {
                 // beim Land die sprachabhaengige Bezeichnung auslesen
-                $value = $gL10n->getCountryName($value);
+                $value = $gL10n->getCountryByCode($value);
             }
             elseif ($columnName === 'cat_name')
             {
                 // if text is a translation-id then translate it
-                $value = Language::translateIfTranslationStrId($value);
+                if (strpos($value, '_') === 3)
+                {
+                    $value = $gL10n->get(admStrToUpper($value));
+                }
             }
         }
 
@@ -309,78 +299,90 @@ class TableDate extends TableAccess
     }
 
     /**
-     * This function reads the deadline for participation. If no deadline is set as default the the startdate of the event will be set.
-     * return string $dateDeadline Returns a string with formated date and time
+     * die Methode gibt ein Array mit den fuer den Termin sichtbaren Rollen-IDs zurueck
+     * @return array
      */
-    public function getValidDeadline()
+    public function getVisibleRoles()
     {
-        global $gSettingsManager;
-
-        if ($this->getValue('dat_deadline') == null)
+        if (count($this->visibleRoles) === 0)
         {
-            $validDeadline = $this->getValue('dat_begin');
-        }
-        else
-        {
-            $validDeadline = $this->getValue('dat_deadline');
-        }
+            // alle Rollen-IDs einlesen, die diesen Termin sehen duerfen
+            $sql = 'SELECT dtr_rol_id AS roleId
+                      FROM '.TBL_DATE_ROLE.'
+                     WHERE dtr_dat_id = '.$this->getValue('dat_id');
+            $dateRolesStatement = $this->db->query($sql);
 
-        $objDateDeadline = \DateTime::createFromFormat($gSettingsManager->getString('system_date').' '.$gSettingsManager->getString('system_time'), $validDeadline);
-
-        return $objDateDeadline->format('Y-m-d H:i:s');
-    }
-
-    /**
-     * This method checks if the current user is allowed to edit this event. Therefore
-     * the event must be visible to the user and must be of the current organization.
-     * The user must be a member of at least one role that have the right to manage events.
-     * Global events could be only edited by the parent organization.
-     * @return bool Return true if the current user is allowed to edit this event
-     */
-    public function isEditable()
-    {
-        global $gCurrentOrganization, $gCurrentUser;
-
-        if($gCurrentUser->editDates()
-        || in_array((int) $this->getValue('cat_id'), $gCurrentUser->getAllEditableCategories('DAT'), true))
-        {
-            if ($gCurrentOrganization->countAllRecords() === 1)
+            while ($row = $dateRolesStatement->fetch()) // Do not simplify to fetchColumn() -> This row could be null
             {
-                return true;
-            }
-
-            // parent organizations could edit global events,
-            // child organizations could only edit their own events
-            if ($gCurrentOrganization->isParentOrganization()
-            || ($gCurrentOrganization->isChildOrganization() && (int) $gCurrentOrganization->getValue('org_id') == (int) $this->getValue('cat_org_id')))
-            {
-                return true;
+                if ($row['roleId'] === null)
+                {
+                    $this->visibleRoles[] = 0;
+                }
+                else
+                {
+                    $this->visibleRoles[] = (int) $row['roleId'];
+                }
             }
         }
 
-        return false;
+        return $this->visibleRoles;
     }
 
     /**
-     * This method checks if the current user is allowed to view this event. Therefore
-     * the visibility of the category is checked.
-     * @return bool Return true if the current user is allowed to view this event
+     * Save all changed columns of the recordset in table of database. Therefore the class remembers if it's
+     * a new record or if only an update is necessary. The update statement will only update the changed columns.
+     * If the table has columns for creator or editor than these column with their timestamp will be updated.
+     * Saves also all roles that could see this date.
+     * @param bool $updateFingerPrint Default @b true. Will update the creator or editor of the recordset
+     *                                if table has columns like @b usr_id_create or @b usr_id_changed
+     * @return bool
      */
-    public function isVisible()
+    public function save($updateFingerPrint = true)
     {
-        global $gCurrentUser;
+        $this->db->startTransaction();
 
-        // check if the current user could view the category of the event
-        return in_array((int) $this->getValue('cat_id'), $gCurrentUser->getAllVisibleCategories('DAT'), true);
+        $returnValue = parent::save($updateFingerPrint);
+
+        if ($this->changeVisibleRoles)
+        {
+            // Sichbarkeit der Rollen wegschreiben
+            if (!$this->new_record)
+            {
+                // erst einmal alle bisherigen Rollenzuordnungen loeschen, damit alles neu aufgebaut werden kann
+                $sql = 'DELETE FROM '.TBL_DATE_ROLE.'
+                         WHERE dtr_dat_id = '.$this->getValue('dat_id');
+                $this->db->query($sql);
+            }
+
+            // nun alle Rollenzuordnungen wegschreiben
+            $dateRole = new TableAccess($this->db, TBL_DATE_ROLE, 'dtr');
+
+            foreach ($this->visibleRoles as $roleId)
+            {
+                if ($roleId > 0)
+                {
+                    $dateRole->setValue('dtr_rol_id', $roleId);
+                }
+
+                $dateRole->setValue('dtr_dat_id', $this->getValue('dat_id'));
+                $dateRole->save();
+                $dateRole->clear();
+            }
+        }
+
+        $this->changeVisibleRoles = false;
+        $this->db->endTransaction();
+
+        return $returnValue;
     }
 
     /**
      * Set a new value for a column of the database table.
-     * The value is only saved in the object. You must call the method **save** to store the new value to the database
+     * The value is only saved in the object. You must call the method @b save to store the new value to the database
      * @param string $columnName The name of the database column whose value should get a new value
      * @param mixed  $newValue   The new value that should be stored in the database field
-     * @param bool   $checkValue The value will be checked if it's valid. If set to **false** than the value will not be checked.
-     * @return bool Returns **true** if the value is stored in the current object and **false** if a check failed
+     * @param bool   $checkValue The value will be checked if it's valid. If set to @b false than the value will not be checked.
+     * @return bool Returns @b true if the value is stored in the current object and @b false if a check failed
      */
     public function setValue($columnName, $newValue, $checkValue = true)
     {
@@ -388,26 +390,30 @@ class TableDate extends TableAccess
         {
             return parent::setValue($columnName, $newValue, false);
         }
-        elseif($columnName === 'dat_cat_id')
-        {
-            $category = new TableCategory($this->db, $newValue);
-
-            if(!$category->isVisible() || $category->getValue('cat_type') !== 'DAT')
-            {
-                throw new AdmException('Category of the event '. $this->getValue('dat_name'). ' could not be set
-                    because the category is not visible to the current user and current organization.');
-            }
-        }
 
         if ($columnName === 'dat_end' && (int) $this->getValue('dat_all_day') === 1)
         {
             // hier muss bei ganztaegigen Terminen das bis-Datum um einen Tag hochgesetzt werden
             // damit der Termin bei SQL-Abfragen richtig beruecksichtigt wird
-            $dateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $newValue);
-            $oneDayOffset = new \DateInterval('P1D');
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $newValue);
+            $oneDayOffset = new DateInterval('P1D');
             $newValue = $dateTime->add($oneDayOffset)->format('Y-m-d H:i:s');
         }
 
         return parent::setValue($columnName, $newValue, $checkValue);
+    }
+
+    /**
+     * die Methode erwartet ein Array mit den fuer den Termin sichtbaren Rollen-IDs
+     * @param int[] $arrVisibleRoleIds
+     */
+    public function setVisibleRoles(array $arrVisibleRoleIds)
+    {
+        if (count(array_diff($arrVisibleRoleIds, $this->visibleRoles)) > 0)
+        {
+            $this->changeVisibleRoles = true;
+        }
+
+        $this->visibleRoles = $arrVisibleRoleIds;
     }
 }

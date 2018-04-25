@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Backup
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -14,8 +14,8 @@
  * filename : Der Name der Datei, welche heruntergeladen werden soll
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require('../../system/common.php');
+require('../../system/login_valid.php');
 
 // Initialize and check the parameters
 $getJob      = admFuncVariableIsValid($_GET, 'job',      'string', array('requireValue' => true, 'validValues' => array('delete', 'get_file')));
@@ -45,12 +45,17 @@ switch($getJob)
     case 'get_file':
         // Dateigroese ermitteln
         $fileSize = filesize($completePath);
-        $filename = FileSystemUtils::getSanitizedPathEntry($getFilename);
+
+        // for IE the filename must have special chars in hexadecimal
+        if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false)
+        {
+            $getFilename = urlencode($getFilename);
+        }
 
         // Passenden Datentyp erzeugen.
         header('Content-Type: application/octet-stream');
         header('Content-Length: '.$fileSize);
-        header('Content-Disposition: attachment; filename="'.$filename.'"');
+        header('Content-Disposition: attachment; filename="'.$getFilename.'"');
 
         // necessary for IE, because without it the download with SSL has problems
         header('Cache-Control: private');
@@ -62,13 +67,9 @@ switch($getJob)
 
     case 'delete':
         // Backupdatei loeschen
-        try
+        if(unlink($completePath))
         {
-            FileSystemUtils::deleteFileIfExists($completePath);
             echo 'done';
-        }
-        catch (\RuntimeException $exception)
-        {
         }
         exit();
         break;

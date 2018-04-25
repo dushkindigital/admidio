@@ -31,7 +31,7 @@ like member lists, event manager, guestbook, photo album or download area.
 
 ## Installation
 
-You can install Admidio on your webspace if the script language [PHP](https://secure.php.net/) in version 5.6.0
+You can install Admidio on your webspace if the script language [PHP](https://secure.php.net/) in version 5.3.7
 or higher is available. Admidio also needs a [MySQL](https://www.mysql.com/) (version 5.0 or higher) or
 [PostgreSQL](https://www.postgresql.org/) (version 9.0 or higher) database to run.
 
@@ -66,7 +66,7 @@ Just ask us for write permissions in the wiki and you can start.
 
 We always need persons who [translate our software Admidio](https://www.admidio.org/dokuwiki/doku.php?id=en:entwickler:uebersetzen) into another
 language or just update an existing language to the current version.
-We also need people who translate [our documentation](https://www.admidio.org/dokuwiki/doku.php?id=en:2.0:index) into english.
+We also need people you translate [our documentation](https://www.admidio.org/dokuwiki/doku.php?id=en:2.0:index) into english.
 
 If you have knowledge in PHP programming and know something about HTML, CSS and
 JavaScript then you can start to help us to improve the software Admidio.
@@ -115,9 +115,12 @@ and sharing great software.
 - [Moment](http://momentjs.com/): Parse, validate, manipulate, and display dates in JavaScript
 - [NobleCount](https://tpgblog.com/NobleCount/): NobleCount… for a more ‘proper’ count of the characters remaining.
 - [James Heinrich](http://www.silisoftware.com/): backupDB
+- [password_compat](https://github.com/ircmaxell/password_compat/): Compatibility with the password_* functions that ship with PHP 5.5
 - [htmLawed](http://www.bioinformatics.org/phplabware/internal_utilities/htmLawed/): PHP code to purify & filter HTML
 - [phpass](http://www.openwall.com/phpass/): Portable PHP password hashing framework
+- [Html5Shiv](https://github.com/aFarkas/html5shiv): Enable Html5 for older browsers
+- [Respond](https://github.com/scottjehl/Respond): Polyfill for min/max-width CSS3 Media Queries
 - [zxcvbn](https://github.com/dropbox/zxcvbn): Add password strength indicator
 - [zxcvbn-php](https://github.com/bjeavons/zxcvbn-php): Test password strength in the backend
 
-Copyright (c) 2004 - 2018 The Admidio Team
+Copyright (c) 2004 - 2017 The Admidio Team

@@ -3,15 +3,15 @@
  ***********************************************************************************************
  * Overview and maintenance of all relationtypes
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
-if (!$gSettingsManager->getBool('members_enable_user_relations'))
+if ($gPreferences['members_enable_user_relations'] == 0)
 {
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
@@ -38,10 +38,8 @@ $relationtypesMenu = $page->getMenu();
 $relationtypesMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 
 // define link to create new category
-$relationtypesMenu->addItem(
-    'admMenuItemNewRelationType', ADMIDIO_URL.FOLDER_MODULES.'/userrelations/relationtypes_new.php',
-    $gL10n->get('SYS_CREATE_VAR', array($gL10n->get('SYS_USER_RELATION_TYPE'))), 'add.png'
-);
+$relationtypesMenu->addItem('admMenuItemNewRelationType', ADMIDIO_URL.FOLDER_MODULES.'/userrelations/relationtypes_new.php',
+                         $gL10n->get('SYS_CREATE_VAR', $gL10n->get('SYS_USER_RELATION_TYPE')), 'add.png');
 
 // Create table object
 $relationtypesOverview = new HtmlTable('tbl_relationtypes', $page, true);
@@ -55,15 +53,14 @@ $columnHeading = array(
 $relationtypesOverview->setColumnAlignByArray(array('left', 'left', 'right'));
 $relationtypesOverview->addRowHeadingByArray($columnHeading);
 
-$sql = 'SELECT urt1.*, urt2.urt_name AS urt_name_inverse, urt2.urt_name_male AS urt_name_male_inverse, urt2.urt_name_female AS urt_name_female_inverse, urt2.urt_edit_user AS urt_edit_user_inverse
+$sql = 'SELECT urt1.*, urt2.urt_name AS urt_name_inverse, urt2.urt_name_male AS urt_name_male_inverse, urt2.urt_name_female AS urt_name_female_inverse
           FROM '.TBL_USER_RELATION_TYPES.' AS urt1
     LEFT OUTER JOIN '.TBL_USER_RELATION_TYPES.' AS urt2
-            ON urt1.urt_id_inverse = urt2.urt_id
-         WHERE urt1.urt_id <= urt1.urt_id_inverse
-            OR urt1.urt_id_inverse IS NULL
+            ON urt1.urt_id_inverse=urt2.urt_id
+         WHERE urt1.urt_id <= urt1.urt_id_inverse OR urt1.urt_id_inverse IS NULL
       ORDER BY urt1.urt_name, urt2.urt_name';
 
-$relationtypesStatement = $gDb->queryPrepared($sql);
+$relationtypesStatement = $gDb->query($sql);
 
 $relationtype1 = new TableUserRelationType($gDb);
 $relationtype2 = new TableUserRelationType($gDb);
@@ -71,9 +68,6 @@ $relationtype2 = new TableUserRelationType($gDb);
 // Get data
 while($relRow = $relationtypesStatement->fetch())
 {
-    $editUserIcon = '';
-    $editUserInverseIcon = '';
-
     $relationtype1->clear();
     $relationtype1->setArray($relRow);
     $relationtype2->clear();
@@ -84,30 +78,17 @@ while($relRow = $relationtypesStatement->fetch())
     $relRow2['urt_name_female'] = $relRow2['urt_name_female_inverse'];
     $relationtype2->setArray($relRow2);
 
-    if((bool) $relRow['urt_edit_user'])
-    {
-        $editUserIcon = ' <img class="admidio-icon-info" src="'. THEME_URL. '/icons/profile_edit.png"
-                            alt="'.$gL10n->get('REL_EDIT_USER_IN_RELATION').'" title="'.$gL10n->get('REL_EDIT_USER_IN_RELATION').'" />';
-    }
-
-    if((bool) $relRow['urt_edit_user_inverse'])
-    {
-        $editUserInverseIcon = ' <img class="admidio-icon-info" src="'. THEME_URL. '/icons/profile_edit.png"
-                            alt="'.$gL10n->get('REL_EDIT_USER_IN_RELATION').'" title="'.$gL10n->get('REL_EDIT_USER_IN_RELATION').'" />';
-    }
-
-    $relationtypeAdministration = '<a class="admidio-icon-link" href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/userrelations/relationtypes_new.php', array('urt_id' => $relationtype1->getValue('urt_id'))). '"><img
+    $relationtypeAdministration = '<a class="admidio-icon-link" href="'.ADMIDIO_URL.FOLDER_MODULES.'/userrelations/relationtypes_new.php?urt_id='. $relationtype1->getValue('urt_id'). '"><img
                                     src="'. THEME_URL. '/icons/edit.png" alt="'.$gL10n->get('SYS_EDIT').'" title="'.$gL10n->get('SYS_EDIT').'" /></a>';
     $relationtypeAdministration .= '<a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
-                                        href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'urt', 'element_id' => 'row_'. $relationtype1->getValue('urt_id'),
-                                        'name' => $relationtype1->getValue('urt_name').($relationtype1->isUnidirectional() ? '' : ('/'.$relationtype2->getValue('urt_name'))),
-                                        'database_id' => $relationtype1->getValue('urt_id'))).'"><img
+                                        href="'.ADMIDIO_URL.'/adm_program/system/popup_message.php?type=urt&amp;element_id=row_'.
+                                        $relationtype1->getValue('urt_id').'&amp;name='.urlencode($relationtype1->getValue('urt_name').($relationtype1->isUnidirectional() ? '' : ('/'.$relationtype2->getValue('urt_name')))).'&amp;database_id='.$relationtype1->getValue('urt_id').'"><img
                                            src="'. THEME_URL. '/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>';
 
     // create array with all column values
     $columnValues = array(
-        $relationtype1->getValue('urt_name') . $editUserIcon,
-        $relationtype2->getValue('urt_name') . $editUserInverseIcon,
+        $relationtype1->getValue('urt_name'),
+        $relationtype2->getValue('urt_name'),
         $relationtypeAdministration
     );
     $relationtypesOverview->addRowByArray($columnValues, 'row_'. $relationtype1->getValue('urt_id'));

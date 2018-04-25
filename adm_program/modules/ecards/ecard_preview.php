@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Preview of ecard
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -11,16 +11,16 @@
 
 // preview will be called before form is send, so there are now POST parameters available
 // then show nothing. Second call is with POST parameters then show preview
-require_once(__DIR__ . '/../../system/common.php');
-require_once(__DIR__ . '/ecard_function.php');
+require_once('../../system/common.php');
+require_once('ecard_function.php');
 
 //$gMessage->showTextOnly(true);
 $gMessage->showThemeBody(false);
-$gMessage->showInModalWindow();
+$gMessage->showInModaleWindow();
 
 if(strlen($_POST['ecard_template']) === 0)
 {
-    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('ECA_TEMPLATE'))));
+    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('ECA_TEMPLATE')));
     // => EXIT
 }
 
@@ -37,7 +37,7 @@ if(isset($_POST['ecard_message']))
     $ecardMessage = $_POST['ecard_message'];
 }
 
-$imageUrl = safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_show.php', array('pho_id' => $postPhotoId, 'photo_nr' => $postPhotoNr, 'max_width' => $gSettingsManager->getInt('ecard_thumbs_scale'), 'max_height' => $gSettingsManager->getInt('ecard_thumbs_scale')));
+$imageUrl = ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_show.php?pho_id='.$postPhotoId.'&photo_nr='.$postPhotoNr.'&max_width='.$gPreferences['ecard_thumbs_scale'].'&max_height='.$gPreferences['ecard_thumbs_scale'];
 
 $funcClass = new FunctionClass($gL10n);
 

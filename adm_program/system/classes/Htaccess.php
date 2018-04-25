@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Klasse um htaccessFiles anzulegen
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class Htaccess
  * Diese Klasse dient dazu ein .htaccessFile zu erstellen.
  * Ein Ordner kann ueber diese Klasse mit einem htaccess-File geschuetzt werden.
  * Von aussen ist dann kan Zugriff mehr erlaubt.
@@ -26,9 +27,6 @@
  */
 class Htaccess
 {
-    /**
-     * @var string
-     */
     protected $folderPath;
 
     /**
@@ -45,27 +43,19 @@ class Htaccess
      */
     public function protectFolder()
     {
-        if (is_file($this->folderPath . '/.htaccess'))
+        if (is_dir($this->folderPath) && !is_file($this->folderPath.'/.htaccess'))
         {
-            return true;
-        }
+            $file = fopen($this->folderPath.'/.htaccess', 'w+b');
 
-        try
-        {
-            FileSystemUtils::createDirectoryIfNotExists($this->folderPath);
+            if (!$file)
+            {
+                return false;
+            }
 
-            $lines = array(
-                'Order deny,allow',
-                'Deny from all'
-            );
-            $data = implode("\n", $lines) . "\n";
-            FileSystemUtils::writeFile($this->folderPath . '/.htaccess', $data);
+            fwrite($file, "Order deny,allow\n");
+            fwrite($file, "Deny from all\n");
+            return fclose($file);
         }
-        catch (\RuntimeException $exception)
-        {
-            return false;
-        }
-
         return true;
     }
 
@@ -75,15 +65,10 @@ class Htaccess
      */
     public function unprotectFolder()
     {
-        try
+        if (is_dir($this->folderPath) && is_file($this->folderPath.'/.htaccess'))
         {
-            FileSystemUtils::deleteFileIfExists($this->folderPath . '/.htaccess');
+            return @unlink($this->folderPath.'/.htaccess', 'w+');
         }
-        catch (\RuntimeException $exception)
-        {
-            return false;
-        }
-
         return true;
     }
 }

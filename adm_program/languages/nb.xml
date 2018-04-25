@@ -24,8 +24,6 @@
   <string name="BAC_SUM">Total</string>
   <string name="BAC_SECONDS_VAR">#VAR1# sekunder</string>
   <!--Phrases only in Category-Administration-->
-  <string name="CAT_ALL_THIS_ORGANIZATION">Alle medlemmer av denne organisasjonen</string>
-  <string name="CAT_CATEGORY_EXIST">Det er allerede en kategori i denne organisasjonen med dette navnet.</string>
   <string name="CAT_DEFAULT_VAR">Standard-#VAR1#</string>
   <string name="CAT_MOVE_DOWN">Flytt ned #VAR1\"</string>
   <string name="CAT_MOVE_UP">Flytt opp #VAR1#</string>
@@ -38,23 +36,20 @@
   <string name="DAT_CANCEL">Avbryt</string>
   <string name="DAT_DATE">Hendelse</string>
   <string name="DAT_DATES">Hendelser</string>
-  <string name="DAT_DEADLINE_ATTENTION">Din registrering kan ikke endres fordi den oppgitte sluttdatoen for registreringer er oppnådd eller datoen er tidligere. Ta kontakt med sjefen eller en administrator!</string>
   <string name="DAT_EDIT_CALENDAR_DESC">Her kan du opprette og endre kalendere.</string>
   <string name="DAT_LOCATION">By</string>
   <string name="DAT_MANAGE_CALENDARS">Administrer kalendere</string>
   <!--Phrases only in Downloadsmodule-->
   <string name="DOW_DOWNLOADS">Nedlastninger</string>
   <!--Phrases only in Ecardsmodule-->
-  <string name="ECA_VIEW_PICTURE_FULL_SIZED">Vis bilde i full størrelse</string>
-  <string name="ECA_TEMPLATE_FOLDER_OPEN">Mal-mappen kunne ikke leses/åpnes.</string>
   <!--Phrases only in Guestbookmodule-->
-  <string name="GBO_BACK_TO_GUESTBOOK">Tilbake til gjesteboken</string>
-  <string name="GBO_COMMENTS4ALL">Tillat anonyme kommentarer</string>
   <!--Phrases only in Installation-->
   <string name="INS_ADD_ORGANIZATION">Legg til organisasjon</string>
   <string name="INS_ADDIDIONAL_DATA">Tilleggsinformasjon</string>
   <string name="INS_ADDRESS_LIST">Adresseliste</string>
   <string name="INS_AOL_INSTANT_MESSENGER">AOL Instant Messenger</string>
+  <string name="INS_CHOOSE_LANGUAGE">Velg språk</string>
+  <string name="INS_CONFERENCE_ROOM">Konferanserom</string>
   <string name="INS_CONTINUE_INSTALLATION">Fortsett installesjon</string>
   <string name="INS_COURSES">Kurs</string>
   <string name="INS_CREATE_ADMINISTRATOR">Opprett en administrator</string>
@@ -69,8 +64,6 @@
   <string name="INS_UPDATE_DATABASE">Oppdater database</string>
   <string name="INS_UPDATE_NOT_POSSIBLE">Oppdatering av databasen er ikke mulig for øyeblikket!</string>
   <string name="INS_UPDATE_VERSION">Oppdater til versjon #VAR1#</string>
-  <string name="INS_WINDOWS_LIVE">Windows Live</string>
-  <string name="INS_XING">Xing</string>
   <string name="INS_YAHOO_MESSENGER">Yahoo! Messenger</string>
   <string name="INS_BOYFRIEND">Venn</string>
   <string name="INS_BROTHER">Bror</string>
@@ -91,6 +84,8 @@
   <string name="INS_SON">Sønn</string>
   <string name="INS_SPOUSE">Ektefelle</string>
   <string name="INS_WIFE">Kone</string>
+  <!--Phrases only in Inventorymodule-->
+  <string name="INV_CREATE_ITEM">Opprett artikkel</string>
   <!--Phrases only in Linkmodule-->
   <!--Phrases only in Listsmodule-->
   <string name="LST_A_TO_Z">A til Å</string>
@@ -119,32 +114,7 @@
   <string name="MAI_ADD_ATTACHEMENT">Legg ved fil</string>
   <string name="MAI_ATTACHEMENT">Vedlegg</string>
   <string name="MAI_HIDDEN">Skjult</string>
-  <string name="MAI_SMTP_HOST">SMTP Vert</string>
-  <string name="MAI_SMTP_HOST_DESC">Adresse til SMTP-server.</string>
-  <string name="MAI_SMTP_PASSWORD">SMTP-passord</string>
-  <string name="MAI_SMTP_PASSWORD_DESC">Passord brukt til SMTP autentisering</string>
-  <string name="MAI_SMTP_PORT">SMTP port</string>
-  <string name="MAI_SMTP_SECURE">SMTP kryptering</string>
-  <string name="MAI_SMTP_SECURE_NO">ingen</string>
-  <string name="MAI_SMTP_SECURE_SSL">SSL</string>
-  <string name="MAI_SMTP_SECURE_TLS">TLS</string>
-  <string name="MAI_SMTP_USER">SMTP brukernavn</string>
-  <string name="MAI_YOUR_EMAIL">Din epost</string>
-  <string name="MAI_YOUR_NAME">Ditt navn</string>
   <!--Phrases only in Membersadministration-->
-  <string name="MEM_ASSIGN_FIELDS">Tildel felter</string>
-  <string name="MEM_ASSIGN_ROLE">Tildel rolle</string>
-  <string name="MEM_ASSIGN_ROLES">Tildel roller</string>
-  <string name="MEM_CREATE_USER">Opprett bruker</string>
-  <string name="MEM_CODING">Koding</string>
-  <string name="MEM_CHANGE_HISTORY">Endringshistorikk</string>
-  <string name="MEM_CHOOSE_FILE">Velg fil</string>
-  <string name="MEM_DUPLICATE">Klon</string>
-  <string name="MEM_EDIT_USER">Endre bruker</string>
-  <string name="MEM_EXISTING_USERS">Eksisterende bruker</string>
-  <string name="MEM_FORMAT">Format</string>
-  <string name="MEM_IMPORT">Import</string>
-  <string name="MEM_IMPORT_USERS">Brukerimport</string>
   <string name="MEM_REMOVE_USER">Fjern bruker</string>
   <string name="MEM_REPLACE">Erstatt</string>
   <string name="MEM_SHOW_ALL_USERS">Vi alle brukere</string>
@@ -176,6 +146,8 @@
   <string name="ORG_TIME_FORMAT">Tidsformat</string>
   <string name="ORG_TIMEZONE">Tidssone</string>
   <string name="ORG_URL">URL</string>
+  <string name="ORG_VARIABLE_FIRST_NAME">Brukers fornavn</string>
+  <string name="ORG_VARIABLE_LAST_NAME">Brukers etternavn</string>
   <string name="ORG_VARIABLE_NAME_ORGANIZATION">Organisasjonsnavn</string>
   <string name="ORG_VARIABLE_NEW_PASSWORD">Nytt brukerpassord</string>
   <!--Phrases only in Updatecheck-->
@@ -183,6 +155,7 @@
   <string name="UPD_BETA_VERSION">Tilgjengelig Beta</string>
   <string name="UPD_CURRENT_VERSION">Installert</string>
   <string name="UPD_STABLE_VERSION">Tilgjengelig</string>
+  <string name="UPD_TITLE">Oppdateringskontroll</string>
   <!--Phrases only in Photomodule-->
   <string name="PHO_ALBUM">Album</string>
   <string name="PHO_ALBUM_DELETE">Slett album</string>
@@ -223,6 +196,7 @@
   <string name="SYS_CONDITION">Betingelser</string>
   <string name="SYS_CONFIRM_PASSWORD">Bekreft passord</string>
   <string name="SYS_CONFIRMATION_OF_INPUT">Bekreft verdi</string>
+  <string name="SYS_CONFIRMATION_OF_PARTICIPATION">Bekreft deltagelse</string>
   <string name="SYS_CONTACT_DETAILS">Kontaktinformasjon</string>
   <string name="SYS_CONTENT">Innhold</string>
   <string name="SYS_CONTRIBUTION">Bidrag</string>
@@ -287,9 +261,11 @@
   <string name="SYS_HIDE">Skjul</string>
   <string name="SYS_HOMEPAGE">Hjemmeside</string>
   <string name="SYS_ICON">Ikon</string>
+  <string name="SYS_INACTIVE">Inaktiv</string>
   <string name="SYS_INFORMATIONS">informasjon</string>
   <string name="SYS_INTERNAL_NAME">Internt navn</string>
   <string name="SYS_INVALID_PAGE_VIEW">Ugyldig sidevisning</string>
+  <string name="SYS_INVISIBLE">Usynlig</string>
   <string name="SYS_IO_ERROR">I/O-feil</string>
   <string name="SYS_ISO_8859_1">ISO-8859-1</string>
   <string name="SYS_LANGUAGE">Språk</string>
@@ -382,6 +358,7 @@
   <string name="SYS_SAVE">Lagre</string>
   <string name="SYS_SAVE_DATA">Dataene ble lagret.</string>
   <string name="SYS_SECONDS">Sekunder</string>
+  <string name="SYS_SECURITY_ERROR">Sikkerhetsfeil</string>
   <string name="SYS_SELECT_FROM_LIST">Velg fra liste</string>
   <string name="SYS_SEND">Send</string>
   <string name="SYS_SEND_EMAIL_TO">Send epost til #VAR1#</string>
@@ -390,6 +367,7 @@
   <string name="SYS_SENDER">Avsender</string>
   <string name="SYS_SERVER">Server</string>
   <string name="SYS_SERVER_NO_UPLOAD">Serverinnstillingene tillater ikke filopplastninger</string>
+  <string name="SYS_SET_BY">Satt av</string>
   <string name="SYS_SETTINGS">Preferanser</string>
   <string name="SYS_SHOW_CALENDAR">Vis kalender</string>
   <string name="SYS_SHOW_PROFILE">Vis profil</string>
@@ -425,6 +403,7 @@
   <string name="SYS_VERSION">Versjon</string>
   <string name="SYS_VIEW">Visning</string>
   <string name="SYS_VISIBLE">Synlig</string>
+  <string name="SYS_VISIBLE_TO_USERS">#VAR1# er synlig bare for innloggede brukere.</string>
   <string name="SYS_VISITORS">Gjester</string>
   <string name="SYS_WANT_REGISTER">Jeg vil registrere meg!</string>
   <string name="SYS_WARNING">Advarsel</string>

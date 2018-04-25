@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Create and send a text or html email with attachments
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class Email
  * Mit dieser Klasse kann ein Email-Objekt erstellt
  * und anschliessend verschickt werden.
  *
@@ -37,7 +38,7 @@
  * Parameters: $subject - Der Text des Betreffs
  *
  * Der Email einen Text geben:
- * setText($text)
+ * function setText($text. )
  * Parameters: $text - Der Text der Mail
  *
  * Bei Bedarf kann man sich eine Kopie der Mail zuschicken lassen (optional):
@@ -48,8 +49,8 @@
  * function setListRecipientsFlag()
  *
  * Methode gibt die maximale Groesse der Anhaenge zurueck
- * sizeUnit : 'Byte' = byte; 'KiB' = kibibyte; 'MiB' = mebibyte; 'GiB' = gibibyte; 'TiB' = tebibyte
- * getMaxAttachmentSize($sizeUnit = 'MiB')
+ * size_unit : 'b' = byte; 'kb' = kilobyte; 'mb' = megabyte
+ * getMaxAttachementSize($size_unit = 'kb')
  *
  * Soll die Nachricht als HTML Code interpretiert und versendet werden,
  * muss folgende Funktion auch noch aufgerufen werden (optional):
@@ -60,43 +61,13 @@
  */
 class Email extends PHPMailer
 {
-    const SIZE_UNIT_BYTE = 'Byte';
-    const SIZE_UNIT_KIBIBYTE = 'KiB';
-    const SIZE_UNIT_MEBIBYTE = 'MiB';
-    const SIZE_UNIT_GIBIBYTE = 'GiB';
-    const SIZE_UNIT_TEBIBYTE = 'TiB';
-
-    /**
-     * @var string Plain text of email
-     */
-    private $emText = '';
-    /**
-     * @var string HTML text of email
-     */
-    private $emHtmlText = '';
-    /**
-     * @var array<int,string> Hier werden noch mal alle Empfaenger der Mail reingeschrieben, fuer den Fall das eine Kopie der Mail angefordert wird...
-     */
-    private $emAddresses = array();
-    /**
-     * @var array<string,string> Mail sender address and Name
-     */
-    private $emSender = array();
-    /**
-     * @var bool
-     */
-    private $emCopyToSender = false;
-    /**
-     * @var bool
-     */
-    private $emListRecipients = false;
-    /**
-     * @var bool
-     */
-    private $emSendAsHTML = false;
-    /**
-     * @var array<int,array<string,string>>
-     */
+    private $emText;     // plain text of email
+    private $emHtmlText; // html text of email
+    private $emSender;   // mail sender adress and Name
+    private $emAddresses;
+    private $emCopyToSender;
+    private $emListRecipients;
+    private $emSendAsHTML;
     private $emBccArray = array();
 
     /**
@@ -105,27 +76,37 @@ class Email extends PHPMailer
     public function __construct()
     {
         // Übername Einstellungen
-        global $gL10n, $gSettingsManager, $gDebug;
+        global $gL10n, $gPreferences, $gDebug;
 
-        parent::__construct(true); // enable exceptions in PHPMailer
+        parent::__construct(true);
 
-        $this->Timeout = 30; // set timeout to 30 seconds
+        $this->emCopyToSender   = false;
+        $this->emListRecipients = false;
+        $this->emSendAsHTML     = false;
+        $this->emText           = '';    // content of text part
+        $this->emHtmlText       = '';    // content of html part
+        $this->exceptions       = true;  // enable exceptions in PHPMailer
+        $this->Timeout          = 30;    // set timeout to 30 seconds
+
+        // Hier werden noch mal alle Empfaenger der Mail reingeschrieben,
+        // fuer den Fall das eine Kopie der Mail angefordert wird...
+        $this->emAddresses = '';
 
         // Versandmethode festlegen
-        if ($gSettingsManager->getString('mail_send_method') === 'SMTP')
+        if($gPreferences['mail_send_method'] === 'SMTP')
         {
             $this->isSMTP();
 
-            $this->Host        = $gSettingsManager->getString('mail_smtp_host');
-            $this->SMTPAuth    = $gSettingsManager->getBool('mail_smtp_auth');
-            $this->Port        = $gSettingsManager->getInt('mail_smtp_port');
-            $this->SMTPSecure  = $gSettingsManager->getString('mail_smtp_secure');
-            $this->AuthType    = $gSettingsManager->getString('mail_smtp_authentication_type');
-            $this->Username    = $gSettingsManager->getString('mail_smtp_user');
-            $this->Password    = $gSettingsManager->getString('mail_smtp_password');
+            $this->Host        = $gPreferences['mail_smtp_host'];
+            $this->SMTPAuth    = $gPreferences['mail_smtp_auth'];
+            $this->Port        = $gPreferences['mail_smtp_port'];
+            $this->SMTPSecure  = $gPreferences['mail_smtp_secure'];
+            $this->AuthType    = $gPreferences['mail_smtp_authentication_type'];
+            $this->Username    = $gPreferences['mail_smtp_user'];
+            $this->Password    = $gPreferences['mail_smtp_password'];
             $this->Debugoutput = 'html';
 
-            if ($gDebug)
+            if($gDebug)
             {
                 $this->SMTPDebug = 2;
             }
@@ -137,51 +118,7 @@ class Email extends PHPMailer
 
         // set language for error reporting
         $this->setLanguage($gL10n->getLanguageIsoCode());
-        $this->CharSet = $gSettingsManager->getString('mail_character_encoding');
-    }
-
-    /**
-     * method adds main recipients to mail
-     * @param string $address
-     * @param string $name
-     * @return true|string
-     */
-    public function addRecipient($address, $name = '')
-    {
-        try
-        {
-            $this->addAddress($address, $name);
-        }
-        catch (phpmailerException $e)
-        {
-            return $e->errorMessage();
-        }
-
-        $this->emAddresses[] = $name;
-
-        return true;
-    }
-
-    /**
-     * method adds CC recipients to mail
-     * @param string $address
-     * @param string $name
-     * @return true|string
-     */
-    public function addCopy($address, $name = '')
-    {
-        try
-        {
-            $this->addCC($address, $name);
-        }
-        catch (phpmailerException $e)
-        {
-            return $e->errorMessage();
-        }
-
-        $this->emAddresses[] = $name;
-
-        return true;
+        $this->CharSet = $gPreferences['mail_character_encoding'];
     }
 
     /**
@@ -193,108 +130,95 @@ class Email extends PHPMailer
      */
     public function addBlindCopy($address, $name = '')
     {
+        $address = admStrToLower($address);
         // Blindcopy must be Ascii-US formated, so encode in MimeHeader
         $asciiName = stripslashes($name);
 
         if (strValidCharacters($address, 'email'))
         {
             $this->emBccArray[] = array('name' => $asciiName, 'address' => $address);
-            $this->emAddresses[] = $name;
+            $this->emAddresses = $this->emAddresses.$name."\r\n";
             return true;
         }
         return false;
     }
 
     /**
-     * Creates an email for the administrator. Therefore we use the email that is stored in
-     * the global preference email_administrator. We don't use the role administrator!
-     * @param string $subject
-     * @param string $message
-     * @param string $editorName
-     * @param string $editorEmail
-     * @throws AdmException 'SYS_EMAIL_NOT_SEND'
-     * @return bool|string
+     * method adds CC recipients to mail
+     * @param string $address
+     * @param string $name
+     * @return true|string
      */
-    public function adminNotification($subject, $message, $editorName = '', $editorEmail = '')
+    public function addCopy($address, $name = '')
     {
-        global $gSettingsManager, $gCurrentOrganization;
+        $address = admStrToLower($address);
 
-        if (!$gSettingsManager->getBool('enable_email_notification'))
+        try
         {
-            return false;
+            $this->addCC($address, $name);
+        }
+        catch (phpmailerException $e)
+        {
+            return $e->errorMessage();
         }
 
-        // Send Notification to Admin
-        $this->addRecipient($gSettingsManager->getString('email_administrator'));
+        $this->emAddresses = $this->emAddresses.$name."\r\n";
 
-        // Set Sender
-        if ($editorEmail === '')
-        {
-            $this->setSender($gSettingsManager->getString('email_administrator'));
-        }
-        else
-        {
-            $this->setSender($editorEmail, $editorName);
-        }
+        return true;
+    }
 
-        // Set Subject
-        $this->setSubject($gCurrentOrganization->getValue('org_shortname').': '.$subject);
+    /**
+     * method adds main recipients to mail
+     * @param string $address
+     * @param string $name
+     * @return true|string
+     */
+    public function addRecipient($address, $name = '')
+    {
+        $address = admStrToLower($address);
 
-        // send html if preference is set
-        if ($gSettingsManager->getBool('mail_html_registered_users'))
+        try
         {
-            $this->sendDataAsHtml();
+            $this->addAddress($address, $name);
         }
-        else
+        catch (phpmailerException $e)
         {
-            // html linebreaks should be converted in simple linefeed
-            $message = str_replace('<br />', "\n", $message);
+            return $e->errorMessage();
         }
 
-        // Set Text
-        $this->setText($message);
-
-        // Verschicken
-        $returnCode = $this->sendEmail();
-
-        // if something went wrong then throw an exception with the error message
-        if ($returnCode !== true)
-        {
-            throw new AdmException('SYS_EMAIL_NOT_SEND', $gSettingsManager->getString('email_administrator'), $returnCode);
-        }
+        $this->emAddresses = $this->emAddresses.$name."\r\n";
 
         return true;
     }
 
     /**
      * Returns the maximum size of an attachment
-     * @param string $sizeUnit  'Byte' = byte, 'KiB' = kibibyte, 'MiB' = mebibyte, 'GiB' = gibibyte, 'TiB' = tebibyte
-     * @param int    $precision The number of decimal digits to round to
+     * @param string $sizeUnit 'b' = byte, 'kib' = kilobyte, 'mib' = megabyte, 'gib' = gigabyte, 'tib' = terabyte
      * @return float The maximum attachment size in the given size-unit
      */
-    public static function getMaxAttachmentSize($sizeUnit = self::SIZE_UNIT_BYTE, $precision = 1)
+    public static function getMaxAttachementSize($sizeUnit = 'mib')
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
-        $maxUploadSize = PhpIniUtils::getUploadMaxSize();
-        $currentAttachmentSize = $gSettingsManager->getInt('max_email_attachment_size') * pow(1024, 2);
+        $maxUploadSize = admFuncMaxUploadSize();
+        $currentAttachmentSize = $gPreferences['max_email_attachment_size'] * pow(1024, 2);
 
         $attachmentSize = min($maxUploadSize, $currentAttachmentSize);
 
         switch ($sizeUnit)
         {
-            case self::SIZE_UNIT_TEBIBYTE:
+            case 'tib':
                 $attachmentSize /= 1024;
-            case self::SIZE_UNIT_GIBIBYTE:
+            case 'gib':
                 $attachmentSize /= 1024;
-            case self::SIZE_UNIT_MEBIBYTE:
+            case 'mib':
                 $attachmentSize /= 1024;
-            case self::SIZE_UNIT_KIBIBYTE:
+            case 'kib':
                 $attachmentSize /= 1024;
             default:
         }
 
-        return round($attachmentSize, $precision);
+        return round($attachmentSize, 1);
     }
 
     /**
@@ -305,17 +229,17 @@ class Email extends PHPMailer
      */
     public function setSender($address, $name = '')
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         // save sender if a copy of the mail should be send to him
         $this->emSender = array('address' => $address, 'name' => $name);
 
         // Falls so eingestellt soll die Mail von einer bestimmten Adresse aus versendet werden
-        if (strlen($gSettingsManager->getString('mail_sendmail_address')) > 0)
+        if(strlen($gPreferences['mail_sendmail_address']) > 0)
         {
             // hier wird die Absenderadresse gesetzt
-            $fromName    = $gSettingsManager->getString('mail_sendmail_name');
-            $fromAddress = $gSettingsManager->getString('mail_sendmail_address');
+            $fromName    = $gPreferences['mail_sendmail_name'];
+            $fromAddress = $gPreferences['mail_sendmail_address'];
 
         }
         // Im Normalfall wird aber versucht von der Adresse des schreibenden aus zu schicken
@@ -344,7 +268,7 @@ class Email extends PHPMailer
     /**
      * Set the subject of the email
      * @param string $subject A text that should be the subject of the email
-     * @return bool Returns **false** if the parameter has no text
+     * @return bool Returns @b false if the parameter has no text
      */
     public function setSubject($subject)
     {
@@ -363,8 +287,12 @@ class Email extends PHPMailer
     public function setText($text)
     {
         // Erst mal die Zeilenumbrueche innerhalb des Mailtextes umwandeln in einfache Umbrueche
-        // statt \r\n nur noch \n
-        $text = str_replace("\r\n", "\n", $text);
+        // statt \r und \r\n nur noch \n
+        $replaceArray = array(
+            "\r"   => "\n",
+            "\r\n" => "\n"
+        );
+        $text = str_replace(array_keys($replaceArray), array_values($replaceArray), $text);
 
         $this->emText .= strip_tags($text);
         $this->emHtmlText .= $text;
@@ -395,16 +323,16 @@ class Email extends PHPMailer
     {
         global $gL10n, $gValidLogin, $gCurrentOrganization;
 
-        $senderText = $gL10n->get('MAI_EMAIL_SEND_TO_RECEIVER', array($senderName, $gCurrentOrganization->getValue('org_homepage'), $receivers));
+        $senderText = $gL10n->get('MAI_EMAIL_SEND_TO_RECEIVER', $senderName, $gCurrentOrganization->getValue('org_homepage'), $receivers);
 
-        if (!$gValidLogin)
+        if(!$gValidLogin)
         {
-            $senderText .= self::CRLF . $gL10n->get('MAI_SENDER_NOT_LOGGED_IN');
+            $senderText = $senderText."\r\n".$gL10n->get('MAI_SENDER_NOT_LOGGED_IN');
         }
 
-        $senderText .= self::CRLF .
-            '*****************************************************************************************************************************' .
-            self::CRLF . self::CRLF;
+        $senderText = $senderText."\r\n".
+        '*****************************************************************************************************************************'.
+        "\r\n"."\r\n";
 
         $this->emText .= $senderText;
         $this->emHtmlText .= nl2br($senderText);
@@ -419,97 +347,62 @@ class Email extends PHPMailer
     }
 
     /**
-     * Sends Emails with BCC addresses
-     * @throws phpmailerException
+     * Mailbenachrichtigung für Admin
+     * @param string $subject
+     * @param string $message
+     * @param string $editorName
+     * @param string $editorEmail
+     * @return bool|string
      */
-    private function sendBccMails()
+    public function adminNotfication($subject, $message, $editorName = '', $editorEmail = '')
     {
-        global $gSettingsManager;
+        global $gPreferences, $gCurrentOrganization;
 
-        // Bcc Array in Päckchen zerlegen
-        $bccArrays = array_chunk($this->emBccArray, $gSettingsManager->getInt('mail_bcc_count'));
-
-        foreach ($bccArrays as $bccArray)
+        if($gPreferences['enable_email_notification'] == 1)
         {
-            // if number of bcc recipients = 1 then send the mail directly to the user and not as bcc
-            if (count($bccArray) === 1)
-            {
-                // remove all current recipients from mail
-                $this->clearAllRecipients();
+            // Send Notifivation to Admin
+            $this->addRecipient($gPreferences['email_administrator']);
 
-                $this->addAddress($bccArray[0]['address'], $bccArray[0]['name']);
-            }
-            elseif ($gSettingsManager->getBool('mail_into_to'))
+            // Set Sender
+            if($editorEmail === '')
             {
-                // remove all current recipients from mail
-                $this->clearAllRecipients();
-
-                // add all recipients as bcc to the mail
-                foreach ($bccArray as $bcc)
-                {
-                    $this->addAddress($bcc['address'], $bcc['name']);
-                }
+                $this->setSender($gPreferences['email_administrator']);
             }
             else
             {
-                // remove only all BCC because to-address could be explicit set if undisclosed recipients won't work
-                $this->clearBCCs();
-
-                // add all recipients as bcc to the mail
-                foreach ($bccArray as $bcc)
-                {
-                    $this->addBCC($bcc['address'], $bcc['name']);
-                }
+                $this->setSender($editorEmail, $editorName);
             }
 
-            // now send mail
-            $this->send();
-        }
-    }
+            // Set Subject
+            $this->setSubject($gCurrentOrganization->getValue('org_shortname').': '.$subject);
 
-    /**
-     * Sends a copy of the mail back to the sender
-     * @throws phpmailerException
-     */
-    private function sendCopyMail()
-    {
-        global $gL10n;
+            // send html if preference is set
+            if($gPreferences['mail_html_registered_users'] == 1)
+            {
+                $this->sendDataAsHtml();
+            }
+            else
+            {
+                // html linebreaks should be converted in simple linefeed
+                $message = str_replace('<br />', "\n", $message);
+            }
 
-        // Alle Empfänger entfernen
-        $this->clearAllRecipients();
+            // Set Text
+            $this->setText($message);
 
-        $this->Subject = $gL10n->get('MAI_CARBON_COPY') . ': ' . $this->Subject;
+            // Verschicken
+            $returnCode = $this->sendEmail();
 
-        // Kopie Header ergänzen
-        $copyHeader = $gL10n->get('MAI_COPY_OF_YOUR_EMAIL') . ':' . self::CRLF .
-            '*****************************************************************************************************************************' .
-            self::CRLF . self::CRLF;
+            // if something went wrong then throw an exception with the error message
+            if($returnCode !== true)
+            {
+                throw new AdmException('SYS_EMAIL_NOT_SEND', $gPreferences['email_administrator'], $returnCode);
+            }
 
-        // Falls das listRecipientsFlag gesetzt ist werden in der Kopie
-        // die einzelnen Empfaenger aufgelistet:
-        if ($this->emListRecipients)
-        {
-            $copyHeader = $gL10n->get('MAI_MESSAGE_WENT_TO').':' . self::CRLF . self::CRLF .
-                implode(self::CRLF, $this->emAddresses) . self::CRLF . self::CRLF . $copyHeader;
+            return true;
         }
 
-        $this->emText = $copyHeader . $this->emText;
-        $this->emHtmlText = nl2br($copyHeader) . $this->emHtmlText;
-
-        // Text in Nachricht einfügen
-        if ($this->emSendAsHTML)
-        {
-            $this->msgHTML($this->emHtmlText);
-        }
-        else
-        {
-            $this->Body = $this->emText;
-        }
-
-        // neuer Empänger
-        $this->addAddress($this->emSender['address'], $this->emSender['name']);
-
-        $this->send();
+        return false;
     }
 
     /**
@@ -518,8 +411,10 @@ class Email extends PHPMailer
      */
     public function sendEmail()
     {
+        global $gPreferences, $gL10n;
+
         // Text in Nachricht einfügen
-        if ($this->emSendAsHTML)
+        if($this->emSendAsHTML)
         {
             $this->msgHTML($this->emHtmlText);
         }
@@ -528,32 +423,117 @@ class Email extends PHPMailer
             $this->Body = $this->emText;
         }
 
-        try
+        // Wenn es Bcc-Empfänger gibt
+        if (count($this->emBccArray) > 0)
         {
-            // Wenn es Bcc-Empfänger gibt
-            if (count($this->emBccArray) > 0)
+            // Bcc Array in Päckchen zerlegen
+            $bccArrays = array_chunk($this->emBccArray, $gPreferences['mail_bcc_count']);
+
+            foreach($bccArrays as $bccArray)
             {
-                $this->sendBccMails();
+                try
+                {
+                    // if number of bcc recipients = 1 then send the mail directly to the user and not as bcc
+                    if(count($bccArray) === 1 || $gPreferences['mail_into_to'] == 1)
+                    {
+                        // remove all current recipients from mail
+                        $this->clearAllRecipients();
+
+                        if($gPreferences['mail_into_to'] == 1)
+                        {
+                            // add all recipients as bcc to the mail
+                            foreach($bccArray as $bcc)
+                            {
+                                $this->addAddress($bcc['address'], $bcc['name']);
+                            }
+                        }
+                        else
+                        {
+                            $this->addAddress($bccArray[0]['address'], $bccArray[0]['name']);
+                        }
+                    }
+                    else
+                    {
+                        // remove only all BCC because to-address could be explicit set if undisclosed recipients won't work
+                        $this->clearBCCs();
+
+                        // add all recipients as bcc to the mail
+                        foreach($bccArray as $bcc)
+                        {
+                            $this->addBCC($bcc['address'], $bcc['name']);
+                        }
+                    }
+
+                    // now send mail
+                    $this->send();
+                }
+                catch (phpmailerException $e)
+                {
+                    return $e->errorMessage();
+                }
             }
-            // Einzelmailversand
-            else
+        }
+        // Einzelmailversand
+        else
+        {
+            try
             {
                 $this->send();
             }
-
-            // Jetzt noch die Mail an den Kopieempfänger
-            if ($this->emCopyToSender)
+            catch (phpmailerException $e)
             {
-                $this->sendCopyMail();
+                return $e->errorMessage();
             }
         }
-        catch (phpmailerException $e)
+
+        // Jetzt noch die Mail an den Kopieempfänger
+        if ($this->emCopyToSender)
         {
-            return $e->errorMessage();
+            // Alle Empfänger entfernen
+            $this->clearAllRecipients();
+
+            $this->Subject = $gL10n->get('MAI_CARBON_COPY').': '.$this->Subject;
+
+            // Kopie Header ergänzen
+            $copyHeader = '*****************************************************************************************************************************'.
+                          "\r\n"."\r\n";
+            $copyHeader = $gL10n->get('MAI_COPY_OF_YOUR_EMAIL').':'."\r\n".$copyHeader;
+
+            // Falls das listRecipientsFlag gesetzt ist werden in der Kopie
+            // die einzelnen Empfaenger aufgelistet:
+            if ($this->emListRecipients)
+            {
+                $copyHeader = $this->emAddresses."\r\n".$copyHeader;
+                $copyHeader = $gL10n->get('MAI_MESSAGE_WENT_TO').':'."\r\n"."\r\n".$copyHeader;
+            }
+
+            $this->emText = $copyHeader.$this->emText;
+            $this->emHtmlText = nl2br($copyHeader).$this->emHtmlText;
+
+            // Text in Nachricht einfügen
+            if($this->emSendAsHTML)
+            {
+                $this->msgHTML($this->emHtmlText);
+            }
+            else
+            {
+                $this->Body = $this->emText;
+            }
+
+            // neuer Empänger
+            $this->addAddress($this->emSender['address'], $this->emSender['name']);
+            try
+            {
+                $this->send();
+            }
+            catch (phpmailerException $e)
+            {
+                return $e->errorMessage();
+            }
         }
 
-        // initialize recipient addresses so same email could be send to other recipients
-        $this->emAddresses = array();
+        // initialize recepient adresses so same email could be send to other recepients
+        $this->emAddresses = '';
         $this->clearAddresses();
 
         return true;

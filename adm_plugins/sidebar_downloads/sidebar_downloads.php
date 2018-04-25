@@ -9,18 +9,28 @@
  *
  * Compatible with Admidio version 3.2
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
-$rootPath = dirname(dirname(__DIR__));
-$pluginFolder = basename(__DIR__);
+// create path to plugin
+$plugin_folder_pos = strpos(__FILE__, 'adm_plugins') + 11;
+$plugin_file_pos = strpos(__FILE__, 'sidebar_downloads.php');
+$plugin_folder = substr(__FILE__, $plugin_folder_pos + 1, $plugin_file_pos - $plugin_folder_pos - 2);
 
-require_once($rootPath . '/adm_program/system/common.php');
-require_once($rootPath . '/adm_program/system/file_extension_icons.php');
-require_once(__DIR__ . '/config.php');
+if(!defined('PLUGIN_PATH'))
+{
+    define('PLUGIN_PATH', substr(__FILE__, 0, $plugin_folder_pos));
+}
+
+require_once(PLUGIN_PATH. '/../adm_program/system/common.php');
+require(PLUGIN_PATH. '/../adm_program/system/file_extension_icons.php');
+require_once(PLUGIN_PATH. '/'.$plugin_folder.'/config.php');
+
+// Sprachdatei des Plugins einbinden
+$gL10n->addLanguagePath(PLUGIN_PATH. '/'.$plugin_folder.'/languages');
 
 // pruefen, ob alle Einstellungen in config.php gesetzt wurden
 // falls nicht, hier noch mal die Default-Werte setzen
@@ -48,13 +58,16 @@ if(!isset($plg_show_upload_timestamp))
     $plg_show_upload_timestamp = true;
 }
 
-// check if the module is enabled
-if ($gSettingsManager->getBool('enable_download_module'))
+// Sprachdatei des Plugins einbinden
+$gL10n->addLanguagePath(PLUGIN_PATH. '/'.$plugin_folder.'/languages');
+
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_download_module'] == 1)
 {
     $countVisibleDownloads = 0;
     $sqlCondition          = '';
 
-    echo '<div id="plugin_'. $pluginFolder. '" class="admidio-plugin-content">';
+    echo '<div id="plugin_'. $plugin_folder. '" class="admidio-plugin-content">';
     if($plg_show_headline)
     {
         echo '<h3>'.$gL10n->get('PLG_DOWNLOADS_HEADLINE').'</h3>';
@@ -70,15 +83,15 @@ if ($gSettingsManager->getBool('enable_download_module'))
               FROM '.TBL_FILES.'
         INNER JOIN '.TBL_FOLDERS.'
                 ON fol_id = fil_fol_id
-             WHERE fol_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
+             WHERE fol_org_id = '.$gCurrentOrganization->getValue('org_id').'
                    '.$sqlCondition.'
           ORDER BY fil_timestamp DESC';
 
-    $filesStatement = $gDb->queryPrepared($sql, array((int) $gCurrentOrganization->getValue('org_id')));
+    $filesStatement = $gDb->query($sql);
 
     if($filesStatement->rowCount() > 0)
     {
-        while($rowFile = $filesStatement->fetch())
+        while($rowFile = $filesStatement->fetchObject())
         {
             $errorCode = '';
 
@@ -88,7 +101,7 @@ if ($gSettingsManager->getBool('enable_download_module'))
             {
                 // get recordset of current file from database
                 $file = new TableFile($gDb);
-                $file->getFileForDownload($rowFile['fil_id']);
+                $file->getFileForDownload($rowFile->fil_id);
             }
             catch(AdmException $e)
             {
@@ -105,11 +118,11 @@ if ($gSettingsManager->getBool('enable_download_module'))
             if($errorCode !== 'DOW_FOLDER_NO_RIGHTS')
             {
                 // get filename without extension and extension separatly
-                $fileName      = pathinfo($rowFile['fil_name'], PATHINFO_FILENAME);
-                $fileExtension = strtolower(pathinfo($rowFile['fil_name'], PATHINFO_EXTENSION));
-                $fullFolderFileName = $rowFile['fol_path']. '/'. $rowFile['fol_name']. '/'.$rowFile['fil_name'];
+                $fileName      = substr($rowFile->fil_name, 0, strrpos($rowFile->fil_name, '.'));
+                $fileExtension = admStrToLower(substr($rowFile->fil_name, strrpos($rowFile->fil_name, '.')+1));
+                $fullFolderFileName = $rowFile->fol_path. '/'. $rowFile->fol_name. '/'.$rowFile->fil_name;
                 $tooltip            = $fullFolderFileName;
-                ++$countVisibleDownloads;
+                $countVisibleDownloads++;
 
                 // if max chars are set then limit characters of shown filename
                 if($plgMaxCharsFilename > 0 && strlen($fileName) > $plgMaxCharsFilename)
@@ -128,13 +141,13 @@ if ($gSettingsManager->getBool('enable_download_module'))
                 if($plg_show_upload_timestamp)
                 {
                     // Vorname und Nachname abfragen (Upload der Datei)
-                    $user = new User($gDb, $gProfileFields, $rowFile['fil_usr_id']);
+                    $user = new User($gDb, $gProfileFields, $rowFile->fil_usr_id);
 
-                    $tooltip .= '<br />'. $gL10n->get('PLG_DOWNLOADS_UPLOAD_FROM_AT', array($user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $rowFile['fil_timestamp']));
+                    $tooltip .= '<br />'. $gL10n->get('PLG_DOWNLOADS_UPLOAD_FROM_AT', $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME'), $rowFile->fil_timestamp);
                 }
 
                 echo '
-                <a class="btn admidio-icon-link '.$plg_link_class_downl.'" data-toggle="tooltip" data-html="true" title="'. $tooltip. '" href="'. safeUrl(ADMIDIO_URL. FOLDER_MODULES. '/downloads/get_file.php', array('file_id' => $rowFile['fil_id'])). '"><img
+                <a class="btn admidio-icon-link '.$plg_link_class_downl.'" data-toggle="tooltip" data-html="true" title="'. $tooltip. '" href="'. ADMIDIO_URL. FOLDER_MODULES. '/downloads/get_file.php?file_id='. $rowFile->fil_id. '"><img
                     src="'. THEME_URL. '/icons/'.$iconFile.'" alt="'. $fullFolderFileName. '/" />'.$fileName.'.'.$fileExtension. '</a>';
 
                 if($countVisibleDownloads === $plg_downloads_count)

@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Create and edit announcements
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -15,13 +15,20 @@
  * copy : true - The announcement of the ann_id will be copied and the base for this new announcement
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
-// check if the module is enabled and disallow access if it's disabled
-if ((int) $gSettingsManager->get('enable_announcements_module') === 0)
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_announcements_module'] == 0)
 {
+    // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
+    // => EXIT
+}
+
+if(!$gCurrentUser->editAnnouncements())
+{
+    $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
     // => EXIT
 }
 
@@ -33,7 +40,7 @@ $getCopy     = admFuncVariableIsValid($_GET, 'copy',     'bool');
 // set headline of the script
 if($getCopy)
 {
-    $headline = $gL10n->get('SYS_COPY_VAR', array($getHeadline));
+    $headline = $gL10n->get('SYS_COPY_VAR', $getHeadline);
 }
 elseif($getAnnId > 0)
 {
@@ -59,17 +66,8 @@ if($getAnnId > 0)
         $getAnnId = 0;
     }
 
-    // check if the current user could edit this announcement
-    if(!$announcement->isEditable())
-    {
-        $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
-        // => EXIT
-    }
-}
-else
-{
-    // check if the user has the right to edit at least one category
-    if(count($gCurrentUser->getAllEditableCategories('ANN')) === 0)
+    // Pruefung, ob der Termin zur aktuellen Organisation gehoert bzw. global ist
+    if(!$announcement->editRight())
     {
         $gMessage->show($gL10n->get('SYS_NO_RIGHTS'));
         // => EXIT
@@ -92,25 +90,27 @@ $announcementsMenu = $page->getMenu();
 $announcementsMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 
 // show form
-$form = new HtmlForm('announcements_edit_form', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_function.php', array('ann_id' => $getAnnId, 'headline' => $getHeadline, 'mode' => '1')), $page);
-$form->addInput(
-    'ann_headline', $gL10n->get('SYS_TITLE'), noHTML($announcement->getValue('ann_headline')),
-    array('maxLength' => 100, 'property' => HtmlForm::FIELD_REQUIRED)
-);
-$form->addSelectBoxForCategories(
-    'ann_cat_id', $gL10n->get('SYS_CATEGORY'), $gDb, 'ANN', HtmlForm::SELECT_BOX_MODUS_EDIT,
-    array('property' => HtmlForm::FIELD_REQUIRED, 'defaultValue' => (int) $announcement->getValue('ann_cat_id'))
-);
-$form->addEditor(
-    'ann_description', $gL10n->get('SYS_TEXT'), $announcement->getValue('ann_description'),
-    array('property' => HtmlForm::FIELD_REQUIRED, 'height' => '400')
-);
+$form = new HtmlForm('announcements_edit_form', ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_function.php?ann_id='.$getAnnId.'&amp;headline='. $getHeadline. '&amp;mode=1', $page);
+$form->addInput('ann_headline', $gL10n->get('SYS_TITLE'), $announcement->getValue('ann_headline'), array('maxLength' => 100, 'property' => FIELD_REQUIRED));
+$form->addSelectBoxForCategories('ann_cat_id', $gL10n->get('SYS_CATEGORY'), $gDb, 'ANN', 'EDIT_CATEGORIES',
+                                 array('property' => FIELD_REQUIRED, 'defaultValue' => $announcement->getValue('ann_cat_id')));
+
+// if current organization has a parent organization or is child organizations then show option to set this announcement to global
+if($gCurrentOrganization->getValue('org_org_id_parent') > 0 || $gCurrentOrganization->hasChildOrganizations())
+{
+    // show all organizations where this organization is mother or child organization
+    $organizations = '- '.$gCurrentOrganization->getValue('org_longname').',<br />- ';
+    $organizations .= implode(',<br />- ', $gCurrentOrganization->getOrganizationsInRelationship(true, true, true));
+
+    $form->addCheckbox('ann_global', $gL10n->get('SYS_ENTRY_MULTI_ORGA'), (bool) $announcement->getValue('ann_global'), array('helpTextIdLabel' => array('SYS_DATA_GLOBAL', $organizations)));
+}
+$form->addEditor('ann_description', $gL10n->get('SYS_TEXT'), $announcement->getValue('ann_description'), array('property' => FIELD_REQUIRED, 'height' => '400'));
 $form->addSubmitButton('btn_save', $gL10n->get('SYS_SAVE'), array('icon' => THEME_URL.'/icons/disk.png'));
 $form->addHtml(admFuncShowCreateChangeInfoById(
-    (int) $announcement->getValue('ann_usr_id_create'), $announcement->getValue('ann_timestamp_create'),
-    (int) $announcement->getValue('ann_usr_id_change'), $announcement->getValue('ann_timestamp_change')
+    $announcement->getValue('ann_usr_id_create'), $announcement->getValue('ann_timestamp_create'),
+    $announcement->getValue('ann_usr_id_change'), $announcement->getValue('ann_timestamp_change')
 ));
 
 // add form to html page and show page
-$page->addHtml($form->show());
+$page->addHtml($form->show(false));
 $page->show();

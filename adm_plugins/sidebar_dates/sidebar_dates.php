@@ -10,17 +10,26 @@
  *
  * Compatible with Admidio version 3.2
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
-$rootPath = dirname(dirname(__DIR__));
-$pluginFolder = basename(__DIR__);
+// create path to plugin
+$plugin_folder_pos = strpos(__FILE__, 'adm_plugins') + 11;
+$plugin_file_pos   = strpos(__FILE__, 'sidebar_dates.php');
+$plugin_folder     = substr(__FILE__, $plugin_folder_pos + 1, $plugin_file_pos - $plugin_folder_pos - 2);
 
-require_once($rootPath . '/adm_program/system/common.php');
-require_once(__DIR__ . '/config.php');
+if(!defined('PLUGIN_PATH'))
+{
+    define('PLUGIN_PATH', substr(__FILE__, 0, $plugin_folder_pos));
+}
+require_once(PLUGIN_PATH. '/../adm_program/system/common.php');
+require_once(PLUGIN_PATH. '/'.$plugin_folder.'/config.php');
+
+// integrate language file of plugin to Admidio language object
+$gL10n->addLanguagePath(PLUGIN_PATH. '/'.$plugin_folder.'/languages');
 
 // pruefen, ob alle Einstellungen in config.php gesetzt wurden
 // falls nicht, hier noch mal die Default-Werte setzen
@@ -91,9 +100,9 @@ $plgDates = new ModuleDates();
 $plgDates->setDateRange();
 $plgDatesResult = $plgDates->getDataSet(0, $plg_dates_count);
 
-$plgDate = new TableDate($gDb);
+$plg_date = new TableDate($gDb);
 
-echo '<div id="plugin_'. $pluginFolder. '" class="admidio-plugin-content">';
+echo '<div id="plugin_'. $plugin_folder. '" class="admidio-plugin-content">';
 if($plg_show_headline)
 {
     echo '<h3>'.$gL10n->get('PLG_DATES_HEADLINE').'</h3>';
@@ -101,90 +110,91 @@ if($plg_show_headline)
 
 if($plgDatesResult['numResults'] > 0)
 {
-    foreach($plgDatesResult['recordset'] as $plgRow)
+    foreach($plgDatesResult['recordset'] as $plg_row)
     {
-        $plgDate->clear();
-        $plgDate->setArray($plgRow);
-        $plgHtmlEndDate = '';
+        $plg_date->clear();
+        $plg_date->setArray($plg_row);
+        $plg_html_end_date = '';
 
-        echo '<h4>'.$plgDate->getValue('dat_begin', $gSettingsManager->getString('system_date')). '&nbsp;&nbsp;';
+        echo '<h4>'.$plg_date->getValue('dat_begin', $gPreferences['system_date']). '&nbsp;&nbsp;';
 
-        if ($plgDate->getValue('dat_all_day') != 1)
+        if ($plg_date->getValue('dat_all_day') != 1)
         {
-            echo $plgDate->getValue('dat_begin', $gSettingsManager->getString('system_time'));
+            echo $plg_date->getValue('dat_begin', $gPreferences['system_time']);
         }
 
         // Bis-Datum und Uhrzeit anzeigen
         if($plg_show_date_end)
         {
-            if($plgDate->getValue('dat_begin', $gSettingsManager->getString('system_date')) !== $plgDate->getValue('dat_end', $gSettingsManager->getString('system_date')))
+            if($plg_date->getValue('dat_begin', $gPreferences['system_date']) !== $plg_date->getValue('dat_end', $gPreferences['system_date']))
             {
-                $plgHtmlEndDate .= $plgDate->getValue('dat_end', $gSettingsManager->getString('system_date'));
+                $plg_html_end_date .= $plg_date->getValue('dat_end', $gPreferences['system_date']);
             }
-            if ($plgDate->getValue('dat_all_day') != 1)
+            if ($plg_date->getValue('dat_all_day') != 1)
             {
-                $plgHtmlEndDate .= ' '. $plgDate->getValue('dat_end', $gSettingsManager->getString('system_time'));
+                $plg_html_end_date .= ' '. $plg_date->getValue('dat_end', $gPreferences['system_time']);
             }
-            if($plgHtmlEndDate !== '')
+            if($plg_html_end_date !== '')
             {
-                $plgHtmlEndDate = ' - '. $plgHtmlEndDate;
+                $plg_html_end_date = ' - '. $plg_html_end_date;
             }
         }
 
         // ?ber $plg_link_url wird die Verbindung zum Date-Modul hergestellt.
-        echo $plgHtmlEndDate. '<br /><a class="'. $plg_link_class. '" href="'. safeUrl($plg_link_url, array('view_mode' => 'html', 'view' => 'detail', 'id' => $plgDate->getValue('dat_id'))). '" target="'. $plg_link_target. '">';
+        echo $plg_html_end_date. '<br /><a class="'. $plg_link_class. '" href="'. $plg_link_url. '?view_mode=html&amp;view=detail&amp;id='. $plg_date->getValue('dat_id'). '" target="'. $plg_link_target. '">';
 
         if($plg_max_char_per_word > 0)
         {
-            $plgNewHeadline = '';
+            $plg_new_headline = '';
+            unset($plg_words);
 
             // Woerter unterbrechen, wenn sie zu lang sind
-            $plgWords = explode(' ', $plgDate->getValue('dat_headline'));
+            $plg_words = explode(' ', $plg_date->getValue('dat_headline'));
 
-            foreach($plgWords as $plgValue)
+            foreach($plg_words as $plg_key => $plg_value)
             {
-                if(strlen($plgValue) > $plg_max_char_per_word)
+                if(strlen($plg_value) > $plg_max_char_per_word)
                 {
-                    $plgNewHeadline .= ' '. substr($plgValue, 0, $plg_max_char_per_word). '-<br />'.
-                                        substr($plgValue, $plg_max_char_per_word);
+                    $plg_new_headline .= ' '. substr($plg_value, 0, $plg_max_char_per_word). '-<br />'.
+                                        substr($plg_value, $plg_max_char_per_word);
                 }
                 else
                 {
-                    $plgNewHeadline .= ' '. $plgValue;
+                    $plg_new_headline .= ' '. $plg_value;
                 }
             }
-            echo $plgNewHeadline. '</a></h4>';
+            echo $plg_new_headline. '</a></h4>';
         }
         else
         {
-            echo $plgDate->getValue('dat_headline'). '</a></h4>';
+            echo $plg_date->getValue('dat_headline'). '</a></h4>';
         }
 
         // show preview text
         if($plgShowFullDescription === 1)
         {
-            echo '<div>'.$plgDate->getValue('dat_description').'</div>';
+            echo '<div>'.$plg_date->getValue('dat_description').'</div>';
         }
         elseif($plg_dates_show_preview > 0)
         {
             // remove all html tags except some format tags
-            $textPrev = strip_tags($plgDate->getValue('dat_description'), '<p></p><br><br/><br /><i></i><b></b><strong></strong><em></em>');
+            $textPrev = strip_tags($plg_date->getValue('dat_description'), '<p></p><br><br/><br /><i></i><b></b><strong></strong><em></em>');
 
             // read first x chars of text and additional 15 chars. Then search for last space and cut the text there
             $textPrev = substr($textPrev, 0, $plg_dates_show_preview + 15);
             $textPrev = substr($textPrev, 0, strrpos($textPrev, ' ')).' ...
                 <a class="'. $plg_link_class. '"  target="'. $plg_link_target. '"
-                    href="'.safeUrl($plg_link_url, array('view_mode' => 'html', 'view' => 'detail', 'id' => $plgDate->getValue('dat_id'))). '"><span
+                    href="'.$plg_link_url.'?view_mode=html&amp;view=detail&amp;id='. $plg_date->getValue('dat_id'). '"><span
                     class="glyphicon glyphicon-circle-arrow-right" aria-hidden="true"></span> '.$gL10n->get('PLG_SIDEBAR_DATES_MORE').'</a>';
             $textPrev = pluginDatesCloseTags($textPrev);
 
             echo '<div>'.$textPrev.'</div>';
         }
 
-        echo '<hr />';
+        echo '<hr>';
     }
 
-    // forward to $plg_link_url without any additional parameters
+    // forward to $plg_link_url without any addional parameters
     echo '<a class="'. $plg_link_class. '" href="'. $plg_link_url. '" target="'. $plg_link_target. '">'.$gL10n->get('PLG_DATES_ALL_EVENTS').'</a>';
 }
 else
@@ -199,27 +209,26 @@ echo '</div>';
  * @param string $html The html string to parse.
  * @return string Returns the parsed html string with all tags closed.
  */
-function pluginDatesCloseTags($html)
-{
+function pluginDatesCloseTags($html) {
     preg_match_all('#<(?!meta|img|br|hr|input\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $html, $result);
-    $openedTags = $result[1];
+    $openedtags = $result[1];
     preg_match_all('#</([a-z]+)>#iU', $html, $result);
-    $closedTags = $result[1];
-    $lenOpened = count($openedTags);
-    if (count($closedTags) === $lenOpened)
+    $closedtags = $result[1];
+    $len_opened = count($openedtags);
+    if (count($closedtags) === $len_opened)
     {
         return $html;
     }
-    $openedTags = array_reverse($openedTags);
-    for ($i = 0; $i < $lenOpened; ++$i)
+    $openedtags = array_reverse($openedtags);
+    for ($i = 0; $i < $len_opened; $i++)
     {
-        if (!in_array($openedTags[$i], $closedTags, true))
+        if (!in_array($openedtags[$i], $closedtags, true))
         {
-            $html .= '</'.$openedTags[$i].'>';
+            $html .= '</'.$openedtags[$i].'>';
         }
         else
         {
-            unset($closedTags[array_search($openedTags[$i], $closedTags, true)]);
+            unset($closedtags[array_search($openedtags[$i], $closedtags, true)]);
         }
     }
     return $html;

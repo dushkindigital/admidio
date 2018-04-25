@@ -1,14 +1,15 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * This **abstract class** defines a parameter set for modules
+ * @class Modules
+ * @brief This @b abstract @b class defines a parameter set for modules
  *
  * This abstract class sets the parameters used in Admidio modules.
  * The class gets a copy of the $_GET Array and validates the values
@@ -18,9 +19,8 @@
  * If no values are available the daterange is set by default: date_from = DATE_NOW; date_to = 9999-12-31
  * The class provides methods to return all single Variables and arrays or returns an Array with all setted parameters
  * The returned array contains following settings:
- *
- * **Return parameter array:**
- * ```
+ * @par Return parameter array:
+ * @code
  * array('active_role'         => '1',
  *       'headline'            => 'string',
  *       'category-selection'  => '0',
@@ -35,58 +35,24 @@
  *                                         [english] (date_from => 'string', date_to => 'string'),
  *                                         [sytem] (date_from => 'string', date_to => 'string'))
  *                                      );
- * ```
+ * @endcode
  */
 abstract class Modules
 {
-    /**
-     * @var bool Boolean false/true for active role
-     */
-    protected $activeRole = false;
-    /**
-     * @var string String with headline expression
-     */
-    protected $headline = '';
-    /**
-     * @var int ID as integer for chosen category
-     */
-    protected $catId = 0;
-    /**
-     * @var int ID as integer to choose record
-     */
-    protected $id = 0;
-    /**
-     * @var array Array with date settings in English format and system format
-     */
-    protected $daterange = array();
-    /**
-     * @var string String with current mode ( Default: "Default" )
-     */
-    protected $mode = 'Default';
-    /**
-     * @var string String with order ASC/DESC ( Default: "ASC" )
-     */
-    protected $order = '';
-    /**
-     * @var int Integer for start element
-     */
-    protected $start = 0;
-    /**
-     * @var array Array with valid modes ( Default: "Default" )
-     */
-    protected $validModes = array('Default');
-    /**
-     * @var array<string,mixed> Array with all parameters of the module that were added to this class.
-     */
-    protected $parameters = array();
-    /**
-     * @var array Array Clone of $_GET Array
-     */
-    protected $properties;
-    /**
-     * @var array Array with validated parameters
-     */
-    protected $arrParameter = array();
+    const HEADLINE = '';            ///< Constant for language parameter set in module classes
+
+    protected $activeRole;          ///< Boolean false/true for active role
+    protected $headline;            ///< String with headline expression
+    protected $catId;               ///< ID as integer for chosen category
+    protected $id;                  ///< ID as integer to choose record
+    protected $daterange;           ///< Array with date settings in English format and system format
+    protected $mode;                ///< String with current mode ( Default: "Default" )
+    protected $order;               ///< String with order ASC/DESC ( Default: "ASC" )
+    protected $start;               ///< Integer for start element
+    protected $properties;          ///< Array Clone of $_GET Array
+    protected $validModes;          ///< Array with valid modes ( Default: "Default" )
+    protected $parameters;          ///< Array with all parameters of the module that were added to this class.
+    public $arrParameter;           ///< Array with validated parameters
 
     /**
      * @param int $startElement
@@ -106,7 +72,18 @@ abstract class Modules
      */
     public function __construct()
     {
-        $this->properties = $_GET;
+        $this->activeRole   = false;
+        $this->headline     = '';
+        $this->catId        = 0;
+        $this->id           = 0;
+        $this->daterange    = array();
+        $this->mode         = 'Default';
+        $this->order        = '';
+        $this->start        = '';
+        $this->properties   = $_GET;
+        $this->validModes   = array('Default');
+        $this->parameters   = array();
+        $this->arrParameter = array();
 
         // Set parameters
         $this->setId();
@@ -177,7 +154,7 @@ abstract class Modules
 
     /**
      * Return parameter set as Array
-     * @return array<string,bool|int|string|array> Returns an Array with all needed parameters as Key/Value pair
+     * @return array Returns an Array with all needed parameters as Key/Value pair
      */
     public function getParameters()
     {

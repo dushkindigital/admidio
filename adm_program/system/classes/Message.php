@@ -1,25 +1,24 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Simple presentation of messages to the user
+ * @class Message
+ * @brief Simple presentation of messages to the user
  *
  * This class creates a new html page with a simple headline and a message. It's
- * designed to easily integrate this class into your code. An object **$gMessage**
+ * designed to easily integrate this class into your code. An object @b $gMessage
  * of this class is created in the common.php. You can set a url that should be
  * open after user confirmed the message or you can show a question with two
  * default buttons yes and no. There is also an option to automatically leave the
  * message after some time.
- *
- * **Code example:**
- * ```
- * // show a message with a back button, the object $gMessage is created in common.php
+ * @par Examples
+ * @code // show a message with a back button, the object $gMessage is created in common.php
  * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID'));
  *
  * // show a message and set a link to a page that should be shown after user click ok
@@ -28,54 +27,36 @@
  *
  * // show a message with yes and no button and set a link to a page that should be shown after user click yes
  * $gMessage->setForwardYesNo('https://www.example.com/mypage.php');
- * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID'));
- * ```
+ * $gMessage->show($gL10n->get('SYS_MESSAGE_TEXT_ID')); @endcode
  */
 class Message
 {
-    /**
-     * @var bool wird ermittelt, ob bereits eine Ausgabe an den Browser erfolgt ist
-     */
-    private $inline = false;
-    /**
-     * @var string Url auf die durch den Weiter-Button verwiesen wird
-     */
-    private $forwardUrl = '';
-    /**
-     * @var int Anzahl ms bis automatisch zu forwardUrl weitergeleitet wird
-     */
-    private $timer = 0;
-    /**
-     * @var bool Includes the header and body of the theme to the message. This will be included as default.
-     */
-    private $includeThemeBody = true;
-    /**
-     * @var bool If set to true then no html elements will be shown, only the pure text message.
-     */
-    private $showTextOnly = false;
-    /**
-     * @var bool If set to true then only the message with their html elements will be shown.
-     */
-    private $showHtmlTextOnly = false;
-    /**
-     * @var bool Buttons werden angezeigt
-     */
-    private $showButtons = true;
-    /**
-     * @var bool Anstelle von Weiter werden Ja/Nein-Buttons angezeigt
-     */
-    private $showYesNoButtons = false;
-    /**
-     * @var bool If this is set to true than the message will be show with html of the bootstrap modal window
-     */
-    private $modalWindowMode = false;
+    private $inline;            // wird ermittelt, ob bereits eine Ausgabe an den Browser erfolgt ist
+    private $forwardUrl;        // Url auf die durch den Weiter-Button verwiesen wird
+    private $timer;             // Anzahl ms bis automatisch zu forwardUrl weitergeleitet wird
+    private $includeThemeBody;  ///< Includes the header and body of the theme to the message. This will be included as default.
+    private $showTextOnly;      ///< If set to true then no html elements will be shown, only the pure text message.
+    private $showHtmlTextOnly;  ///< If set to true then only the message with their html elements will be shown.
+
+    private $showButtons;       // Buttons werden angezeigt
+    private $showYesNoButtons;  // Anstelle von Weiter werden Ja/Nein-Buttons angezeigt
+    private $modalWindowMode;   ///< If this is set to true than the message will be show with html of the bootstrap modal window
 
     /**
      * Constructor that initialize the class member parameters
      */
     public function __construct()
     {
+        $this->inline           = false;
+        $this->forwardUrl       = '';
+        $this->timer            = 0;
+        $this->includeThemeBody = true;
+        $this->showTextOnly     = false;
+        $this->showHtmlTextOnly = false;
 
+        $this->showButtons      = true;
+        $this->showYesNoButtons = false;
+        $this->modalWindowMode  = false;
     }
 
     /**
@@ -89,7 +70,7 @@ class Message
     /**
      * If this is set to true than the message will be show with html of the bootstrap modal window.
      */
-    public function showInModalWindow()
+    public function showInModaleWindow()
     {
         $this->modalWindowMode = true;
         $this->inline = true;
@@ -109,9 +90,9 @@ class Message
     }
 
     /**
-     * Add two buttons with the labels **yes** and **no** to the message. If the user choose yes
+     * Add two buttons with the labels @b yes and @b no to the message. If the user choose yes
      * he will be redirected to the $url. If he chooses no he will be directed back to the previous page.
-     * @param string $url The full url to which the user should be directed if he chooses **yes**.
+     * @param string $url The full url to which the user should be directed if he chooses @b yes.
      */
     public function setForwardYesNo($url)
     {
@@ -162,11 +143,7 @@ class Message
             // forward to next page after x seconds
             if ($this->timer > 0)
             {
-                $page->addJavascript('
-                    setTimeout(function() {
-                        window.location.href = "'. $this->forwardUrl. '";
-                    }, '. $this->timer. ');'
-                );
+                $page->addJavascript('setTimeout(function () { window.location.href = "'. $this->forwardUrl. '"; }, '. $this->timer. ');');
             }
         }
         elseif(!$this->modalWindowMode)

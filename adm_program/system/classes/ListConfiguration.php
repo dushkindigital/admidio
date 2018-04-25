@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Class manages the list configuration
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class ListConfiguration
  * This class creates a list configuration object. With this object it's possible
  * to manage the configuration in the database. You can easily create new lists,
  * add new columns or remove columns.
@@ -22,22 +23,19 @@
  * deleteColumn($number, $all = false)
  *                       - entfernt die entsprechende Spalte aus der Konfiguration
  * countColumns()        - Anzahl der Spalten der Liste zurueckgeben
- * getSQL($roleIds, $showFormerMembers = false)
+ * getSQL($roleIds, $memberStatus = 0)
  *                       - gibt das passende SQL-Statement zu der Liste zurueck
  */
 class ListConfiguration extends TableLists
 {
-    /**
-     * @var array<int,TableAccess> Array with all Listenspaltenobjekte
-     */
-    protected $columns = array();
+    protected $columns = array(); // Array with all Listenspaltenobjekte
 
     /**
      * Constructor that will create an object to handle the configuration of lists.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
-     * @param int      $lstId    The id of the recordset that should be loaded. If id isn't set than an empty object of the table is created.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
+     * @param int       $lstId    The id of the recordset that should be loaded. If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $lstId = 0)
+    public function __construct(&$database, $lstId = 0)
     {
         parent::__construct($database, $lstId);
 
@@ -109,13 +107,12 @@ class ListConfiguration extends TableLists
     /**
      * Delete pointed columns out of configuration
      * @param int  $number
-     * @param bool $all    Define all columns to be deleted
+     * @param bool $all Define all columns to be deleted
      * @return bool
      */
     public function deleteColumn($number, $all = false)
     {
-        if($number > $this->countColumns())
-        {
+        if($number > $this->countColumns()) {
             return false;
         }
 
@@ -151,10 +148,10 @@ class ListConfiguration extends TableLists
     /**
      * Returns the column object with the corresponding number.
      * If that column doesn't exists the method try to repair the
-     * column list. If that won't help then **null** will be returned.
+     * column list. If that won't help then @b null will be returned.
      * @param int $number The internal number of the column.
      *                    This will be the position of the column in the list.
-     * @return TableAccess|null Returns a TableAccess object of the database table **adm_list_columns**.
+     * @return \TableAccess|null Returns a TableAccess object of the database table @b adm_list_columns.
      */
     public function getColumnObject($number)
     {
@@ -175,17 +172,17 @@ class ListConfiguration extends TableLists
 
     /**
      * prepare SQL to list configuration
-     * @param array<int,int> $roleIds           Array with all roles, which members are shown
-     * @param bool           $showFormerMembers false - Only active members of a role
-     *                                          true  - Only former members
-     * @param string         $startDate
-     * @param string         $endDate
-     * @param array<int,int> $relationtypeIds
+     * @param int[]  $roleIds Array with all roles, which members are shown
+     * @param int    $memberStatus 0 - Only active members of a role
+     *                             1 - Only former members
+     *                             2 - Active and former members of a role
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getSQL(array $roleIds, $showFormerMembers = false, $startDate = null, $endDate = null, array $relationtypeIds = array())
+    public function getSQL(array $roleIds, $memberStatus = 0, $startDate = null, $endDate = null, array $relationtypeIds = array())
     {
-        global $gL10n, $gProfileFields, $gCurrentOrganization;
+        global $gL10n, $gProfileFields, $gCurrentOrganization, $gDbType;
 
         $sqlColumnNames = array();
         $sqlOrderBys    = array();
@@ -228,7 +225,7 @@ class ListConfiguration extends TableLists
                 {
                     // if a field has numeric values then there must be a cast because database
                     // column is varchar. A varchar sort of 1,10,2 will be with cast 1,2,10
-                    if(DB_ENGINE === Database::PDO_ENGINE_PGSQL)
+                    if($gDbType === 'pgsql' || $gDbType === 'postgresql') // for backwards compatibility "postgresql"
                     {
                         $columnType = 'numeric';
                     }
@@ -262,7 +259,7 @@ class ListConfiguration extends TableLists
                             // 'yes' or 'no' will be replaced with 1 or 0, so that you can compare it with the database value
                             $arrCheckboxValues = array($gL10n->get('SYS_YES'), $gL10n->get('SYS_NO'), 'true', 'false');
                             $arrCheckboxKeys   = array(1, 0, 1, 0);
-                            $value = str_replace(array_map('StringUtils::strToLower', $arrCheckboxValues), $arrCheckboxKeys, StringUtils::strToLower($value));
+                            $value = str_replace(array_map('admStrToLower', $arrCheckboxValues), $arrCheckboxKeys, admStrToLower($value));
                             break;
 
                         case 'DROPDOWN':
@@ -271,7 +268,7 @@ class ListConfiguration extends TableLists
 
                             // replace all field values with their internal numbers
                             $arrListValues = $gProfileFields->getPropertyById($lscUsfId, 'usf_value_list', 'text');
-                            $value = array_search(StringUtils::strToLower($value), array_map('StringUtils::strToLower', $arrListValues), true);
+                            $value = array_search(admStrToLower($value), array_map('admStrToLower', $arrListValues), true);
                             break;
 
                         case 'NUMBER':
@@ -327,11 +324,8 @@ class ListConfiguration extends TableLists
         $sqlRoleIds     = implode(', ', $roleIds);
 
         // Set state of membership
-        if ($showFormerMembers)
-        {
-            $sqlMemberStatus = 'AND mem_end < \''.DATE_NOW.'\'';
-        }
-        else
+        $sqlMemberStatus = '';
+        if ($memberStatus === 0)
         {
             if ($startDate === null)
             {
@@ -344,18 +338,22 @@ class ListConfiguration extends TableLists
 
             if ($endDate === null)
             {
-                $sqlMemberStatus .= ' AND mem_end >= \''.DATE_NOW.'\'';
+                $sqlMemberStatus .= 'AND mem_end >= \''.DATE_NOW.'\'';
             }
             else
             {
-                $sqlMemberStatus .= ' AND mem_end >= \''.$startDate.' 00:00:00\'';
+                $sqlMemberStatus .= 'AND mem_end >= \''.$startDate.' 00:00:00\'';
             }
+        }
+        elseif ($memberStatus === 1)
+        {
+            $sqlMemberStatus = 'AND mem_end < \''.DATE_NOW.'\'';
         }
 
         $sqlUserJoin = 'INNER JOIN '.TBL_USERS.'
                                 ON usr_id = mem_usr_id';
         $sqlRelationtypeWhere = '';
-        if (count($relationtypeIds) > 0)
+        if ($relationtypeIds)
         {
             $sqlUserJoin = 'INNER JOIN '.TBL_USER_RELATIONS.'
                                     ON ure_usr_id1 = mem_usr_id
@@ -396,9 +394,9 @@ class ListConfiguration extends TableLists
     {
         $sql = 'SELECT *
                   FROM '.TBL_LIST_COLUMNS.'
-                 WHERE lsc_lst_id = ? -- $this->getValue(\'lst_id\')
+                 WHERE lsc_lst_id = '.$this->getValue('lst_id').'
               ORDER BY lsc_number ASC';
-        $lscStatement = $this->db->queryPrepared($sql, array($this->getValue('lst_id')));
+        $lscStatement = $this->db->query($sql);
 
         while($lscRow = $lscStatement->fetch())
         {
@@ -447,7 +445,7 @@ class ListConfiguration extends TableLists
         $returnValue = parent::save($updateFingerPrint);
 
         // save columns
-        foreach($this->columns as $listColumn)
+        foreach($this->columns as $number => $listColumn)
         {
             if((int) $listColumn->getValue('lsc_lst_id') === 0)
             {

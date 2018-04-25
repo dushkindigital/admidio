@@ -3,31 +3,78 @@
  ***********************************************************************************************
  * Various common functions
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
-if (basename($_SERVER['SCRIPT_FILENAME']) === 'function.php')
+
+/**
+ * Autoloading function of class files. This function will be later registered
+ * for default autoload implementation. Therefore the class name must be the same
+ * as the file name except for case sensitive.
+ * @param string $className Name of the class for which the file should be loaded.
+ * @return null|false Return @b false if the file for the class wasn't found.
+ */
+function admFuncAutoload($className)
 {
-    exit('This page may not be called directly!');
+    global $gLogger;
+
+    $libFiles = array(
+        ADMIDIO_PATH . FOLDER_CLASSES . '/' . strtolower($className) . '.php',
+        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/monolog/src/' . str_replace('\\', '/', $className) . '.php',
+//        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/phpass/' . strtolower($className) . '.php',
+        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/phpmailer/class.' . strtolower($className) . '.php',
+        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/psr/log/' . str_replace('\\', '/', $className) . '.php',
+//        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/securimage/' . strtolower($className) . '.php',
+        ADMIDIO_PATH . FOLDER_LIBS_SERVER . '/zxcvbn-php/src/' . substr(str_replace('\\', '/', $className), 9) . '.php'
+    );
+
+    foreach ($libFiles as $libFile)
+    {
+        if (is_file($libFile))
+        {
+            include($libFile);
+            return null;
+        }
+    }
+
+    $logErrorMessage = 'Class-File for Class "' . $className . '" could not be found and included!';
+    if ($gLogger instanceof \Monolog\Logger)
+    {
+        $gLogger->critical($logErrorMessage);
+    }
+    else
+    {
+        error_log($logErrorMessage);
+    }
+
+    return false;
 }
+
+// now register this function in this script so only function.php must be included for autoload
+spl_autoload_register('admFuncAutoload');
 
 /**
  * Function checks if the user is a member of the role.
- * If **userId** is not set than this will be checked for the current user
+ * If @b userId is not set than this will be checked for the current user
  * @param string $roleName The name of the role where the membership of the user should be checked
  * @param int    $userId   The id of the user who should be checked if he is a member of the role.
  *                         If @userId is not set than this will be checked for the current user
- * @return bool Returns **true** if the user is a member of the role
+ * @return bool Returns @b true if the user is a member of the role
  */
 function hasRole($roleName, $userId = 0)
 {
-    global $gDb, $gCurrentUser, $gCurrentOrganization;
+    global $gCurrentUser, $gCurrentOrganization, $gDb;
+
+    if (!is_numeric($userId))
+    {
+        return false;
+    }
 
     if ($userId === 0)
     {
-        $userId = (int) $gCurrentUser->getValue('usr_id');
+        $userId = $gCurrentUser->getValue('usr_id');
     }
 
     $sql = 'SELECT mem_id
@@ -36,14 +83,14 @@ function hasRole($roleName, $userId = 0)
                 ON rol_id = mem_rol_id
         INNER JOIN '.TBL_CATEGORIES.'
                 ON cat_id = rol_cat_id
-             WHERE mem_usr_id = ? -- $userId
-               AND mem_begin <= ? -- DATE_NOW
-               AND mem_end    > ? -- DATE_NOW
-               AND rol_name   = ? -- $roleName
+             WHERE mem_usr_id = '.$userId.'
+               AND mem_begin <= \''.DATE_NOW.'\'
+               AND mem_end    > \''.DATE_NOW.'\'
+               AND rol_name   = \''.$roleName.'\'
                AND rol_valid  = 1
-               AND (  cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
+               AND (  cat_org_id = '.$gCurrentOrganization->getValue('org_id').'
                    OR cat_org_id IS NULL )';
-    $statement = $gDb->queryPrepared($sql, array($userId, DATE_NOW, DATE_NOW, $roleName, (int) $gCurrentOrganization->getValue('org_id')));
+    $statement = $gDb->query($sql);
 
     return $statement->rowCount() === 1;
 }
@@ -51,75 +98,75 @@ function hasRole($roleName, $userId = 0)
 /**
  * Function checks if the user is a member in a role of the current organization.
  * @param int $userId The id of the user who should be checked if he is a member of the current organization
- * @return bool Returns **true** if the user is a member
+ * @return bool Returns @b true if the user is a member
  */
 function isMember($userId)
 {
-    global $gDb, $gCurrentOrganization;
+    global $gCurrentOrganization, $gDb;
 
-    if ($userId === 0)
+    if (is_numeric($userId) && $userId > 0)
     {
-        return false;
+        $sql = 'SELECT COUNT(*) AS count
+                  FROM '.TBL_MEMBERS.'
+            INNER JOIN '.TBL_ROLES.'
+                    ON rol_id = mem_rol_id
+            INNER JOIN '.TBL_CATEGORIES.'
+                    ON cat_id = rol_cat_id
+                 WHERE mem_usr_id = '.$userId.'
+                   AND mem_begin <= \''.DATE_NOW.'\'
+                   AND mem_end    > \''.DATE_NOW.'\'
+                   AND rol_valid  = 1
+                   AND (  cat_org_id = '.$gCurrentOrganization->getValue('org_id').'
+                       OR cat_org_id IS NULL )';
+        $statement = $gDb->query($sql);
+
+        if ($statement->fetchColumn() > 0)
+        {
+            return true;
+        }
     }
-
-    $sql = 'SELECT COUNT(*) AS count
-              FROM '.TBL_MEMBERS.'
-        INNER JOIN '.TBL_ROLES.'
-                ON rol_id = mem_rol_id
-        INNER JOIN '.TBL_CATEGORIES.'
-                ON cat_id = rol_cat_id
-             WHERE mem_usr_id = ? -- $userId
-               AND mem_begin <= ? -- DATE_NOW
-               AND mem_end    > ? -- DATE_NOW
-               AND rol_valid  = 1
-               AND (  cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
-                   OR cat_org_id IS NULL )';
-    $statement = $gDb->queryPrepared($sql, array($userId, DATE_NOW, DATE_NOW, (int) $gCurrentOrganization->getValue('org_id')));
-
-    return $statement->fetchColumn() > 0;
+    return false;
 }
 
 /**
  * Function checks if the user is a group leader in a role of the current organization.
- * If you use the **roleId** parameter you can check if the user is group leader of that role.
+ * If you use the @b roleId parameter you can check if the user is group leader of that role.
  * @param int $userId The id of the user who should be checked if he is a group leader
  * @param int $roleId (optional) If set <> 0 than the function checks if the user is group leader of this role
  *                    otherwise it checks if the user is group leader in one role of the current organization
- * @return bool Returns **true** if the user is a group leader
+ * @return bool Returns @b true if the user is a group leader
  */
 function isGroupLeader($userId, $roleId = 0)
 {
-    global $gDb, $gCurrentOrganization;
+    global $gCurrentOrganization, $gDb;
 
-    if ($userId === 0)
+    if (is_numeric($userId) && $userId > 0 && is_numeric($roleId))
     {
-        return false;
+        $sql = 'SELECT mem_id
+                  FROM '.TBL_MEMBERS.'
+            INNER JOIN '.TBL_ROLES.'
+                    ON rol_id = mem_rol_id
+            INNER JOIN '.TBL_CATEGORIES.'
+                    ON cat_id = rol_cat_id
+                 WHERE mem_usr_id = '.$userId.'
+                   AND mem_begin <= \''.DATE_NOW.'\'
+                   AND mem_end    > \''.DATE_NOW.'\'
+                   AND mem_leader = 1
+                   AND rol_valid  = 1
+                   AND (  cat_org_id = '.$gCurrentOrganization->getValue('org_id').'
+                       OR cat_org_id IS NULL )';
+        if ($roleId > 0)
+        {
+            $sql .= ' AND mem_rol_id = '.$roleId;
+        }
+        $statement = $gDb->query($sql);
+
+        if ($statement->rowCount() > 0)
+        {
+            return true;
+        }
     }
-
-    $sql = 'SELECT mem_id
-              FROM '.TBL_MEMBERS.'
-        INNER JOIN '.TBL_ROLES.'
-                ON rol_id = mem_rol_id
-        INNER JOIN '.TBL_CATEGORIES.'
-                ON cat_id = rol_cat_id
-             WHERE mem_usr_id = ? -- $userId
-               AND mem_begin <= ? -- DATE_NOW
-               AND mem_end    > ? -- DATE_NOW
-               AND mem_leader = 1
-               AND rol_valid  = 1
-               AND (  cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
-                   OR cat_org_id IS NULL )';
-    $queryParams = array($userId, DATE_NOW, DATE_NOW, (int) $gCurrentOrganization->getValue('org_id'));
-
-    if ($roleId > 0)
-    {
-        $sql .= ' AND mem_rol_id = ? -- $roleId';
-        $queryParams[] = $roleId;
-    }
-
-    $statement = $gDb->queryPrepared($sql, $queryParams);
-
-    return $statement->rowCount() > 0;
+    return false;
 }
 
 /**
@@ -169,11 +216,11 @@ function admFuncGeneratePagination($baseUrl, $itemsCount, $itemsPerPage, $pageSt
         {
             if ($i === $page)
             {
-                $pageNavString .= getListElementString((string) $i, 'active');
+                $pageNavString .= getListElementString($i, 'active');
             }
             else
             {
-                $pageNavString .= getListElementString((string) $i, '', $url, $paramName, ($i - 1) * $itemsPerPage);
+                $pageNavString .= getListElementString($i, '', $url, $paramName, ($i - 1) * $itemsPerPage);
             }
         }
 
@@ -185,10 +232,10 @@ function admFuncGeneratePagination($baseUrl, $itemsCount, $itemsPerPage, $pageSt
      * @param string $className
      * @param string $url
      * @param string $paramName
-     * @param int    $paramValue
+     * @param string $paramValue
      * @return string
      */
-    function getListElementString($linkText, $className = '', $url = '', $paramName = '', $paramValue = null)
+    function getListElementString($linkText, $className = '', $url = '', $paramName = '', $paramValue = '')
     {
         $classString = '';
         if ($className !== '')
@@ -217,22 +264,20 @@ function admFuncGeneratePagination($baseUrl, $itemsCount, $itemsPerPage, $pageSt
 
         if ($totalPagesCount > 3)
         {
-            $disabledLink = '<li class="disabled"><a>...</a></li>';
-
             if ($onPage > 1 && $onPage < $totalPagesCount)
             {
-                $pageNavigationString .= ($onPage > 5) ? $disabledLink : '&nbsp;&nbsp;';
+                $pageNavigationString .= ($onPage > 5) ? '<li class="disabled"><a>...</a></li>' : '&nbsp;&nbsp;';
 
                 $initPageMin = ($onPage > 4) ? $onPage : 5;
                 $initPageMax = ($onPage < $totalPagesCount - 4) ? $onPage : $totalPagesCount - 4;
 
                 $pageNavigationString .= getListElementsFromTo($initPageMin - 1, $initPageMax + 2, $onPage, $baseUrl, $queryParamName, $itemsPerPage);
 
-                $pageNavigationString .= ($onPage < $totalPagesCount - 4) ? $disabledLink : '&nbsp;&nbsp;';
+                $pageNavigationString .= ($onPage < $totalPagesCount - 4) ? '<li class="disabled"><a>...</a></li>' : '&nbsp;&nbsp;';
             }
             else
             {
-                $pageNavigationString .= $disabledLink;
+                $pageNavigationString .= '<li class="disabled"><a>...</a></li>';
             }
 
             $pageNavigationString .= getListElementsFromTo($totalPagesCount - 2, $totalPagesCount + 1, $onPage, $baseUrl, $queryParamName, $itemsPerPage);
@@ -269,53 +314,99 @@ function admFuncGeneratePagination($baseUrl, $itemsCount, $itemsPerPage, $pageSt
 }
 
 /**
- * Funktion gibt die maximale Pixelzahl zurück die der Speicher verarbeiten kann
+ * @param string $data
+ * @param bool   $decimalMulti
  * @return int
  */
-function admFuncProcessableImageSize()
+function admFuncGetBytesFromSize($data, $decimalMulti = false)
 {
-    $memoryLimit = PhpIniUtils::getMemoryLimit();
-    // if memory_limit is disabled in php.ini
-    if ($memoryLimit === -1)
+    $value = (float) substr(trim($data), 0, -1);
+    $unit  = admStrToUpper(substr(trim($data), -1));
+
+    $multi = 1024;
+    if ($decimalMulti)
     {
-        $memoryLimit = 128 * 1024 * 1024; // 128MB
+        $multi = 1000;
     }
 
-    // For each Pixel 3 Bytes are necessary (RGB)
-    $bytesPerPixel = 3;
-    // der Speicher muss doppelt zur Verfügung stehen
-    // nach ein paar tests hat sich 2.5x als sicher herausgestellt
-    $factor = 2.5;
+    switch ($unit)
+    {
+        case 'T':
+            $value *= $multi;
+        case 'G':
+            $value *= $multi;
+        case 'M':
+            $value *= $multi;
+        case 'K':
+            $value *= $multi;
+    }
 
-    return (int) round($memoryLimit / ($bytesPerPixel * $factor));
+    return (int) $value;
 }
 
 /**
- * Verify the content of an array element if it's the expected datatype
- *
- * The function is designed to check the content of **$_GET** and **$_POST** elements and should be used at the
+ * Berechnung der Maximalerlaubten Dateiuploadgröße in Byte
+ * @return int
+ */
+function admFuncMaxUploadSize()
+{
+    $postMaxSize       = admFuncGetBytesFromSize(ini_get('post_max_size'));
+    $uploadMaxFilesize = admFuncGetBytesFromSize(ini_get('upload_max_filesize'));
+
+    return min($postMaxSize, $uploadMaxFilesize);
+}
+
+/**
+ * Funktion gibt die maximale Pixelzahl zurück die der Speicher verarbeiten kann
+ * @return float
+ */
+function admFuncProcessableImageSize()
+{
+    $memoryLimit = trim(ini_get('memory_limit'));
+    // falls in php.ini nicht gesetzt
+    if (!$memoryLimit || $memoryLimit === '')
+    {
+        $memoryLimit = '8M';
+    }
+    // falls in php.ini abgeschaltet
+    if ($memoryLimit === '-1')
+    {
+        $memoryLimit = '128M';
+    }
+
+    $memoryLimit = admFuncGetBytesFromSize($memoryLimit);
+
+    // Für jeden Pixel werden 3Byte benötigt (RGB)
+    // der Speicher muss doppelt zur Verfügung stehen
+    // nach ein paar tests hat sich 2,5Fach als sichrer herausgestellt
+    return $memoryLimit / (3 * 2.5);
+}
+
+// Verify the content of an array element if it's the expected datatype
+/**
+ * The function is designed to check the content of @b $_GET and @b $_POST elements and should be used at the
  * beginning of a script. If the value of the defined datatype is not valid then an error will be shown. If no
  * value was set then the parameter will be initialized. The function can be used with every array and their elements.
  * You can set several flags (like required value, datatype …) that should be checked.
  *
- * @param array<string,mixed> $array        The array with the element that should be checked
- * @param string              $variableName Name of the array element that should be checked
- * @param string              $datatype     The datatype like **string**, **numeric**, **int**, **float**, **bool**, **boolean**, **html**,
- *                                          **date** or **file** that is expected and which will be checked.
- *                                          Datatype **date** expects a date that has the Admidio default format from the
- *                                          preferences or the english date format **Y-m-d**
- * @param array<string,mixed> $options      (optional) An array with the following possible entries:
- *                                          - Value : A value that will be set if the variable has no value
- *                                          - **requireValue** : If set to **true** than a value is required otherwise the function
- *                                                              returns an error
- *                                          - **validValues** :  An array with all values that the variable could have. If another
- *                                                              value is found than the function returns an error
- *                                          - **directOutput** : If set to **true** the function returns only the error string, if set
- *                                                              to false a html message with the error will be returned
+ * @param array  $array        The array with the element that should be checked
+ * @param string $variableName Name of the array element that should be checked
+ * @param string $datatype     The datatype like @b string, @b numeric, @b int, @b float, @b bool, @b boolean, @b html,
+ *                             @b date or @b file that is expected and which will be checked.
+ *                             Datatype @b date expects a date that has the Admidio default format from the
+ *                             preferences or the english date format @b Y-m-d
+ * @param array  $options      (optional) An array with the following possible entries:
+ *                             - @b defaultValue : A value that will be set if the variable has no value
+ *                             - @b requireValue : If set to @b true than a value is required otherwise the function
+ *                                                 returns an error
+ *                             - @b validValues :  An array with all values that the variable could have. If another
+ *                                                 value is found than the function returns an error
+ *                             - @b directOutput : If set to @b true the function returns only the error string, if set
+ *                                                 to false a html message with the error will be returned
  * @return mixed|null Returns the value of the element or the error message if a test failed
  *
- * **Code example:**
- * ```
+ * @par Examples
+ * @code
  * // numeric value that would get a default value 0 if not set
  * $getDateId = admFuncVariableIsValid($_GET, 'dat_id', 'numeric', array('defaultValue' => 0));
  *
@@ -324,17 +415,18 @@ function admFuncProcessableImageSize()
  *
  * // string initialized with actual and the only allowed values are actual and old
  * $getMode = admFuncVariableIsValid($_GET, 'mode', 'string', array('defaultValue' => 'actual', 'validValues' => array('actual', 'old')));
- * ```
+ * @endcode
  */
 function admFuncVariableIsValid(array $array, $variableName, $datatype, array $options = array())
 {
-    global $gL10n, $gMessage, $gSettingsManager;
+    global $gL10n, $gMessage, $gPreferences;
 
     // create array with all options
     $optionsDefault = array('defaultValue' => null, 'requireValue' => false, 'validValues' => null, 'directOutput' => null);
     $optionsAll     = array_replace($optionsDefault, $options);
 
     $errorMessage = '';
+    $datatype = admStrToLower($datatype);
     $value = null;
 
     // set default value for each datatype if no value is given and no value was required
@@ -380,7 +472,9 @@ function admFuncVariableIsValid(array $array, $variableName, $datatype, array $o
 
     // check if parameter has a valid value
     // do a strict check with in_array because the function don't work properly
-    if ($optionsAll['validValues'] !== null && !in_array($value, $optionsAll['validValues'], true))
+    if ($optionsAll['validValues'] !== null
+    && !in_array(admStrToUpper($value), $optionsAll['validValues'], true)
+    && !in_array(admStrToLower($value), $optionsAll['validValues'], true))
     {
         $errorMessage = $gL10n->get('SYS_INVALID_PAGE_VIEW');
     }
@@ -403,16 +497,16 @@ function admFuncVariableIsValid(array $array, $variableName, $datatype, array $o
 
         case 'date':
             // check if date is a valid Admidio date format
-            $objAdmidioDate = \DateTime::createFromFormat($gSettingsManager->getString('system_date'), $value);
+            $objAdmidioDate = DateTime::createFromFormat($gPreferences['system_date'], $value);
 
             if (!$objAdmidioDate)
             {
                 // check if date has english format
-                $objEnglishDate = \DateTime::createFromFormat('Y-m-d', $value);
+                $objEnglishDate = DateTime::createFromFormat('Y-m-d', $value);
 
                 if (!$objEnglishDate)
                 {
-                    $errorMessage = $gL10n->get('LST_NOT_VALID_DATE_FORMAT', array($variableName));
+                    $errorMessage = $gL10n->get('LST_NOT_VALID_DATE_FORMAT', $variableName);
                 }
             }
             break;
@@ -420,6 +514,12 @@ function admFuncVariableIsValid(array $array, $variableName, $datatype, array $o
         case 'bool':
         case 'boolean':
             $valid = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            // Bug workaround PHP <5.4.8
+            // https://bugs.php.net/bug.php?id=49510
+            if ($valid === null && ($value === null || $value === false || $value === ''))
+            {
+                $valid = false;
+            }
             if ($valid === null)
             {
                 $errorMessage = $gL10n->get('SYS_INVALID_PAGE_VIEW');
@@ -469,7 +569,7 @@ function admFuncVariableIsValid(array $array, $variableName, $datatype, array $o
         return $value;
     }
 
-    if (isset($gMessage) && $gMessage instanceof Message)
+    if (isset($gMessage) && $gMessage instanceof \Message)
     {
         if ($optionsAll['directOutput'])
         {
@@ -491,19 +591,19 @@ function admFuncVariableIsValid(array $array, $variableName, $datatype, array $o
 /**
  * Creates a html fragment with information about user and time when the recordset was created
  * and when it was at last edited. Therefore all necessary data must be set in the function
- * parameters. If userId is not set then the function will show **deleted user**.
- * @param int         $userIdCreated   Id of the user who create the recordset.
- * @param string      $timestampCreate Date and time of the moment when the user create the recordset.
- * @param int         $userIdEdited    Id of the user last changed the recordset.
- * @param string|null $timestampEdited Date and time of the moment when the user last changed the recordset
+ * parameters. If userId is not set then the function will show @b deleted @b user.
+ * @param int    $userIdCreated   Id of the user who create the recordset.
+ * @param string $timestampCreate Date and time of the moment when the user create the recordset.
+ * @param int    $userIdEdited    Id of the user last changed the recordset.
+ * @param string $timestampEdited Date and time of the moment when the user last changed the recordset
  * @return string Returns a html string with usernames who creates item and edit item the last time
  */
-function admFuncShowCreateChangeInfoById($userIdCreated, $timestampCreate, $userIdEdited = 0, $timestampEdited = null)
+function admFuncShowCreateChangeInfoById($userIdCreated, $timestampCreate, $userIdEdited, $timestampEdited)
 {
-    global $gDb, $gProfileFields, $gL10n, $gSettingsManager;
+    global $gDb, $gProfileFields, $gL10n, $gPreferences;
 
     // only show info if system setting is activated
-    if ((int) $gSettingsManager->get('system_show_create_edit') === 0)
+    if ((int) $gPreferences['system_show_create_edit'] === 0)
     {
         return '';
     }
@@ -516,7 +616,7 @@ function admFuncShowCreateChangeInfoById($userIdCreated, $timestampCreate, $user
         {
             $userCreate = new User($gDb, $gProfileFields, $userIdCreated);
 
-            if ((int) $gSettingsManager->get('system_show_create_edit') === 1)
+            if ((int) $gPreferences['system_show_create_edit'] === 1)
             {
                 $htmlCreateName = $userCreate->getValue('FIRST_NAME') . ' ' . $userCreate->getValue('LAST_NAME');
             }
@@ -539,7 +639,7 @@ function admFuncShowCreateChangeInfoById($userIdCreated, $timestampCreate, $user
         {
             $userEdit = new User($gDb, $gProfileFields, $userIdEdited);
 
-            if ((int) $gSettingsManager->get('system_show_create_edit') === 1)
+            if ((int) $gPreferences['system_show_create_edit'] === 1)
             {
                 $htmlEditName = $userEdit->getValue('FIRST_NAME') . ' ' . $userEdit->getValue('LAST_NAME');
             }
@@ -570,23 +670,23 @@ function admFuncShowCreateChangeInfoById($userIdCreated, $timestampCreate, $user
 /**
  * Creates a html fragment with information about user and time when the recordset was created
  * and when it was at last edited. Therefore all necessary data must be set in the function
- * parameters. If user name is not set then the function will show **deleted user**.
- * @param string      $userNameCreated Id of the user who create the recordset.
- * @param string      $timestampCreate Date and time of the moment when the user create the recordset.
- * @param string|null $userNameEdited  Id of the user last changed the recordset.
- * @param string|null $timestampEdited Date and time of the moment when the user last changed the recordset
- * @param int         $userIdCreated   (optional) The id of the user who create the recordset.
- *                                     If id is set than a link to the user profile will be created
- * @param int         $userIdEdited    (optional) The id of the user last changed the recordset.
- *                                     If id is set than a link to the user profile will be created
+ * parameters. If user name is not set then the function will show @b deleted @b user.
+ * @param string $userNameCreated Id of the user who create the recordset.
+ * @param string $timestampCreate Date and time of the moment when the user create the recordset.
+ * @param string $userNameEdited  Id of the user last changed the recordset.
+ * @param string $timestampEdited Date and time of the moment when the user last changed the recordset
+ * @param int    $userIdCreated   (optional) The id of the user who create the recordset.
+ *                                If id is set than a link to the user profile will be created
+ * @param int    $userIdEdited    (optional) The id of the user last changed the recordset.
+ *                                If id is set than a link to the user profile will be created
  * @return string Returns a html string with usernames who creates item and edit item the last time
  */
-function admFuncShowCreateChangeInfoByName($userNameCreated, $timestampCreate, $userNameEdited = null, $timestampEdited = null, $userIdCreated = 0, $userIdEdited = 0)
+function admFuncShowCreateChangeInfoByName($userNameCreated, $timestampCreate, $userNameEdited, $timestampEdited, $userIdCreated = 0, $userIdEdited = 0)
 {
-    global $gL10n, $gValidLogin, $gSettingsManager;
+    global $gL10n, $gValidLogin, $gPreferences;
 
     // only show info if system setting is activated
-    if ((int) $gSettingsManager->get('system_show_create_edit') === 0)
+    if ((int) $gPreferences['system_show_create_edit'] === 0)
     {
         return '';
     }
@@ -606,11 +706,11 @@ function admFuncShowCreateChangeInfoByName($userNameCreated, $timestampCreate, $
         // if valid login and a user id is given than create a link to the profile of this user
         if ($gValidLogin && $userIdCreated > 0 && $userNameCreated !== $gL10n->get('SYS_SYSTEM'))
         {
-            $userNameCreated = '<a href="' . safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/profile/profile.php', array('user_id' => $userIdCreated)) .
-                               '">' . $userNameCreated . '</a>';
+            $userNameCreated = '<a href="' . ADMIDIO_URL . FOLDER_MODULES . '/profile/profile.php?user_id=' .
+                                $userIdCreated . '">' . $userNameCreated . '</a>';
         }
 
-        $html .= '<span class="admidio-info-created">' . $gL10n->get('SYS_CREATED_BY', array($userNameCreated, $timestampCreate)) . '</span>';
+        $html .= '<span class="admidio-info-created">' . $gL10n->get('SYS_CREATED_BY', $userNameCreated, $timestampCreate) . '</span>';
     }
 
     // compose name of user who edit the recordset
@@ -626,11 +726,11 @@ function admFuncShowCreateChangeInfoByName($userNameCreated, $timestampCreate, $
         // if valid login and a user id is given than create a link to the profile of this user
         if ($gValidLogin && $userIdEdited > 0 && $userNameEdited !== $gL10n->get('SYS_SYSTEM'))
         {
-            $userNameEdited = '<a href="' . safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/profile/profile.php', array('user_id' => $userIdEdited)) .
-                              '">' . $userNameEdited . '</a>';
+            $userNameEdited = '<a href="' . ADMIDIO_URL . FOLDER_MODULES . '/profile/profile.php?user_id=' .
+                               $userIdEdited . '">' . $userNameEdited . '</a>';
         }
 
-        $html .= '<span class="info-edited">' . $gL10n->get('SYS_LAST_EDITED_BY', array($userNameEdited, $timestampEdited)) . '</span>';
+        $html .= '<span class="info-edited">' . $gL10n->get('SYS_LAST_EDITED_BY', $userNameEdited, $timestampEdited) . '</span>';
     }
 
     if ($html === '')
@@ -644,9 +744,9 @@ function admFuncShowCreateChangeInfoByName($userNameCreated, $timestampCreate, $
 /**
  * Search all visible files or directories in the specified directory.
  * @param string $directory  The directory where the files or directories should be searched.
- * @param string $searchType This could be **file**, **dir**, **both** or **all** and represent
+ * @param string $searchType This could be @b file, @b dir, @b both or @b all and represent
  *                           the type of entries that should be searched.
- * @return false|array<string,string> Returns an array with all found entries or false if an error occurs.
+ * @return string[]|false Returns an array with all found entries or false if an error occurs.
  */
 function admFuncGetDirectoryEntries($directory, $searchType = 'file')
 {
@@ -696,7 +796,8 @@ function admFuncGetDirectoryEntries($directory, $searchType = 'file')
 function admFuncCheckUrl($url)
 {
     // Homepage url have to start with "http://"
-    if (!StringUtils::strStartsWith($url, 'http://', false) && !StringUtils::strStartsWith($url, 'https://', false))
+    if (strpos(admStrToLower($url), 'http://')  !== 0
+    &&  strpos(admStrToLower($url), 'https://') !== 0)
     {
         $url = 'http://' . $url;
     }
@@ -705,48 +806,6 @@ function admFuncCheckUrl($url)
     if (!strValidCharacters($url, 'url'))
     {
         return false;
-    }
-
-    return $url;
-}
-
-/**
- * Escape all HTML, JavaScript, and CSS
- * @param string $input    The input string
- * @param string $encoding Define character encoding tue use
- * @return string Escaped string
- */
-function noHTML($input, $encoding = 'UTF-8')
-{
-    return htmlentities($input, ENT_QUOTES | ENT_HTML5, $encoding);
-}
-
-/**
- * @param string              $path
- * @param array<string,mixed> $params
- * @param string              $anchor
- * @param bool                $escape
- * @return string
- */
-function safeUrl($path, array $params = array(), $anchor = '', $escape = false)
-{
-    $paramsText = '';
-    if (count($params) > 0)
-    {
-        $paramsText = '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
-    }
-
-    $anchorText = '';
-    if ($anchor !== '')
-    {
-        $anchorText = '#' . rawurlencode($anchor);
-    }
-
-    $url = $path . $paramsText . $anchorText;
-
-    if ($escape)
-    {
-        return noHTML($url);
     }
 
     return $url;
@@ -786,7 +845,6 @@ function admRedirect($url, $statusCode = 303)
         // => EXIT
     }
 
-    // Check if $url starts with the Admidio URL
     if (strpos($url, ADMIDIO_URL) === 0)
     {
         $gLogger->info('REDIRECT: Redirecting to internal URL!', $loggerObject);
@@ -798,7 +856,7 @@ function admRedirect($url, $statusCode = 303)
     {
         $gLogger->notice('REDIRECT: Redirecting to external URL!', $loggerObject);
 
-        $redirectUrl = safeUrl(ADMIDIO_URL . '/adm_program/system/redirect.php', array('url' => $url));
+        $redirectUrl = ADMIDIO_URL . '/adm_program/system/redirect.php?url=' . $url;
     }
 
     header('Location: ' . $redirectUrl, true, $statusCode);
@@ -806,13 +864,18 @@ function admRedirect($url, $statusCode = 303)
 }
 
 /**
- * Calculates and formats the execution time
- * @param float $startTime The start time
- * @return string Returns the formated execution time
+ * Escape all HTML, JavaScript, and CSS
+ * @param string $input    The input string
+ * @param string $encoding Define character encoding tue use
+ * @return string Escaped string
  */
-function getExecutionTime($startTime)
+function noHTML($input, $encoding = 'UTF-8')
 {
-    $stopTime = microtime(true);
+    // backwards compatibility for PHP-Version < 5.4
+    if (!defined('ENT_HTML5'))
+    {
+        return htmlentities($input, ENT_QUOTES, $encoding);
+    }
 
-    return number_format(($stopTime - $startTime) * 1000, 6, '.', '') . ' ms';
+    return htmlentities($input, ENT_QUOTES | ENT_HTML5, $encoding);
 }

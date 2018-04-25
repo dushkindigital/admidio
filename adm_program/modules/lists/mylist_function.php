@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Various functions for mylist module
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -16,8 +16,8 @@
  * name   : (optional) Name of the list that should be used to save list
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 // Initialize and check the parameters
 $getListId = admFuncVariableIsValid($_GET, 'lst_id', 'int');
@@ -26,17 +26,10 @@ $getName   = admFuncVariableIsValid($_GET, 'name',   'string');
 
 $_SESSION['mylist_request'] = $_POST;
 
-// check if the module is enabled and disallow access if it's disabled
-if (!$gSettingsManager->getBool('lists_enable_module'))
-{
-    $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
-    // => EXIT
-}
-
 // Mindestens ein Feld sollte zugeordnet sein
 if(!isset($_POST['column1']) || strlen($_POST['column1']) === 0)
 {
-    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array('1. '.$gL10n->get('LST_COLUMN'))));
+    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', '1. '.$gL10n->get('LST_COLUMN')));
     // => EXIT
 }
 
@@ -44,8 +37,13 @@ if(!isset($_POST['column1']) || strlen($_POST['column1']) === 0)
 if($getMode === 2
 && (!isset($_POST['sel_roles_ids']) || (int) $_POST['sel_roles_ids'] === 0 || !is_array($_POST['sel_roles_ids'])))
 {
-    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_ROLE'))));
+    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_ROLE')));
     // => EXIT
+}
+
+if(!isset($_POST['sel_show_members']))
+{
+    $_POST['sel_show_members'] = 0;
 }
 
 if(!isset($_POST['sel_relationtype_ids']))
@@ -108,27 +106,22 @@ if ($getMode === 1 || $getMode === 2)
 
     $list->save();
 
-    $listId = (int) $list->getValue('lst_id');
-
     if($getMode === 1)
     {
         // save new id to session so that we can restore the configuration with new list name
-        $_SESSION['mylist_request']['sel_select_configuration'] = $listId;
+        $_SESSION['mylist_request']['sel_select_configuation'] = $list->getValue('lst_id');
 
         // go back to mylist configuration
-        admRedirect(safeUrl(ADMIDIO_URL . FOLDER_MODULES.'/lists/mylist.php', array('lst_id' => $listId)));
+        admRedirect(ADMIDIO_URL . FOLDER_MODULES.'/lists/mylist.php?lst_id=' . $list->getValue('lst_id'));
         // => EXIT
     }
 
     // weiterleiten zur allgemeinen Listeseite
-    admRedirect(safeUrl(
-        ADMIDIO_URL . FOLDER_MODULES.'/lists/lists_show.php',
-        array(
-            'lst_id' => $listId, 'mode' => 'html',
-            'rol_ids' => implode(',', array_map('intval', $_POST['sel_roles_ids'])),
-            'urt_ids' => implode(',', $_POST['sel_relationtype_ids'])
-        )
-    ));
+    admRedirect(
+        ADMIDIO_URL . FOLDER_MODULES.'/lists/lists_show.php?lst_id=' . $list->getValue('lst_id') .
+        '&mode=html&show_members=' . $_POST['sel_show_members'] . '&rol_ids=' . implode(',', array_map('intval', $_POST['sel_roles_ids'])) .
+        '&urt_ids=' . implode(',', $_POST['sel_relationtype_ids'])
+    );
     // => EXIT
 }
 elseif ($getMode === 3)
@@ -142,7 +135,6 @@ elseif ($getMode === 3)
     catch(AdmException $e)
     {
         $e->showHtml();
-        // => EXIT
     }
 
     // go back to list configuration

@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Configure download folder rights
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -12,17 +12,18 @@
  * folder_id : Id of the current folder to configure the rights
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 // Initialize and check the parameters
 $getFolderId = admFuncVariableIsValid($_GET, 'folder_id', 'int', array('requireValue' => true));
 
 $headline = $gL10n->get('DOW_SET_FOLDER_PERMISSIONS');
 
-// check if the module is enabled and disallow access if it's disabled
-if (!$gSettingsManager->getBool('enable_download_module'))
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_download_module'] != 1)
 {
+    // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
@@ -36,10 +37,6 @@ if (!$gCurrentUser->editDownloadRight())
 
 $gNavigation->addUrl(CURRENT_URL, $headline);
 
-$rolesViewRightParentFolder = array();
-$sqlRolesViewRight          = '';
-$sqlRolesUploadRight        = '';
-
 try
 {
     // get recordset of current folder from database
@@ -47,41 +44,48 @@ try
     $folder->getFolderForDownload($getFolderId);
 
     // Parentordner holen
+    $rolesViewRightParentFolder = array();
+    $rolesUploadRightParentFolder = array();
+    $sqlRolesViewRight = '';
+    $sqlRolesUploadRight = '';
+
     if ($folder->getValue('fol_fol_id_parent'))
     {
         // get recordset of parent folder from database
         $parentFolder = new TableFolder($gDb);
-        $parentFolder->getFolderForDownload((int) $folder->getValue('fol_fol_id_parent'));
+        $parentFolder->getFolderForDownload($folder->getValue('fol_fol_id_parent'));
 
         // get assigned roles of the parent folder
         $rolesViewRightParentFolder = $parentFolder->getRoleViewArrayOfFolder();
         if(count($rolesViewRightParentFolder) > 0)
         {
-            $sqlRolesViewRight = ' AND rol_id IN ('.Database::getQmForValues($rolesViewRightParentFolder).')';
+            $sqlRolesViewRight = ' AND rol_id IN ('.implode(',', $rolesViewRightParentFolder).')';
+        }
+
+        // get assigned roles of the parent folder
+        $rolesUploadRightParentFolder = $parentFolder->getRoleUploadArrayOfFolder();
+        if(count($rolesUploadRightParentFolder) > 0)
+        {
+            $sqlRolesUploadRight = ' AND rol_id IN ('.implode(',', $rolesUploadRightParentFolder).')';
         }
     }
 }
 catch(AdmException $e)
 {
     $e->showHtml();
-    // => EXIT
 }
 
-// if parent folder has access for all roles then read all roles from database
-$sqlViewRoles = 'SELECT rol_id, rol_name, cat_name
-                   FROM '.TBL_ROLES.'
-             INNER JOIN '.TBL_CATEGORIES.'
-                     ON cat_id = rol_cat_id
-                  WHERE rol_valid  = 1
-                    AND rol_system = 0
-                        '.$sqlRolesViewRight.'
-                    AND cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
-               ORDER BY cat_sequence, rol_name';
-$sqlDataView = array(
-    'query'  => $sqlViewRoles,
-    'params' => array_merge($rolesViewRightParentFolder, array($gCurrentOrganization->getValue('org_id')))
-);
-
+// wenn der uebergeordnete Ordner keine Rollen gesetzt hat sind alle erlaubt
+// alle aus der DB aus lesen
+$sqlViewRoles =  'SELECT rol_id, rol_name, cat_name
+                FROM '.TBL_ROLES.'
+          INNER JOIN '.TBL_CATEGORIES.'
+                  ON cat_id = rol_cat_id
+               WHERE rol_valid  = 1
+                 AND rol_system = 0
+                     '.$sqlRolesViewRight.'
+                 AND cat_org_id = '. $gCurrentOrganization->getValue('org_id'). '
+            ORDER BY cat_sequence, rol_name';
 $firstEntryViewRoles = '';
 
 if (count($rolesViewRightParentFolder) === 0)
@@ -98,6 +102,18 @@ if(count($roleViewSet) === 0)
     $roleViewSet[] = 0;
 }
 
+// wenn der uebergeordnete Ordner keine Rollen gesetzt hat sind alle erlaubt
+// alle aus der DB aus lesen
+$sqlUploadRoles =  'SELECT rol_id, rol_name, cat_name
+                FROM '.TBL_ROLES.'
+          INNER JOIN '.TBL_CATEGORIES.'
+                  ON cat_id = rol_cat_id
+               WHERE rol_valid  = 1
+                 AND rol_system = 0
+                     '.$sqlRolesUploadRight.'
+                 AND cat_org_id = '. $gCurrentOrganization->getValue('org_id'). '
+            ORDER BY cat_sequence, rol_name';
+
 // get assigned roles of this folder
 $roleUploadSet = $folder->getRoleUploadArrayOfFolder();
 
@@ -107,23 +123,6 @@ if(count($roleUploadSet) === 0)
     $roleUploadSet[] = '';
 }
 
-// read all download module administrator roles
-$sqlAdminRoles = 'SELECT rol_name
-                    FROM '.TBL_ROLES.'
-              INNER JOIN '.TBL_CATEGORIES.'
-                      ON cat_id = rol_cat_id
-                   WHERE rol_valid    = 1
-                     AND rol_download = 1
-                     AND cat_org_id   = ? -- $gCurrentOrganization->getValue(\'org_id\')
-                ORDER BY cat_sequence, rol_name';
-$statementAdminRoles = $gDb->queryPrepared($sqlAdminRoles, array($gCurrentOrganization->getValue('org_id')));
-
-$adminRoles = array();
-while($row = $statementAdminRoles->fetch())
-{
-    $adminRoles[] = $row['rol_name'];
-}
-
 // create html page object
 $page = new HtmlPage($headline);
 
@@ -131,37 +130,36 @@ $page = new HtmlPage($headline);
 $folderConfigMenu = $page->getMenu();
 $folderConfigMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 
-$page->addHtml('<p class="lead">'.$gL10n->get('DOW_ROLE_ACCESS_PERMISSIONS_DESC', array($folder->getValue('fol_name'))).'</p>');
+$page->addHtml('<p class="lead">'.$gL10n->get('DOW_ROLE_ACCESS_PERMISSIONS_DESC', $folder->getValue('fol_name'), $gL10n->get('ROL_RIGHT_DOWNLOAD')).'</p>');
 
 // show form
-$form = new HtmlForm('folder_rights_form', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/downloads/download_function.php', array('mode' => '7', 'folder_id' => $getFolderId)), $page);
+$form = new HtmlForm('folder_rights_form', ADMIDIO_URL.FOLDER_MODULES.'/downloads/download_function.php?mode=7&amp;folder_id='.$getFolderId, $page);
 $form->addSelectBoxFromSql(
-    'adm_roles_view_right', $gL10n->get('SYS_VISIBLE_FOR'), $gDb, $sqlDataView,
+    'adm_roles_view_right',
+    $gL10n->get('DAT_VISIBLE_TO'),
+    $gDb,
+    $sqlViewRoles,
     array(
-        'property'     => HtmlForm::FIELD_REQUIRED,
+        'property'     => FIELD_REQUIRED,
         'defaultValue' => $roleViewSet,
         'multiselect'  => true,
         'firstEntry'   => $firstEntryViewRoles
     )
 );
 $form->addSelectBoxFromSql(
-    'adm_roles_upload_right', $gL10n->get('DOW_UPLOAD_FILES'), $gDb, $sqlDataView,
+    'adm_roles_upload_right',
+    $gL10n->get('DOW_UPLOAD_FILES'),
+    $gDb,
+    $sqlUploadRoles,
     array(
-        'property'     => HtmlForm::FIELD_REQUIRED,
+        'property'     => FIELD_REQUIRED,
         'defaultValue' => $roleUploadSet,
-        'multiselect'  => true,
-        'placeholder'  => $gL10n->get('DOW_NO_ADDITIONAL_PERMISSIONS_SET')
+        'multiselect'  => true
     )
 );
-$form->addStaticControl(
-    'adm_administrators', $gL10n->get('SYS_ADMINISTRATORS'), implode(', ', $adminRoles),
-    array('helpTextIdLabel' => array('DOW_ADMINISTRATORS_DESC', $gL10n->get('ROL_RIGHT_DOWNLOAD')))
-);
-$form->addSubmitButton(
-    'btn_save', $gL10n->get('SYS_SAVE'),
-    array('icon' => THEME_URL.'/icons/disk.png', 'class' => ' col-sm-offset-3')
-);
+$form->addSubmitButton('btn_save', $gL10n->get('SYS_SAVE'), array('icon'  => THEME_URL.'/icons/disk.png',
+                                                                  'class' => ' col-sm-offset-3'));
 
 // add form to html page and show page
-$page->addHtml($form->show());
+$page->addHtml($form->show(false));
 $page->show();

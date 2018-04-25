@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Popup window with information
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -13,7 +13,7 @@
  * inline        - true : message should not be shown in separate window
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/common.php');
+require_once('common.php');
 
 // Initialize and check the parameters
 $getMessageId    = admFuncVariableIsValid($_GET, 'message_id',    'string', array('directOutput' => true, 'requireValue' => true));
@@ -36,7 +36,14 @@ if($getInlineView)
 
 switch ($getMessageId)
 {
-    // room help text
+    case 'CAT_CATEGORY_GLOBAL':
+    case 'SYS_DATA_GLOBAL':
+        // show all organizations where this organization is mother or child organization
+        $organizations = '- '.$gCurrentOrganization->getValue('org_longname').',<br />- ';
+        $organizations .= implode(',<br />- ', $gCurrentOrganization->getOrganizationsInRelationship(true, true, true));
+        echo $gL10n->get(strtoupper($getMessageId), $organizations);
+        break;
+
     case 'room_detail':
         if(is_numeric($getMessageVar1))
         {
@@ -65,7 +72,7 @@ switch ($getMessageId)
         echo $gProfileFields->getProperty($getMessageVar1, 'usf_description');
         break;
 
-    // mylist condition description
+    // Eigene Listen
     case 'mylist_condition':
         echo '
             <p>'.$gL10n->get('LST_MYLIST_CONDITION_DESC').'</p>
@@ -125,12 +132,12 @@ switch ($getMessageId)
                         <td>'.$gL10n->get('LST_EXCLUDE_EXAMPLE_DESC').'</td>
                     </tr>
                     <tr>
-                        <td>'.$gL10n->get('SYS_STREET').'</td>
+                        <td>'.$gL10n->get('SYS_ADDRESS').'</td>
                         <td><strong>'.$gL10n->get('SYS_EMPTY').'</strong></td>
                         <td>'.$gL10n->get('LST_EMPTY_EXAMPLE_DESC').'</td>
                     </tr>
                     <tr>
-                        <td>'.$gL10n->get('SYS_STREET').'</td>
+                        <td>'.$gL10n->get('SYS_ADDRESS').'</td>
                         <td><strong>'.$gL10n->get('SYS_NOT_EMPTY').'</strong></td>
                         <td>'.$gL10n->get('LST_NOT_EMPTY_EXAMPLE_DESC').'</td>
                     </tr>
@@ -143,22 +150,34 @@ switch ($getMessageId)
             </table>';
         break;
 
-    // Profile photo help text
+    // Profil
     case 'profile_photo_up_help':
         echo '
             <h3>'.$gL10n->get('SYS_RESTRICTIONS').'</h3>
             <ul>
                 <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_1').'</li>
                 <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_2').'</li>
-                <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_3', array(round(admFuncProcessableImageSize()/1000000, 2))).'</li>
-                <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_4', array(round(PhpIniUtils::getUploadMaxSize()/pow(1024, 2), 2))).'</li>
+                <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_3', round(admFuncProcessableImageSize()/1000000, 2)).'</li>
+                <li>'.$gL10n->get('PRO_RESTRICTIONS_HELP_4', round(admFuncMaxUploadSize()/pow(1024, 2), 2)).'</li>
             </ul>';
         break;
 
     default:
-        // In the standard case, the ID is used to read the text from the language file.
-        // If the text variable is filled, check whether this is an ID from the language file.
-        echo $gL10n->get(strtoupper($getMessageId), array(Language::translateIfTranslationStrId($getMessageVar1)));
+        // im Standardfall wird mit der ID der Text aus der Sprachdatei gelesen
+        // falls die Textvariable gefuellt ist, pruefen ob dies auch eine ID aus der Sprachdatei ist
+        $msgVar1 = '';
+        if($getMessageVar1 !== '')
+        {
+            if(strpos($getMessageVar1, '_') === 3)
+            {
+                $msgVar1 = $gL10n->get($getMessageVar1);
+            }
+            else
+            {
+                $msgVar1 = $getMessageVar1;
+            }
+        }
+        echo $gL10n->get(strtoupper($getMessageId), $msgVar1);
         break;
 }
 

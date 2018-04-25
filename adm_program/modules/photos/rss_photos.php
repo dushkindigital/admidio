@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * RSS feed for photos
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -21,148 +21,139 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 // Nachschauen ob RSS ueberhaupt aktiviert ist...
-if (!$gSettingsManager->getBool('enable_rss'))
+if ($gPreferences['enable_rss'] != 1)
 {
     $gMessage->setForwardUrl($gHomepage);
     $gMessage->show($gL10n->get('SYS_RSS_DISABLED'));
     // => EXIT
 }
 
-// check if the module is enabled and disallow access if it's disabled
-if ((int) $gSettingsManager->get('enable_photo_module') === 0)
+// pruefen ob das Modul ueberhaupt aktiviert ist
+if ($gPreferences['enable_photo_module'] == 0)
 {
+    // das Modul ist deaktiviert
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
-elseif ((int) $gSettingsManager->get('enable_photo_module') === 2)
+elseif($gPreferences['enable_photo_module'] == 2)
 {
     // nur eingeloggte Benutzer duerfen auf das Modul zugreifen
-    require(__DIR__ . '/../../system/login_valid.php');
+    require_once('../../system/login_valid.php');
 }
 
 // Initialize and check the parameters
 $getHeadline = admFuncVariableIsValid($_GET, 'headline', 'string', array('defaultValue' => $gL10n->get('PHO_PHOTO_ALBUMS')));
 
-if ((int) $gSettingsManager->get('system_show_create_edit') === 1)
+if($gPreferences['system_show_create_edit'] == 1)
 {
     // show firstname and lastname of create and last change user
-    $additionalFields = ' cre_firstname.usd_value || \' \' || cre_surname.usd_value AS create_name ';
+    $additionalFields = '
+        cre_firstname.usd_value || \' \' || cre_surname.usd_value AS create_name ';
     $additionalTables = '
-                         LEFT JOIN '. TBL_USER_DATA .' AS cre_surname
+                         LEFT JOIN '. TBL_USER_DATA .' cre_surname
                                 ON cre_surname.usd_usr_id = pho_usr_id_create
-                               AND cre_surname.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
-                         LEFT JOIN '. TBL_USER_DATA .' AS cre_firstname
+                               AND cre_surname.usd_usf_id = '.$gProfileFields->getProperty('LAST_NAME', 'usf_id').'
+                         LEFT JOIN '. TBL_USER_DATA .' cre_firstname
                                 ON cre_firstname.usd_usr_id = pho_usr_id_create
-                               AND cre_firstname.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')';
-    $queryParams = array(
-        $gProfileFields->getProperty('LAST_NAME', 'usf_id'),
-        $gProfileFields->getProperty('FIRST_NAME', 'usf_id')
-    );
+                               AND cre_firstname.usd_usf_id = '.$gProfileFields->getProperty('FIRST_NAME', 'usf_id');
 }
 else
 {
     // show username of create and last change user
     $additionalFields = ' cre_username.usr_login_name AS create_name ';
     $additionalTables = '
-                         LEFT JOIN '. TBL_USERS .' AS cre_username
+                         LEFT JOIN '. TBL_USERS .' cre_username
                                 ON cre_username.usr_id = pho_usr_id_create ';
-    $queryParams = array();
 }
 
 // read albums from database
 $sql = 'SELECT pho.*, '.$additionalFields.'
-          FROM '.TBL_PHOTOS.' AS pho
+          FROM '.TBL_PHOTOS.' pho
                '.$additionalTables.'
-         WHERE pho_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
-           AND pho_locked = 0
+         WHERE (   pho_org_id = '. $gCurrentOrganization->getValue('org_id'). '
+               AND pho_locked = 0)
       ORDER BY pho_timestamp_create DESC
          LIMIT 10';
-$queryParams[] = $gCurrentOrganization->getValue('org_id');
-$statement = $gDb->queryPrepared($sql, $queryParams);
+$statement = $gDb->query($sql);
 
-$photoAlbum = new TablePhotos($gDb);
+$photo_album = new TablePhotos($gDb);
 
 // ab hier wird der RSS-Feed zusammengestellt
 
 // create RSS feed object with channel information
-$orgLongname = $gCurrentOrganization->getValue('org_longname');
-$rss = new RssFeed(
-    $orgLongname . ' - ' . $getHeadline,
-    $gCurrentOrganization->getValue('org_homepage'),
-    $gL10n->get('PHO_RECENT_ALBUMS_OF_ORGA', array($orgLongname)),
-    $orgLongname
-);
+$rss = new RSSfeed($gCurrentOrganization->getValue('org_longname').' - '.$getHeadline,
+            $gCurrentOrganization->getValue('org_homepage'),
+            $gL10n->get('PHO_RECENT_ALBUMS_OF_ORGA', $gCurrentOrganization->getValue('org_longname')),
+            $gCurrentOrganization->getValue('org_longname'));
 
-// Dem RssFeed-Objekt jetzt die RSSitems zusammenstellen und hinzufuegen
+// Dem RSSfeed-Objekt jetzt die RSSitems zusammenstellen und hinzufuegen
 while ($row = $statement->fetch())
 {
     // Daten in ein Photo-Objekt uebertragen
-    $photoAlbum->clear();
-    $photoAlbum->setArray($row);
+    $photo_album->clear();
+    $photo_album->setArray($row);
 
     // set data for attributes of this entry
 
     // read folder structure to put them together and write to title
     $parents = '';
-    $phoId       = (int) $photoAlbum->getValue('pho_id');
-    $phoParentId = (int) $photoAlbum->getValue('pho_pho_id_parent');
+    $pho_parent_id = $photo_album->getValue('pho_pho_id_parent');
 
-    while($phoParentId > 0)
+    while($pho_parent_id > 0)
     {
         // Erfassen des Eltern Albums
-        $sql = 'SELECT pho_name, pho_pho_id_parent
+        $sql = ' SELECT *
                   FROM '.TBL_PHOTOS.'
-                 WHERE pho_id = ? -- $phoParentId';
-        $parentsStatement = $gDb->queryPrepared($sql, array($phoParentId));
-        $admPhotoParent = $parentsStatement->fetch();
+                 WHERE pho_id = '.$pho_parent_id;
+        $parentsStatement = $gDb->query($sql);
+        $adm_photo_parent = $parentsStatement->fetch();
 
         // Link zusammensetzen
-        $parents = $admPhotoParent['pho_name'].' > '.$parents;
+        $parents = $adm_photo_parent['pho_name'].' > '.$parents;
 
         // Elternveranst
-        $phoParentId = $admPhotoParent['pho_pho_id_parent'];
+        $pho_parent_id = $adm_photo_parent['pho_pho_id_parent'];
     }
+
+    $title   = $parents.$photo_album->getValue('pho_name');
+    $link    = ADMIDIO_URL.FOLDER_MODULES.'/photos/photos.php?pho_id='. $photo_album->getValue('pho_id');
+    $author  = $row['create_name'];
+    $pubDate = date('r', strtotime($photo_album->getValue('pho_timestamp_create')));
 
     // Inhalt zusammensetzen
-    $description = $gL10n->get('SYS_DATE').': '.$photoAlbum->getValue('pho_begin', $gSettingsManager->getString('system_date'));
+    $description = $gL10n->get('SYS_DATE').': '.$photo_album->getValue('pho_begin', $gPreferences['system_date']);
     // Enddatum nur wenn anders als startdatum
-    if ($photoAlbum->getValue('pho_end') !== $photoAlbum->getValue('pho_begin'))
+    if($photo_album->getValue('pho_end') !== $photo_album->getValue('pho_begin'))
     {
-        $description = $gL10n->get('SYS_DATE_FROM_TO', array($description, $photoAlbum->getValue('pho_end', $gSettingsManager->getString('system_date'))));
+        $description = $gL10n->get('SYS_DATE_FROM_TO', $description, $photo_album->getValue('pho_end', $gPreferences['system_date']));
     }
-    $description .= '<br />'.$gL10n->get('PHO_PHOTOS').': '.$photoAlbum->countImages();
-    $description .= '<br />'.$gL10n->get('PHO_PHOTOGRAPHER').': '.$photoAlbum->getValue('pho_photographers');
+    $description = $description. '<br /> '.$gL10n->get('PHO_PHOTOS').': '.$photo_album->countImages();
+    $description = $description. '<br />'.$gL10n->get('PHO_PHOTOGRAPHER').': '.$photo_album->getValue('pho_photographers');
 
     // show the last five photos as examples
-    if ($photoAlbum->getValue('pho_quantity') > 0)
+    if($photo_album->getValue('pho_quantity') >0)
     {
-        $description .= '<br /><br />'.$gL10n->get('SYS_PREVIEW').':<br />';
-        for ($photoNr = $photoAlbum->getValue('pho_quantity'); $photoNr >= $photoAlbum->getValue('pho_quantity')-4 && $photoNr > 0; --$photoNr)
+        $description = $description. '<br /><br />'.$gL10n->get('SYS_PREVIEW').':<br />';
+        for($photoNr = $photo_album->getValue('pho_quantity'); $photoNr >= $photo_album->getValue('pho_quantity')-4 && $photoNr > 0; --$photoNr)
         {
-            $photoPath = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photoAlbum->getValue('pho_begin', 'Y-m-d') . '_' . $phoId . '/' . $photoNr . '.jpg';
+            $photoPath = ADMIDIO_PATH . FOLDER_DATA . '/photos/' . $photo_album->getValue('pho_begin', 'Y-m-d') . '_' . $photo_album->getValue('pho_id') . '/' . $photoNr . '.jpg';
 
             // show only photo if that photo exists
             if (is_file($photoPath))
             {
-                $description .=
-                    '<a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_presenter.php', array('pho_id' => $phoId, 'photo_nr' => $photoNr)).'"><img
-                    src="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_show.php', array('pho_id' => $phoId, 'photo_nr' => $photoNr,
-                    'pho_begin' => $photoAlbum->getValue('pho_begin', 'Y-m-d'), 'thumb' => '1')).'" border="0" /></a>&nbsp;';
+                $description = $description.
+                    '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_presenter.php?pho_id='.$photo_album->getValue('pho_id').'&amp;photo_nr='.$photoNr.'"><img
+                     src="'.ADMIDIO_URL.FOLDER_MODULES.'/photos/photo_show.php?pho_id='.$photo_album->getValue('pho_id').'&amp;photo_nr='.$photoNr.
+                     '&amp;pho_begin='.$photo_album->getValue('pho_begin', 'Y-m-d').'&amp;thumb=1" border="0" /></a>&nbsp;';
             }
         }
     }
 
     // add entry to RSS feed
-    $rss->addItem(
-        $parents . $photoAlbum->getValue('pho_name'),
-        $description,
-        safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/photos/photos.php', array('pho_id' => $phoId)),
-        $row['create_name'],
-        \DateTime::createFromFormat('Y-m-d H:i:s', $photoAlbum->getValue('pho_timestamp_create', 'Y-m-d H:i:s'))->format('r')
-    );
+    $rss->addItem($title, $description, $link, $author, $pubDate);
 }
 
 // jetzt nur noch den Feed generieren lassen

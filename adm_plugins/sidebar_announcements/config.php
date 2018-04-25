@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Konfigurationsdatei fuer Admidio-Plugin Sidebar-Announcements
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -14,7 +14,7 @@ $plg_announcements_count = 2;
 
 // Soll ein Vorschau-Text der Ankündigung gezeigt werden?
 // 0 = keine Voranzeige
-// 70 = Anzahl Zeichen des Vorschau-Textes
+// >0 = Anzahl Zeichen des Vorschau-Textes
 $plg_show_preview = 70;
 
 // If this option is set to true (1) than the full content of the

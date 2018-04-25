@@ -1,22 +1,22 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Admidio specific enhancements of the exception class
+ * @class AdmException
+ * @brief Admidio specific enhancements of the exception class
  *
  * This class extends the default PHP exception class with an Admidio specific
  * output. The exception get's a language string as parameter and returns a
  * html or plain text message with the translated error if an exception is thrown
  *
- * **Code example:**
- * ```
- * try
+ * @par Example
+ * @code try
  * {
  *    if($bla == 1)
  *    {
@@ -32,37 +32,42 @@
  *
  *    // show simply text message
  *    $e->showText();
- * }
- * ```
+ * } @endcode
  */
 class AdmException extends Exception
 {
-    /**
-     * @var array<int,string>|string
-     */
-    protected $params = array();
+    protected $param1;
+    protected $param2;
+    protected $param3;
+    protected $param4;
 
     /**
-     * Constructor that will **rollback** an open database translation
-     * @param string            $message Translation **id** that should be shown when exception is catched
-     * @param array<int,string> $params  Optional parameter for language string of translation id
+     * Constructor that will @b rollback an open database translation
+     * @param string $message Translation @b id that should be shown when exception is catched
+     * @param string $param1  Optional parameter for language string of translation id
+     * @param string $param2  Another optional parameter for language string of translation id
+     * @param string $param3  Another optional parameter for language string of translation id
+     * @param string $param4  Another optional parameter for language string of translation id
      */
-    public function __construct($message, $params = array())
+    public function __construct($message, $param1 = '', $param2 = '', $param3 = '', $param4 = '')
     {
         global $gLogger, $gDb;
 
-        if ($gDb instanceof Database)
+        $gLogger->notice('AdmException is thrown!', array('message' => $message, 'params' => array($param1, $param2, $param3, $param4)));
+
+        if($gDb instanceof \Database)
         {
-            // if there is an open transaction we should perform a rollback
-            $gDb->rollback();
+            $gDb->endTransaction();
         }
 
-        $gLogger->notice('AdmException is thrown!', array('message' => $message, 'params' => $this->params));
-
-        $this->params = $params;
+        // save param in class parameters
+        $this->param1 = $param1;
+        $this->param2 = $param2;
+        $this->param3 = $param3;
+        $this->param4 = $param4;
 
         // sicherstellen, dass alles korrekt zugewiesen wird
-        parent::__construct($message);
+        parent::__construct($message, 0);
     }
 
     /**
@@ -74,9 +79,9 @@ class AdmException extends Exception
         global $gL10n;
 
         // if text is a translation-id then translate it
-        if (Language::isTranslationStringId($this->message))
+        if(strpos($this->message, '_') === 3)
         {
-            return $gL10n->get($this->message, $this->params);
+            return $gL10n->get($this->message, $this->param1, $this->param2, $this->param3, $this->param4);
         }
 
         return $this->message;
@@ -85,13 +90,21 @@ class AdmException extends Exception
     /**
      * Set a new Admidio message id with their parameters. This method should be used
      * if during the exception processing a new better message should be set.
-     * @param string            $message Translation **id** that should be shown when exception is catched
-     * @param array<int,string> $params  Optional parameter for language string of translation id
+     * @param string $message Translation @b id that should be shown when exception is catched
+     * @param string $param1  Optional parameter for language string of translation id
+     * @param string $param2  Another optional parameter for language string of translation id
+     * @param string $param3  Another optional parameter for language string of translation id
+     * @param string $param4  Another optional parameter for language string of translation id
      */
-    public function setNewMessage($message, array $params = array())
+    public function setNewMessage($message, $param1 = '', $param2 = '', $param3 = '', $param4 = '')
     {
         $this->message = $message;
-        $this->params = $params;
+
+        // save param in class parameters
+        $this->param1 = $param1;
+        $this->param2 = $param2;
+        $this->param3 = $param3;
+        $this->param4 = $param4;
     }
 
     /**
@@ -102,7 +115,7 @@ class AdmException extends Exception
         global $gMessage;
 
         // display database error to user
-        if ($gMessage instanceof Message)
+        if($gMessage instanceof \Message)
         {
             $gMessage->show($this->getText());
             // => EXIT
@@ -119,7 +132,7 @@ class AdmException extends Exception
      */
     public function showText()
     {
-        if (!headers_sent())
+        if(!headers_sent())
         {
             header('Content-type: text/html; charset=utf-8');
         }

@@ -3,14 +3,14 @@
  ***********************************************************************************************
  * Overview and maintenance of all profile fields
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 // nur berechtigte User duerfen die Profilfelder bearbeiten
 if (!$gCurrentUser->isAdministrator())
@@ -37,10 +37,6 @@ $page->addJavascript('
     true
 );
 $page->addJavascript('
-    /**
-     * @param {string} direction
-     * @param {int}    usfID
-     */
     function moveCategory(direction, usfID) {
         var actRow = document.getElementById("row_usf_" + usfID);
         var childs = actRow.parentNode.childNodes;
@@ -69,7 +65,7 @@ $page->addJavascript('
         }
 
         // entsprechende Werte zum Hoch- bzw. Runterverschieben ermitteln
-        if (direction === "UP") {
+        if (direction === "up") {
             if (prevNode !== null) {
                 actRow.parentNode.insertBefore(actRow, prevNode);
                 secondSequence = actSequence - 1;
@@ -83,10 +79,10 @@ $page->addJavascript('
 
         if (secondSequence > 0) {
             // Nun erst mal die neue Position von dem gewaehlten Feld aktualisieren
-            $.get("' . safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/preferences/fields_function.php', array('mode' => 4)) . '&usf_id=" + usfID + "&sequence=" + direction);
+            $.get(gRootPath + "/adm_program/modules/preferences/fields_function.php?usf_id=" + usfID + "&mode=4&sequence=" + direction);
         }
-    }
-');
+    }'
+);
 
 // get module menu
 $fieldsMenu = $page->getMenu();
@@ -95,25 +91,21 @@ $fieldsMenu = $page->getMenu();
 $fieldsMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 
 // define link to create new profile field
-$fieldsMenu->addItem(
-    'menu_item_new_field', ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php',
-    $gL10n->get('ORG_CREATE_PROFILE_FIELD'), 'add.png'
-);
+$fieldsMenu->addItem('menu_item_new_field', ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php',
+                     $gL10n->get('ORG_CREATE_PROFILE_FIELD'), 'add.png');
 // define link to maintain categories
-$fieldsMenu->addItem(
-    'menu_item_maintain_category', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/categories/categories.php', array('type' => 'USF')),
-    $gL10n->get('SYS_MAINTAIN_CATEGORIES'), 'application_view_tile.png'
-);
+$fieldsMenu->addItem('menu_item_maintain_category', ADMIDIO_URL.FOLDER_MODULES.'/categories/categories.php?type=USF',
+                     $gL10n->get('SYS_MAINTAIN_CATEGORIES'), 'application_double.png');
 
 $sql = 'SELECT *
           FROM '.TBL_USER_FIELDS.'
     INNER JOIN '.TBL_CATEGORIES.'
             ON cat_id = usf_cat_id
          WHERE cat_type = \'USF\'
-           AND (  cat_org_id = ?
+           AND (  cat_org_id = '. $gCurrentOrganization->getValue('org_id'). '
                OR cat_org_id IS NULL )
       ORDER BY cat_sequence ASC, usf_sequence ASC';
-$statement = $gDb->queryPrepared($sql, array($gCurrentOrganization->getValue('org_id')));
+$statement = $gDb->query($sql);
 
 // Create table
 $table = new HtmlTable('tbl_profile_fields', $page, true);
@@ -125,9 +117,8 @@ $columnHeading = array(
     '&nbsp;',
     $gL10n->get('SYS_DESCRIPTION'),
     '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/eye.png" alt="'.$gL10n->get('ORG_FIELD_NOT_HIDDEN').'" title="'.$gL10n->get('ORG_FIELD_NOT_HIDDEN').'" />',
-    '<img class="admidio-icon-info" data-html="true" src="'.THEME_URL.'/icons/textfield_key.png" alt="'.$gL10n->get('ORG_FIELD_DISABLED', array($gL10n->get('ROL_RIGHT_EDIT_USER'))).'" title="'.$gL10n->get('ORG_FIELD_DISABLED', array($gL10n->get('ROL_RIGHT_EDIT_USER'))).'" />',
+    '<img class="admidio-icon-info" data-html="true" src="'.THEME_URL.'/icons/textfield_key.png" alt="'.$gL10n->get('ORG_FIELD_DISABLED', $gL10n->get('ROL_RIGHT_EDIT_USER')).'" title="'.$gL10n->get('ORG_FIELD_DISABLED', $gL10n->get('ROL_RIGHT_EDIT_USER')).'" />',
     '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/asterisk_yellow.png" alt="'.$gL10n->get('ORG_FIELD_REQUIRED').'" title="'.$gL10n->get('ORG_FIELD_REQUIRED').'" />',
-    '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/new_registrations.png" alt="'.$gL10n->get('ORG_FIELD_REGISTRATION').'" title="'.$gL10n->get('ORG_FIELD_REGISTRATION').'" />',
     $gL10n->get('ORG_DATATYPE'),
     '&nbsp;'
 );
@@ -150,13 +141,13 @@ while($row = $statement->fetch())
 
     if($categoryId !== (int) $userField->getValue('cat_id'))
     {
-        $blockId = 'admCategory'.$userField->getValue('usf_cat_id');
+        $block_id = 'admCategory'.$userField->getValue('usf_cat_id');
 
         $table->addTableBody();
         $table->addRow('', array('class' => 'admidio-group-heading'));
-        $table->addColumn('<span id="caret_'.$blockId.'" class="caret"></span>'.$userField->getValue('cat_name'),
-                          array('id' => 'group_'.$blockId, 'colspan' => '8'));
-        $table->addTableBody('id', $blockId);
+        $table->addColumn('<span id="caret_'.$block_id.'" class="caret"></span>'.$userField->getValue('cat_name'),
+                          array('id' => 'group_'.$block_id, 'colspan' => '8'), 'td');
+        $table->addTableBody('id', $block_id);
 
         $categoryId = (int) $userField->getValue('usf_cat_id');
     }
@@ -166,7 +157,7 @@ while($row = $statement->fetch())
     {
         $description = substr($userField->getValue('usf_description', 'database'), 0, 22).'
             <a data-toggle="modal" data-target="#admidio_modal"
-                href="'. safeUrl(ADMIDIO_URL. '/adm_program/system/msg_window.php', array('message_id' => 'user_field_description', 'message_var1' => $userField->getValue('usf_name_intern'), 'inline' => 'true')).'"><span  data-html="true" data-toggle="tooltip" data-original-title="'.str_replace('"', '\'', $userField->getValue('usf_description')).'">[..]</span></a>';
+                href="'. ADMIDIO_URL. '/adm_program/system/msg_window.php?message_id=user_field_description&amp;message_var1='.$userField->getValue('usf_name_intern').'&amp;inline=true"><span  data-html="true" data-toggle="tooltip" data-original-title="'.str_replace('"', '\'', $userField->getValue('usf_description')).'">[..]</span></a>';
     }
     elseif($userField->getValue('usf_description') === '')
     {
@@ -188,7 +179,7 @@ while($row = $statement->fetch())
 
     if($userField->getValue('usf_disabled') == 1)
     {
-        $disable = '<img class="admidio-icon-info" data-html="true" src="'.THEME_URL.'/icons/textfield_key.png" alt="'.$gL10n->get('ORG_FIELD_DISABLED', array($gL10n->get('ROL_RIGHT_EDIT_USER'))).'" title="'.$gL10n->get('ORG_FIELD_DISABLED', array($gL10n->get('ROL_RIGHT_EDIT_USER'))).'" />';
+        $disable = '<img class="admidio-icon-info" data-html="true" src="'.THEME_URL.'/icons/textfield_key.png" alt="'.$gL10n->get('ORG_FIELD_DISABLED', $gL10n->get('ROL_RIGHT_EDIT_USER')).'" title="'.$gL10n->get('ORG_FIELD_DISABLED', $gL10n->get('ROL_RIGHT_EDIT_USER')).'" />';
     }
     else
     {
@@ -204,15 +195,6 @@ while($row = $statement->fetch())
         $mandatory = '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/asterisk_gray.png" alt="'.$gL10n->get('ORG_FIELD_NOT_MANDATORY').'" title="'.$gL10n->get('ORG_FIELD_NOT_MANDATORY').'" />';
     }
 
-    if($userField->getValue('usf_registration') == 1)
-    {
-        $registration = '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/new_registrations.png" alt="'.$gL10n->get('ORG_FIELD_REGISTRATION').'" title="'.$gL10n->get('ORG_FIELD_REGISTRATION').'" />';
-    }
-    else
-    {
-        $registration = '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/new_registrations_gray.png" alt="'.$gL10n->get('ORG_FIELD_NOT_REGISTRATION').'" title="'.$gL10n->get('ORG_FIELD_NOT_REGISTRATION').'" />';
-    }
-
     $userFieldText = array('CHECKBOX'     => $gL10n->get('SYS_CHECKBOX'),
                            'DATE'         => $gL10n->get('SYS_DATE'),
                            'DROPDOWN'     => $gL10n->get('SYS_DROPDOWN_LISTBOX'),
@@ -225,7 +207,7 @@ while($row = $statement->fetch())
                            'NUMBER'       => $gL10n->get('SYS_NUMBER'),
                            'DECIMAL'      => $gL10n->get('SYS_DECIMAL_NUMBER'));
 
-    $usfSystem = '<a class="admidio-icon-link" href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php', array('usf_id' => $userField->getValue('usf_id'))).'"><img
+    $usfSystem = '<a class="admidio-icon-link" href="'.ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php?usf_id='.$userField->getValue('usf_id').'"><img
                     src="'.THEME_URL.'/icons/edit.png" alt="'.$gL10n->get('SYS_EDIT').'" title="'.$gL10n->get('SYS_EDIT').'" /></a>';
 
     if($userField->getValue('usf_system') == 1)
@@ -235,23 +217,22 @@ while($row = $statement->fetch())
     else
     {
         $usfSystem .='<a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
-                        href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'usf', 'element_id' => 'row_usf_'.$userField->getValue('usf_id'),
-                        'name' => $userField->getValue('usf_name'), 'database_id' => $userField->getValue('usf_id'))).'"><img
+                        href="'.ADMIDIO_URL.'/adm_program/system/popup_message.php?type=usf&amp;element_id=row_usf_'.
+                        $userField->getValue('usf_id').'&amp;name='.urlencode($userField->getValue('usf_name')).'&amp;database_id='.$userField->getValue('usf_id').'"><img
                         src="'.THEME_URL.'/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>';
     }
 
     // create array with all column values
     $columnValues = array(
-        '<a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php', array('usf_id' => $userField->getValue('usf_id'))).'">'.$userField->getValue('usf_name').'</a>',
-        '<a class="admidio-icon-link" href="javascript:void(0)" onclick="moveCategory(\''.TableUserField::MOVE_UP.'\', '.$userField->getValue('usf_id').')"><img
+        '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/preferences/fields_new.php?usf_id='.$userField->getValue('usf_id').'">'.$userField->getValue('usf_name').'</a>',
+        '<a class="admidio-icon-link" href="javascript:void(0)" onclick="moveCategory(\'up\', '.$userField->getValue('usf_id').')"><img
             src="'.THEME_URL.'/icons/arrow_up.png" alt="'.$gL10n->get('ORG_FIELD_UP').'" title="'.$gL10n->get('ORG_FIELD_UP').'" /></a>
-        <a class="admidio-icon-link" href="javascript:void(0)" onclick="moveCategory(\''.TableUserField::MOVE_DOWN.'\', '.$userField->getValue('usf_id').')"><img
+        <a class="admidio-icon-link" href="javascript:void(0)" onclick="moveCategory(\'down\', '.$userField->getValue('usf_id').')"><img
             src="'.THEME_URL.'/icons/arrow_down.png" alt="'.$gL10n->get('ORG_FIELD_DOWN').'" title="'.$gL10n->get('ORG_FIELD_DOWN').'" /></a>',
         $description,
         $hidden,
         $disable,
         $mandatory,
-        $registration,
         $userFieldText[$userField->getValue('usf_type')],
         $usfSystem
     );

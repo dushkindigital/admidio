@@ -10,17 +10,26 @@
  *
  * Compatible with Admidio version 3.2
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
-$rootPath = dirname(dirname(__DIR__));
-$pluginFolder = basename(__DIR__);
+// create path to plugin
+$plugin_folder_pos = strpos(__FILE__, 'adm_plugins') + 11;
+$plugin_file_pos   = strpos(__FILE__, 'birthday.php');
+$plugin_folder     = substr(__FILE__, $plugin_folder_pos + 1, $plugin_file_pos - $plugin_folder_pos - 2);
 
-require_once($rootPath . '/adm_program/system/common.php');
-require_once(__DIR__ . '/config.php');
+if(!defined('PLUGIN_PATH'))
+{
+    define('PLUGIN_PATH', substr(__FILE__, 0, $plugin_folder_pos));
+}
+require_once(PLUGIN_PATH. '/../adm_program/system/common.php');
+require_once(PLUGIN_PATH. '/'.$plugin_folder.'/config.php');
+
+// integrate language file of plugin
+$gL10n->addLanguagePath(PLUGIN_PATH. '/'.$plugin_folder.'/languages');
 
 // pruefen, ob alle Einstellungen in config.php gesetzt wurden
 // falls nicht, hier noch mal die Default-Werte setzen
@@ -70,21 +79,21 @@ if(!isset($plg_show_future) || !is_numeric($plg_show_names_extern))
 // Prüfen, ob die Rollenbedingung gesetzt wurde
 if(!isset($plg_rolle_sql) || $plg_rolle_sql === '')
 {
-    $sqlRol = 'IS NOT NULL';
+    $rol_sql = 'IS NOT NULL';
 }
 else
 {
-    $sqlRol = 'IN '.$plg_rolle_sql;
+    $rol_sql = 'IN '.$plg_rolle_sql;
 }
 
-// Prüfen, ob die Sortierbedingung gesetzt wurde
+// Prüfen, ob die Sotierbedingung gesetzt wurde
 if(!isset($plg_sort_sql) || $plg_sort_sql === '')
 {
-    $sqlSort = 'DESC';
+    $sort_sql = 'DESC';
 }
 else
 {
-    $sqlSort = $plg_sort_sql;
+    $sort_sql = $plg_sort_sql;
 }
 
 // ist der Benutzer ausgeloggt und soll nur die Anzahl der Geb-Kinder angezeigt werden, dann Zeitraum auf 0 Tage setzen
@@ -96,87 +105,70 @@ if($plg_show_names_extern === 0 && !$gValidLogin)
 
 // if page object is set then integrate css file of this plugin
 global $page;
-if(isset($page) && $page instanceof HtmlPage)
+if(isset($page) && $page instanceof \HtmlPage)
 {
     $page->addCssFile(ADMIDIO_URL . FOLDER_PLUGINS . '/birthday/birthday.css');
 }
 
-$fieldBirthday = $gProfileFields->getProperty('BIRTHDAY', 'usf_id');
-
 $sql = 'SELECT DISTINCT usr_id, usr_login_name,
                         last_name.usd_value AS last_name, first_name.usd_value AS first_name,
                         birthday.bday AS birthday, birthday.bdate,
-                        DATEDIFF(birthday.bdate, ?) AS days_to_bdate, -- DATE_NOW
+                        DATEDIFF(birthday.bdate, \''.DATETIME_NOW.'\') AS days_to_bdate,
                         YEAR(bdate) - YEAR(bday) AS age,
                         email.usd_value AS email, gender.usd_value AS gender
-          FROM '.TBL_USERS.' AS users
+          FROM '.TBL_USERS.' users
     INNER JOIN ( (SELECT usd_usr_id, usd_value AS bday,
-                         CONCAT(YEAR(?), DATE_FORMAT(bd1.usd_value, \'-%m-%d\')) AS bdate -- DATE_NOW
-                    FROM '.TBL_USER_DATA.' AS bd1
-                   WHERE DATEDIFF(CONCAT(YEAR(?), DATE_FORMAT(bd1.usd_value, \'-%m-%d\')), ?) -- DATE_NOW,DATE_NOW
-                 BETWEEN ? AND ? -- -$plg_show_zeitraum AND $plg_show_future
-                     AND usd_usf_id = ?) -- $fieldBirthday
+                         CONCAT(YEAR(\''.DATETIME_NOW.'\'), DATE_FORMAT(bd1.usd_value, \'-%m-%d\')) AS bdate
+                    FROM '.TBL_USER_DATA.' bd1
+                   WHERE DATEDIFF(CONCAT(YEAR(\''.DATETIME_NOW.'\'), DATE_FORMAT(bd1.usd_value, \'-%m-%d\')), \''.DATETIME_NOW.'\')
+                         BETWEEN -'.$plg_show_zeitraum.' AND '.$plg_show_future.'
+                     AND usd_usf_id = '.$gProfileFields->getProperty('BIRTHDAY', 'usf_id').')
                UNION
                  (SELECT usd_usr_id, usd_value AS bday,
-                         CONCAT(YEAR(?)-1, DATE_FORMAT(bd2.usd_value, \'-%m-%d\')) AS bdate -- DATE_NOW
-                    FROM '.TBL_USER_DATA.' AS bd2
-                   WHERE DATEDIFF(CONCAT(YEAR(?)-1, DATE_FORMAT(bd2.usd_value, \'-%m-%d\')), ?) -- DATE_NOW,DATE_NOW
-                 BETWEEN ? AND ? -- -$plg_show_zeitraum AND $plg_show_future
-                     AND usd_usf_id = ?) -- $fieldBirthday
+                         CONCAT(YEAR(\''.DATETIME_NOW.'\')-1, DATE_FORMAT(bd2.usd_value, \'-%m-%d\')) AS bdate
+                    FROM '.TBL_USER_DATA.' bd2
+                   WHERE DATEDIFF(CONCAT(YEAR(\''.DATETIME_NOW.'\')-1, DATE_FORMAT(bd2.usd_value, \'-%m-%d\')), \''.DATETIME_NOW.'\')
+                         BETWEEN -'.$plg_show_zeitraum.' AND '.$plg_show_future.'
+                     AND usd_usf_id = '.$gProfileFields->getProperty('BIRTHDAY', 'usf_id').')
                UNION
                  (SELECT usd_usr_id, usd_value AS bday,
-                         CONCAT(YEAR(?)+1, DATE_FORMAT(bd3.usd_value, \'-%m-%d\')) AS bdate -- DATE_NOW
-                    FROM '.TBL_USER_DATA.' AS bd3
-                   WHERE DATEDIFF(CONCAT(YEAR(?)+1, DATE_FORMAT(bd3.usd_value, \'-%m-%d\')), ?) -- DATE_NOW,DATE_NOW
-                 BETWEEN ? AND ? -- -$plg_show_zeitraum AND $plg_show_future
-                     AND usd_usf_id = ?) -- $fieldBirthday
+                         CONCAT(YEAR(\''.DATETIME_NOW.'\')+1, DATE_FORMAT(bd3.usd_value, \'-%m-%d\')) AS bdate
+                    FROM '.TBL_USER_DATA.' bd3
+                   WHERE DATEDIFF(CONCAT(YEAR(\''.DATETIME_NOW.'\')+1, DATE_FORMAT(bd3.usd_value, \'-%m-%d\')), \''.DATETIME_NOW.'\')
+                         BETWEEN -'.$plg_show_zeitraum.' AND '.$plg_show_future.'
+                     AND usd_usf_id = '.$gProfileFields->getProperty('BIRTHDAY', 'usf_id').')
                ) birthday
             ON birthday.usd_usr_id = usr_id
      LEFT JOIN '.TBL_USER_DATA.' AS last_name
             ON last_name.usd_usr_id = usr_id
-           AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
+           AND last_name.usd_usf_id = '.$gProfileFields->getProperty('LAST_NAME', 'usf_id').'
      LEFT JOIN '.TBL_USER_DATA.' AS first_name
             ON first_name.usd_usr_id = usr_id
-           AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
+           AND first_name.usd_usf_id = '.$gProfileFields->getProperty('FIRST_NAME', 'usf_id').'
      LEFT JOIN '.TBL_USER_DATA.' AS email
             ON email.usd_usr_id = usr_id
-           AND email.usd_usf_id = ? -- $gProfileFields->getProperty(\'EMAIL\', \'usf_id\')
+           AND email.usd_usf_id = '.$gProfileFields->getProperty('EMAIL', 'usf_id').'
      LEFT JOIN '.TBL_USER_DATA.' AS gender
             ON gender.usd_usr_id = usr_id
-           AND gender.usd_usf_id = ? -- $gProfileFields->getProperty(\'GENDER\', \'usf_id\')
+           AND gender.usd_usf_id = '.$gProfileFields->getProperty('GENDER', 'usf_id').'
      LEFT JOIN '.TBL_MEMBERS.'
             ON mem_usr_id = usr_id
-           AND mem_begin <= ? -- DATE_NOW
-           AND mem_end    > ? -- DATE_NOW
+           AND mem_begin <= \''.DATE_NOW.'\'
+           AND mem_end    > \''.DATE_NOW.'\'
     INNER JOIN '.TBL_ROLES.'
             ON mem_rol_id = rol_id
            AND rol_valid  = 1
     INNER JOIN '.TBL_CATEGORIES.'
             ON rol_cat_id = cat_id
-           AND cat_org_id = ? -- $gCurrentOrganization->getValue(\'org_id\')
+           AND cat_org_id = '.$gCurrentOrganization->getValue('org_id').'
          WHERE usr_valid = 1
-           AND mem_rol_id '.$sqlRol.'
-      ORDER BY days_to_bdate '.$sqlSort.', last_name, first_name';
-
-$queryParams = array(
-    DATE_NOW,
-    DATE_NOW, DATE_NOW, DATE_NOW, -$plg_show_zeitraum, $plg_show_future, $fieldBirthday,
-    DATE_NOW, DATE_NOW, DATE_NOW, -$plg_show_zeitraum, $plg_show_future, $fieldBirthday,
-    DATE_NOW, DATE_NOW, DATE_NOW, -$plg_show_zeitraum, $plg_show_future, $fieldBirthday,
-    $gProfileFields->getProperty('LAST_NAME', 'usf_id'),
-    $gProfileFields->getProperty('FIRST_NAME', 'usf_id'),
-    $gProfileFields->getProperty('EMAIL', 'usf_id'),
-    $gProfileFields->getProperty('GENDER', 'usf_id'),
-    DATE_NOW,
-    DATE_NOW,
-    $gCurrentOrganization->getValue('org_id')
-    // TODO add more params
-);
-$birthdayStatement = $gDb->queryPrepared($sql, $queryParams);
+           AND mem_rol_id '.$rol_sql.'
+      ORDER BY days_to_bdate '.$sort_sql.', last_name, first_name ';
+$birthdayStatement = $gDb->query($sql);
 
 $numberBirthdays = $birthdayStatement->rowCount();
 
-echo '<div id="plugin_'. $pluginFolder. '" class="admidio-plugin-content">';
+echo '<div id="plugin_'. $plugin_folder. '" class="admidio-plugin-content">';
 if($plg_show_headline)
 {
     echo '<h3>'.$gL10n->get('PLG_BIRTHDAY_HEADLINE').'</h3>';
@@ -194,19 +186,19 @@ if($numberBirthdays > 0)
                 switch ($plg_show_names)
                 {
                     case 1:  // Vorname, Nachname
-                        $plgShowName = $row['first_name']. ' '. $row['last_name'];
+                        $plg_show_name = $row['first_name']. ' '. $row['last_name'];
                         break;
                     case 2:  // Nachname, Vorname
-                        $plgShowName = $row['last_name']. ', '. $row['first_name'];
+                        $plg_show_name = $row['last_name']. ', '. $row['first_name'];
                         break;
                     case 3:  // Vorname
-                        $plgShowName = $row['first_name'];
+                        $plg_show_name = $row['first_name'];
                         break;
                     case 4:  // Loginname
-                        $plgShowName = $row['usr_login_name'];
+                        $plg_show_name = $row['usr_login_name'];
                         break;
                     default: // Vorname, Nachname
-                        $plgShowName = $row['first_name']. ' '. $row['last_name'];
+                        $plg_show_name = $row['first_name']. ' '. $row['last_name'];
                 }
 
                 // ab einem festgelegten Alter wird fuer ausgeloggte Besucher nur der Nachname mit Anrede angezeigt
@@ -214,31 +206,31 @@ if($numberBirthdays > 0)
                 {
                     if ($row['gender'] > 1)
                     {
-                        $plgShowName = $gL10n->get('PLG_BIRTHDAY_WOMAN_VAR', array($row['last_name']));
+                        $plg_show_name = $gL10n->get('PLG_BIRTHDAY_WOMAN_VAR', $row['last_name']);
                     }
                     else
                     {
-                        $plgShowName = $gL10n->get('PLG_BIRTHDAY_MAN_VAR', array($row['last_name']));
+                        $plg_show_name = $gL10n->get('PLG_BIRTHDAY_MAN_VAR', $row['last_name']);
                     }
                 }
 
                 // Namen mit Alter und Mail-Link anzeigen
                 if($gValidLogin)
                 {
-                    $plgShowName = '<a href="'. safeUrl(ADMIDIO_URL. FOLDER_MODULES. '/profile/profile.php', array('user_id' => $row['usr_id'])) . '"
-                        target="'. $plg_link_target. '" title="'.$gL10n->get('SYS_SHOW_PROFILE').'">'. $plgShowName. '</a>';
+                    $plg_show_name = '<a href="'. ADMIDIO_URL. FOLDER_MODULES. '/profile/profile.php?user_id='. $row['usr_id']. '"
+                        target="'. $plg_link_target. '" title="'.$gL10n->get('SYS_SHOW_PROFILE').'">'. $plg_show_name. '</a>';
 
                     // E-Mail-Adresse ist hinterlegt und soll auch bei eingeloggten Benutzern verlinkt werden
                     if(strlen($row['email']) > 0 && $plg_show_email_extern < 2)
                     {
-                        $plgShowName .= '
-                            <a class="admidio-icon-link" href="'. safeUrl(ADMIDIO_URL. FOLDER_MODULES. '/messages/messages_write.php', array('usr_id' => $row['usr_id'])) . '"><img
+                        $plg_show_name = $plg_show_name.'
+                            <a class="admidio-icon-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/messages/messages_write.php?usr_id='. $row['usr_id']. '"><img
                             src="'. THEME_URL. '/icons/email.png" alt="'.$gL10n->get('MAI_SEND_EMAIL').'" title="'.$gL10n->get('MAI_SEND_EMAIL').'" /></a>';
                     }
                 }
                 elseif($plg_show_email_extern === 1 && strlen($row['email']) > 0)
                 {
-                    $plgShowName .= '
+                    $plg_show_name = $plg_show_name.'
                         <a class="admidio-icon-link" href="mailto:'. $row['email']. '"><img
                         src="'. THEME_URL. '/icons/email.png" alt="'.$gL10n->get('MAI_SEND_EMAIL').'" title="'.$gL10n->get('MAI_SEND_EMAIL').'" /></a>';
                 }
@@ -250,11 +242,11 @@ if($numberBirthdays > 0)
                     if((int) $row['days_to_bdate'] === 0)
                     {
                         // Die Anzeige der Geburtstage folgt nicht mehr als Liste, sondern mittels div-Tag
-                        echo '<li><span id="plgBirthdayNameHighlight">'.$gL10n->get('PLG_BIRTHDAY_TODAY', array($plgShowName, $row['age'])).'</span></li>';
+                        echo '<li><span id="plgBirthdayNameHighlight">'.$gL10n->get('PLG_BIRTHDAY_TODAY', $plg_show_name, $row['age']).'</span></li>';
                     }
                     else
                     {
-                        $birthayDate  = \DateTime::createFromFormat('Y-m-d', $row['birthday']);
+                        $birthayDate  = DateTime::createFromFormat('Y-m-d', $row['birthday']);
                         $plgDays      = ' ';
                         $plgCssClass  = '';
                         $birthdayText = '';
@@ -287,7 +279,7 @@ if($numberBirthdays > 0)
                         }
                         // Die Anzeige der Geburtstage folgt nicht mehr als Liste, sondern mittels div-Tag
                         echo '<li><span id="'.$plgCssClass.'">'.
-                            $gL10n->get($birthdayText, array($plgShowName, $plgDays, $row['age'], $birthayDate->format($gSettingsManager->getString('system_date')))).
+                            $gL10n->get($birthdayText, $plg_show_name, $plgDays, $row['age'], $birthayDate->format($gPreferences['system_date'])).
                         '</span></li>';
                     }
                 }
@@ -302,7 +294,7 @@ if($numberBirthdays > 0)
         }
         else
         {
-            echo '<p>'.$gL10n->get('PLG_BIRTHDAY_MORE_USERS', array($numberBirthdays)).'</p>';
+            echo '<p>'.$gL10n->get('PLG_BIRTHDAY_MORE_USERS', $numberBirthdays).'</p>';
         }
     }
 }

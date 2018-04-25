@@ -1,20 +1,20 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Class manages weblinks viewable for user
+ * @class ModuleWeblinks
+ * @brief Class manages weblinks viewable for user
  *
  * This class reads all available recordsets from table links.
  * and returns an Array with results, recordsets and validated parameters from $_GET Array.
- *
- * **Returned Array:**
- * ```
+ * @par Returned Array
+ * @code
  * Array(
  *         [numResults] => 4
  *         [limit] => 0
@@ -33,6 +33,8 @@
  *                     [cat_name_intern] => COMMON
  *                     [4] => Allgemein
  *                     [cat_name] => Allgemein
+ *                     [5] => 0
+ *                     [cat_hidden] => 0
  *                     [6] => 0
  *                     [cat_system] => 0
  *                     [7] => 0
@@ -97,38 +99,44 @@
  *             [view_mode] => Default
  *         )
  * )
- * ```
+ * @endcode
  */
 class ModuleWeblinks extends Modules
 {
     /**
+     * creates an new ModuleWeblink object
+     */
+    public function __construct()
+    {
+        // get parent instance with all parameters from $_GET Array
+        parent::__construct();
+    }
+
+    /**
      * Function returns a set of links with corresponding information
      * @param int $startElement Start element of result. First (and default) is 0.
      * @param int $limit        Number of elements returned max. Default NULL will take number from preferences.
-     * @return array<string,mixed> with links and corresponding information
+     * @return array with links and corresponding information
      */
     public function getDataSet($startElement = 0, $limit = null)
     {
-        global $gCurrentUser, $gSettingsManager, $gDb;
+        global $gCurrentOrganization, $gPreferences, $gProfileFields, $gDb, $gValidLogin;
 
         // Parameter
         if($limit === null)
         {
-            $limit = $gSettingsManager->getInt('weblinks_per_page');
+            $limit = $gPreferences['weblinks_per_page'];
         }
-
-        $catIdParams = array_merge(array(0), $gCurrentUser->getAllVisibleCategories('LNK'));
-        $sqlConditions = $this->getSqlConditions();
 
         // Weblinks aus der DB fischen...
         $sql = 'SELECT *
                   FROM '.TBL_LINKS.'
             INNER JOIN '.TBL_CATEGORIES.'
                     ON cat_id = lnk_cat_id
-                 WHERE cat_id IN ('.Database::getQmForValues($catIdParams).')
-                       '.$sqlConditions['sql'].'
+                 WHERE cat_type   = \'LNK\'
+                   AND cat_org_id = '.$gCurrentOrganization->getValue('org_id').'
+                       '.$this->getSqlConditions().'
               ORDER BY cat_sequence, lnk_name, lnk_timestamp_create DESC';
-
         if($limit > 0)
         {
             $sql .= ' LIMIT '.$limit;
@@ -138,12 +146,12 @@ class ModuleWeblinks extends Modules
             $sql .= ' OFFSET '.$startElement;
         }
 
-        $pdoStatement = $gDb->queryPrepared($sql, array_merge($catIdParams, $sqlConditions['params'])); // TODO add more params
+        $weblinksStatement = $gDb->query($sql);
 
         // array for results
         return array(
-            'recordset'  => $pdoStatement->fetchAll(),
-            'numResults' => $pdoStatement->rowCount(),
+            'recordset'  => $weblinksStatement->fetchAll(),
+            'numResults' => $weblinksStatement->rowCount(),
             'limit'      => $limit,
             'totalCount' => $this->getDataSetCount(),
             'parameter'  => $this->getParameters()
@@ -156,18 +164,16 @@ class ModuleWeblinks extends Modules
      */
     public function getDataSetCount()
     {
-        global $gCurrentUser, $gDb;
-
-        $catIdParams = array_merge(array(0), $gCurrentUser->getAllVisibleCategories('LNK'));
-        $sqlConditions = $this->getSqlConditions();
+        global $gCurrentOrganization, $gDb;
 
         $sql = 'SELECT COUNT(*) AS count
                   FROM '.TBL_LINKS.'
-            INNER JOIN '.TBL_CATEGORIES.'
+            INNER JOIN '. TBL_CATEGORIES .'
                     ON cat_id = lnk_cat_id
-                 WHERE cat_id IN (' . Database::getQmForValues($catIdParams) . ')
-                       '.$sqlConditions['sql'];
-        $pdoStatement = $gDb->queryPrepared($sql, array_merge($catIdParams, $sqlConditions['params']));
+                 WHERE cat_type   = \'LNK\'
+                   AND cat_org_id = '. $gCurrentOrganization->getValue('org_id'). '
+                       '.$this->getSqlConditions();
+        $pdoStatement = $gDb->query($sql);
 
         return (int) $pdoStatement->fetchColumn();
     }
@@ -181,44 +187,43 @@ class ModuleWeblinks extends Modules
     {
         global $gDb;
 
-        $catId = (int) $this->getParameter('cat_id');
         // set headline with category name
-        if($catId > 0)
+        if($this->getParameter('cat_id') > 0)
         {
-            $category  = new TableCategory($gDb, $catId);
+            $category  = new TableCategory($gDb, $this->getParameter('cat_id'));
             $headline .= ' - '. $category->getValue('cat_name');
         }
         return $headline;
     }
 
     /**
-     * Add several conditions to an SQL string that could later be used as additional conditions in other SQL queries.
-     * @return array<string,string|array<int,int>> Returns an array of a SQL string with additional conditions and it's query params.
+     * Add several conditions to an SQL string that could later be used 
+     * as additional conditions in other SQL queries.
+     * @return string Return SQL string with additional conditions.
      */
     private function getSqlConditions()
     {
-        $sqlConditions = '';
-        $params = array();
+        global $gValidLogin;
 
-        $id    = (int) $this->getParameter('id');
-        $catId = (int) $this->getParameter('cat_id');
+        $sqlConditions = '';
 
         // In case ID was permitted and user has rights
-        if($id > 0)
+        if($this->getParameter('id') > 0)
         {
-            $sqlConditions .= ' AND lnk_id = ? '; // $id
-            $params[] = $id;
+            $sqlConditions .= ' AND lnk_id = '. $this->getParameter('id');
         }
         // show all weblinks from category
-        elseif($catId > 0)
+        elseif($this->getParameter('cat_id') > 0)
         {
-            $sqlConditions .= ' AND cat_id = ? '; // $catId
-            $params[] = $catId;
+            $sqlConditions .= ' AND cat_id = '. $this->getParameter('cat_id');
         }
 
-        return array(
-            'sql'    => $sqlConditions,
-            'params' => $params
-        );
+        // if user isn't logged in, then don't show hidden categories
+        if(!$gValidLogin)
+        {
+            $sqlConditions .= ' AND cat_hidden = 0 ';
+        }
+
+        return $sqlConditions;
     }
 }

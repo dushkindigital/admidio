@@ -3,13 +3,13 @@
  ***********************************************************************************************
  * Prepare values of import form for further processing
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
 
 // Initialize and check the parameters
 $postImportCoding   = admFuncVariableIsValid($_POST, 'import_coding',    'string',  array('requireValue' => true, 'validValues' => array('iso-8859-1', 'utf-8')));
@@ -28,18 +28,18 @@ if(!$gCurrentUser->editUsers())
 
 if(strlen($_FILES['userfile']['tmp_name'][0]) === 0)
 {
-    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_FILE'))));
+    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_FILE')));
     // => EXIT
 }
 elseif($_FILES['userfile']['error'][0] === UPLOAD_ERR_INI_SIZE)
 {
     // Dateigroesse ueberpruefen Servereinstellungen
-    $gMessage->show($gL10n->get('SYS_FILE_TO_LARGE_SERVER', array($gSettingsManager->getInt('max_file_upload_size'))));
+    $gMessage->show($gL10n->get('SYS_FILE_TO_LARGE_SERVER', $gPreferences['max_file_upload_size']));
     // => EXIT
 }
 elseif($postRoleId === 0)
 {
-    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', array($gL10n->get('SYS_ROLE'))));
+    $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_ROLE')));
     // => EXIT
 }
 
@@ -50,7 +50,7 @@ $role = new TableRoles($gDb, $postRoleId);
 if(!$gCurrentUser->hasRightViewRole($role->getValue('rol_id'))
 || (!$gCurrentUser->manageRoles() && $role->getValue('rol_assign_roles') == false))
 {
-    $gMessage->show($gL10n->get('MEM_ROLE_SELECT_RIGHT', array($role->getValue('rol_name'))));
+    $gMessage->show($gL10n->get('MEM_ROLE_SELECT_RIGHT', $role->getValue('rol_name')));
     // => EXIT
 }
 
@@ -63,7 +63,10 @@ $_SESSION['user_import_mode'] = $postUserImportMode;
 if($postImportCoding === 'iso-8859-1')
 {
     // Daten der Datei erst einmal in UTF8 konvertieren, damit es damit spaeter keine Probleme gibt
-    $_SESSION['file_lines'] = array_map('utf8_encode', $_SESSION['file_lines']);
+    foreach($_SESSION['file_lines'] as $key => $value)
+    {
+        $_SESSION['file_lines'][$key] = utf8_encode($value);
+    }
 }
 
 // CSV-Import (im Moment gibt es nur diesen, spaeter muss hier dann unterschieden werden)

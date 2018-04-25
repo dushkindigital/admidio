@@ -1,58 +1,84 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Creates from a custom condition syntax a sql condition
+ * @class ConditionParser
+ * @brief Creates from a custom condition syntax a sql condition
  *
  * The user can write a condition in a special syntax. This class will parse
  * that condition and creates a valid SQL statement which can be used in
  * another SQL statement to select data with these conditions.
  * This class uses AdmExceptions when an error occurred. Make sure you catch these
  * exceptions when using the class.
- *
- * **Code example:**
- * ```
- * // create a valid SQL condition out of the special syntax
+ * @par Examples
+ * @code // create a valid SQL condition out of the special syntax
  * $parser = new ConditionParser();
  * $sqlCondition = $parser->makeSqlStatement('> 5 AND <= 100', 'usd_value', 'int');
- * $sql = 'SELECT * FROM '.TBL_USER_DATA.' WHERE usd_id > 0 AND '.$sqlCondition;
- * ```
+ * $sql = 'SELECT * FROM '.TBL_USER_DATA.' WHERE usd_id > 0 AND '.$sqlCondition; @endcode
  */
 class ConditionParser
 {
-    /**
-     * @var string The source condition with the user specific condition
-     */
-    private $srcCond = '';
-    /**
-     * @var string The destination string with the valid sql statement
-     */
-    private $destCond = '';
-    /**
-     * @var array<int,string> An array from the string **mSrcCond** where every char is one array element
-     */
-    private $srcCondArray = array();
-    /**
-     * @var string Stores the sql statement if a record should not exists when user wants to exclude a column
-     */
-    private $notExistsSql = '';
-    /**
-     * @var bool Flag if there is a open quote in this condition that must be closed before the next condition will be parsed
-     */
-    private $openQuotes = false;
+    private $srcCond;         ///< The source condition with the user specific condition
+    private $destCond;        ///< The destination string with the valid sql statement
+    private $srcCondArray;    ///< An array from the string @b mSrcCond where every char is one array element
+    private $notExistsSql;    ///< Stores the sql statement if a record should not exists when user wants to exclude a column
+    private $openQuotes;      ///< Flag if there is a open quote in this condition that must be closed before the next condition will be parsed
 
     /**
      * constructor that will initialize variables
      */
     public function __construct()
     {
+        $this->srcCond  = '';
+        $this->destCond = '';
+        $this->srcCondArray = array();
+        $this->notExistsSql = '';
+        $this->openQuotes   = false;
+    }
 
+    /**
+     * Starts the "DestCondition"
+     * @param string $columnType      The type of the column. Valid types are @b string, @b int, @b date and @b checkbox
+     * @param string $columnName      The name of the database column for which the condition should be created
+     * @param string $sourceCondition The user condition string
+     * @return bool Returns true if "mDestCondition" is complete
+     */
+    private function startDestCond($columnType, $columnName, $sourceCondition)
+    {
+        $this->destCond = ' AND ';  // Bedingungen fuer das Feld immer mit UND starten
+
+        if ($columnType === 'string')
+        {
+            $this->destCond .= '( UPPER(' . $columnName . ') ';
+        }
+        elseif ($columnType === 'checkbox')
+        {
+            // Sonderfall !!!
+            // bei einer Checkbox kann es nur 1 oder 0 geben und keine komplizierten Verknuepfungen
+            if ($sourceCondition === '1')
+            {
+                $this->destCond .= $columnName . ' = 1 ';
+            }
+            else
+            {
+                $this->destCond .= '(' . $columnName . ' IS NULL OR ' . $columnName . ' = 0) ';
+            }
+
+            return true;
+        }
+        // $columnType = "int" or "date"
+        else
+        {
+            $this->destCond .= '( ' . $columnName . ' ';
+        }
+
+        return false;
     }
 
     /**
@@ -71,25 +97,37 @@ class ConditionParser
     }
 
     /**
-     * Creates a valid date format **YYYY-MM-DD** for the SQL statement
-     * @param string $date     The unformated date from user input e.g. **12.04.2012**
-     * @param string $operator The actual operator for the **date** parameter
-     * @return string String with a SQL valid date format **YYYY-MM-DD** or empty string
+     * @param string $columnType
+     * @param string $sourceCondition
+     * @return bool Returns true if date search and false if age search
+     */
+    private static function isDateSearch($columnType, $sourceCondition)
+    {
+        $sourceCondition = admStrToUpper($sourceCondition);
+
+        return $columnType === 'date' && (strpos($sourceCondition, 'J') !== false || strpos($sourceCondition, 'Y') !== false);
+    }
+
+    /**
+     * Creates a valid date format @b YYYY-MM-DD for the SQL statement
+     * @param string $date     The unformated date from user input e.g. @b 12.04.2012
+     * @param string $operator The actual operator for the @b date parameter
+     * @return string String with a SQL valid date format @b YYYY-MM-DD or empty string
      */
     private function getFormatDate($date, $operator)
     {
-        global $gSettingsManager;
+        global $gPreferences;
 
         // if last char is Y or J then user searches for age
-        $lastDateChar = strtoupper(substr($date, -1));
+        $lastDateChar = admStrToUpper(substr($date, -1));
 
         if ($lastDateChar === 'J' || $lastDateChar === 'Y')
         {
             $ageCondition = '';
-            $dateObj = new \DateTime();
-            $years   = new \DateInterval('P' . substr($date, 0, -1) . 'Y');
-            $oneYear = new \DateInterval('P1Y');
-            $oneDay  = new \DateInterval('P1D');
+            $dateObj = new DateTime();
+            $years   = new DateInterval('P' . substr($date, 0, -1) . 'Y');
+            $oneYear = new DateInterval('P1Y');
+            $oneDay  = new DateInterval('P1D');
             $dateObj->sub($years);
 
             switch ($operator)
@@ -137,7 +175,7 @@ class ConditionParser
         // validate date and return it in database format
         if ($date !== '')
         {
-            $dateObject = \DateTime::createFromFormat($gSettingsManager->getString('system_date'), $date);
+            $dateObject = DateTime::createFromFormat($gPreferences['system_date'], $date);
             if ($dateObject !== false)
             {
                 return $dateObject->format('Y-m-d');
@@ -148,22 +186,12 @@ class ConditionParser
     }
 
     /**
-     * @param string $columnType
-     * @param string $sourceCondition
-     * @return bool Returns true if date search and false if age search
-     */
-    private static function isDateSearch($columnType, $sourceCondition)
-    {
-        return $columnType === 'date' && (StringUtils::strContains($sourceCondition, 'J', false) || StringUtils::strContains($sourceCondition, 'Y', false));
-    }
-
-    /**
      * Stores an sql statement that checks if a record in a table does exists or not exists.
      * This must bei a full subselect that starts with SELECT. The statement is used if
      * a condition with EMPTY or NOT EMPTY is used.
      * @param string $sqlStatement String with the full subselect
-     * **Code example:**
-     * ```$parser->setNotExistsStatement('SELECT 1 FROM adm_user_data WHERE usd_usr_id = 1 AND usd_usf_id = 9');```
+     * @par Examples
+     * @code $parser->setNotExistsStatement('SELECT 1 FROM adm_user_data WHERE usd_usr_id = 1 AND usd_usf_id = 9'); @endcode
      */
     public function setNotExistsStatement($sqlStatement)
     {
@@ -174,7 +202,7 @@ class ConditionParser
      * Creates from a user defined condition a valid SQL condition
      * @param string $sourceCondition The user condition string
      * @param string $columnName      The name of the database column for which the condition should be created
-     * @param string $columnType      The type of the column. Valid types are **string**, **int**, **date** and **checkbox**
+     * @param string $columnType      The type of the column. Valid types are @b string, @b int, @b date and @b checkbox
      * @param string $fieldName       The name of the profile field. This is used for error output to the end user
      * @throws AdmException LST_NOT_VALID_DATE_FORMAT
      *                      LST_NOT_NUMERIC
@@ -437,7 +465,7 @@ class ConditionParser
 
     /**
      * Replace different user conditions with predefined chars that
-     * represents a special condition e.g. **!** represents **!=** and **<>**
+     * represents a special condition e.g. @b ! represents @b != and @b <>
      * @param string $sourceCondition The user condition string
      * @return string String with the predefined chars for conditions
      */
@@ -445,16 +473,16 @@ class ConditionParser
     {
         global $gL10n;
 
-        $this->srcCond = StringUtils::strToUpper(trim($sourceCondition));
+        $this->srcCond = admStrToUpper(trim($sourceCondition));
 
-        $replaces = array(
+        $replaceArray = array(
             '*' => '%',
             // valid 'not null' is '#'
-            StringUtils::strToUpper($gL10n->get('SYS_NOT_EMPTY')) => ' # ',
-            ' NOT NULL '                                          => ' # ',
+            admStrToUpper($gL10n->get('SYS_NOT_EMPTY')) => ' # ',
+            ' NOT NULL '                                => ' # ',
             // valid 'null' is '_'
-            StringUtils::strToUpper($gL10n->get('SYS_EMPTY')) => ' _ ',
-            ' NULL '                                          => ' _ ',
+            admStrToUpper($gL10n->get('SYS_EMPTY')) => ' _ ',
+            ' NULL '                                => ' _ ',
             // valid 'is not' is '!'
             '{}'     => ' ! ',
             '!='     => ' ! ',
@@ -479,47 +507,8 @@ class ConditionParser
             ' ODER ' => ' | ',
             '||'     => ' | '
         );
-        $this->srcCond = StringUtils::strMultiReplace($this->srcCond, $replaces);
+        $this->srcCond = str_replace(array_keys($replaceArray), array_values($replaceArray), $this->srcCond);
 
         return $this->srcCond;
-    }
-
-    /**
-     * Starts the "DestCondition"
-     * @param string $columnType      The type of the column. Valid types are **string**, **int**, **date** and **checkbox**
-     * @param string $columnName      The name of the database column for which the condition should be created
-     * @param string $sourceCondition The user condition string
-     * @return bool Returns true if "mDestCondition" is complete
-     */
-    private function startDestCond($columnType, $columnName, $sourceCondition)
-    {
-        $this->destCond = ' AND ';  // Bedingungen fuer das Feld immer mit UND starten
-
-        if ($columnType === 'string')
-        {
-            $this->destCond .= '( UPPER(' . $columnName . ') ';
-        }
-        elseif ($columnType === 'checkbox')
-        {
-            // Sonderfall !!!
-            // bei einer Checkbox kann es nur 1 oder 0 geben und keine komplizierten Verknuepfungen
-            if ($sourceCondition === '1')
-            {
-                $this->destCond .= $columnName . ' = 1 ';
-            }
-            else
-            {
-                $this->destCond .= '(' . $columnName . ' IS NULL OR ' . $columnName . ' = 0) ';
-            }
-
-            return true;
-        }
-        // $columnType = "int" or "date"
-        else
-        {
-            $this->destCond .= '( ' . $columnName . ' ';
-        }
-
-        return false;
     }
 }

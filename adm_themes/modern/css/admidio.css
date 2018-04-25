@@ -1,7 +1,7 @@
 /******************************************************************************
  * Cascading-Style-Sheets file for Admidio
  *
- * Copyright    : (c) 2004 - 2018 The Admidio Team
+ * Copyright    : (c) 2004 - 2017 The Admidio Team
  * Homepage     : https://www.admidio.org/
  * License      : GNU Public License 2 https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -12,10 +12,6 @@
 /**************************************************/
 /* Basic Admidio layout classes */
 /**************************************************/
-html {
-    min-height: 100%;
-}
-
 body {
     color: #474b4c;
     margin: auto;
@@ -752,10 +748,6 @@ input[type="time"] {
 
 #profile_photo {
     display: inline;
-}
-
-#profile_authorizations_box_body div {
-    margin-bottom: 5px;
 }
 
 .admidio-list-roles-assign li,

@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Show a list of all announcements
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -20,7 +20,7 @@
  *             if no date information is delivered
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 unset($_SESSION['announcements_request']);
 
@@ -33,16 +33,16 @@ $getDateFrom = admFuncVariableIsValid($_GET, 'date_from', 'date');
 $getDateTo   = admFuncVariableIsValid($_GET, 'date_to',   'date');
 
 // check if module is enabled
-if ((int) $gSettingsManager->get('enable_announcements_module') === 0)
+if ($gPreferences['enable_announcements_module'] == 0)
 {
     // module is disabled
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
-elseif((int) $gSettingsManager->get('enable_announcements_module') === 2)
+elseif($gPreferences['enable_announcements_module'] == 2)
 {
     // Access only with valid login
-    require(__DIR__ . '/../../system/login_valid.php');
+    require('../../system/login_valid.php');
 }
 
 // create object for announcements
@@ -62,18 +62,15 @@ $page = new HtmlPage($getHeadline);
 $page->enableModal();
 
 // add rss feed to announcements
-if($gSettingsManager->getBool('enable_rss'))
+if($gPreferences['enable_rss'] == 1)
 {
-    $page->addRssFile(
-        safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/rss_announcements.php', array('headline' => $getHeadline)),
-        $gL10n->get('SYS_RSS_FEED_FOR_VAR', array($gCurrentOrganization->getValue('org_longname').' - '.$getHeadline))
-    );
+    $page->addRssFile(ADMIDIO_URL.FOLDER_MODULES.'/announcements/rss_announcements.php?headline='.$getHeadline, $gL10n->get('SYS_RSS_FEED_FOR_VAR', $gCurrentOrganization->getValue('org_longname').' - '.$getHeadline));
 }
 
 // number of announcements per page
-if($gSettingsManager->getInt('announcements_per_page') > 0)
+if($gPreferences['announcements_per_page'] > 0)
 {
-    $announcementsPerPage = $gSettingsManager->getInt('announcements_per_page');
+    $announcementsPerPage = (int) $gPreferences['announcements_per_page'];
 }
 else
 {
@@ -83,45 +80,24 @@ else
 // get module menu
 $announcementsMenu = $page->getMenu();
 
-if(count($gCurrentUser->getAllEditableCategories('ANN')) > 0)
-{
-    // show link to create new announcement
-    $announcementsMenu->addItem(
-        'menu_item_new_announcement', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php', array('headline' => $getHeadline)),
-        $gL10n->get('SYS_CREATE_ENTRY'), 'add.png'
-    );
-}
-
-$page->addJavascript('
-    $("#cat_id").change(function() {
-        $("#navbar_cat_id_form").submit();
-    });',
-    true
-);
-
-$navbarForm = new HtmlForm('navbar_cat_id_form', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php', array('headline' => $getHeadline)), $page, array('type' => 'navbar', 'setFocus' => false));
-$navbarForm->addSelectBoxForCategories(
-    'cat_id', $gL10n->get('SYS_CATEGORY'), $gDb, 'ANN', HtmlForm::SELECT_BOX_MODUS_FILTER,
-    array('defaultValue' => $getCatId)
-);
-$announcementsMenu->addForm($navbarForm->show());
-
 if($gCurrentUser->editAnnouncements())
 {
-    // if no calendar selectbox is shown, then show link to edit calendars
-    $announcementsMenu->addItem(
-        'admMenuItemCategories', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/categories/categories.php', array('type' => 'ANN')),
-        $gL10n->get('SYS_MAINTAIN_CATEGORIES'), 'application_view_tile.png'
-    );
+    // show link to create new announcement
+    $announcementsMenu->addItem('menu_item_new_announcement', ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php?headline='.$getHeadline,
+                                $gL10n->get('SYS_CREATE_ENTRY'), 'add.png');
 }
+
+$page->addJavascript('$("#cat_id").change(function () { $("#navbar_cat_id_form").submit(); });', true);
+
+$navbarForm = new HtmlForm('navbar_cat_id_form', ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php?headline='. $getHeadline, $page, array('type' => 'navbar', 'setFocus' => false));
+$navbarForm->addSelectBoxForCategories('cat_id', $gL10n->get('SYS_CATEGORY'), $gDb, 'ANN', 'FILTER_CATEGORIES', array('defaultValue' => $getCatId));
+$announcementsMenu->addForm($navbarForm->show(false));
 
 if($gCurrentUser->isAdministrator())
 {
     // show link to system preferences of announcements
-    $announcementsMenu->addItem(
-        'menu_item_preferences', safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/preferences/preferences.php', array('show_option' => 'announcements')),
-        $gL10n->get('SYS_MODULE_PREFERENCES'), 'options.png', 'right'
-    );
+    $announcementsMenu->addItem('menu_item_preferences', ADMIDIO_URL.FOLDER_MODULES.'/preferences/preferences.php?show_option=announcements',
+                                $gL10n->get('SYS_MODULE_PREFERENCES'), 'options.png', 'right');
 }
 
 if($announcementsCount === 0)
@@ -147,30 +123,36 @@ else
     {
         $announcement->clear();
         $announcement->setArray($row);
-
-        $annId = (int) $announcement->getValue('ann_id');
-        $annHeadline = noHTML($announcement->getValue('ann_headline'));
-
         $page->addHtml('
-        <div class="panel panel-primary" id="ann_'.$annId.'">
+        <div class="panel panel-primary" id="ann_'.$announcement->getValue('ann_id').'">
             <div class="panel-heading">
                 <div class="pull-left">
-                    <img class="admidio-panel-heading-icon" src="'. THEME_URL. '/icons/announcements.png" alt="'. $annHeadline. '" />'.
-                    $annHeadline. '
+                    <img class="admidio-panel-heading-icon" src="'. THEME_URL. '/icons/announcements.png" alt="'. $announcement->getValue('ann_headline'). '" />'.
+                    $announcement->getValue('ann_headline'). '
                 </div>
-                <div class="pull-right text-right">'.$announcement->getValue('ann_timestamp_create', $gSettingsManager->getString('system_date')));
+                <div class="pull-right text-right">'.$announcement->getValue('ann_timestamp_create', $gPreferences['system_date']));
 
-                    // check if the user could edit this announcement
-                    if($announcement->isEditable())
+                    // aendern & loeschen duerfen nur User mit den gesetzten Rechten
+                    if($gCurrentUser->editAnnouncements())
                     {
-                        $page->addHtml('
-                        <a class="admidio-icon-link" href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php', array('ann_id' => $annId, 'copy' => '1', 'headline' => $getHeadline)).'"><img
-                            src="'.THEME_URL.'/icons/application_double.png" alt="'.$gL10n->get('SYS_COPY').'" title="'.$gL10n->get('SYS_COPY').'" /></a>
-                        <a class="admidio-icon-link" href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php', array('ann_id' => $annId, 'headline' => $getHeadline)).'"><img
-                            src="'. THEME_URL. '/icons/edit.png" alt="'.$gL10n->get('SYS_EDIT').'" title="'.$gL10n->get('SYS_EDIT').'" /></a>
-                        <a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
-                            href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'ann', 'element_id' => 'ann_'.$annId, 'name' => $announcement->getValue('ann_headline'), 'database_id' => $annId)).'"><img
-                            src="'. THEME_URL. '/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>');
+                        if($announcement->editRight())
+                        {
+                            $page->addHtml('
+                            <a class="admidio-icon-link" href="'.ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php?ann_id='. $announcement->getValue('ann_id'). '&amp;copy=1&amp;headline='.$getHeadline.'"><img
+                                src="'.THEME_URL.'/icons/application_double.png" alt="'.$gL10n->get('SYS_COPY').'" title="'.$gL10n->get('SYS_COPY').'" /></a>
+                            <a class="admidio-icon-link" href="'.ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements_new.php?ann_id='. $announcement->getValue('ann_id'). '&amp;headline='.$getHeadline.'"><img
+                                src="'. THEME_URL. '/icons/edit.png" alt="'.$gL10n->get('SYS_EDIT').'" title="'.$gL10n->get('SYS_EDIT').'" /></a>');
+                        }
+
+                        // Loeschen darf man nur Ankuendigungen der eigenen Gliedgemeinschaft
+                        if((int) $announcement->getValue('cat_org_id') === (int) $gCurrentOrganization->getValue('org_id'))
+                        {
+                            $page->addHtml('
+                            <a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
+                                href="'.ADMIDIO_URL.'/adm_program/system/popup_message.php?type=ann&amp;element_id=ann_'.
+                                $announcement->getValue('ann_id').'&amp;name='.urlencode($announcement->getValue('ann_headline')).'&amp;database_id='.$announcement->getValue('ann_id').'"><img
+                                src="'. THEME_URL. '/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>');
+                        }
                     }
                 $page->addHtml('</div>
             </div>
@@ -183,19 +165,19 @@ else
                 admFuncShowCreateChangeInfoByName(
                     $row['create_name'], $announcement->getValue('ann_timestamp_create'),
                     $row['change_name'], $announcement->getValue('ann_timestamp_change'),
-                    (int) $announcement->getValue('ann_usr_id_create'), (int) $announcement->getValue('ann_usr_id_change')
+                    $announcement->getValue('ann_usr_id_create'), $announcement->getValue('ann_usr_id_change')
                 ) .
                 '<div class="admidio-info-category">' .
                     $gL10n->get('SYS_CATEGORY') .
-                    '&nbsp;<a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php', array('headline' => $getHeadline, 'cat_id' => $announcement->getValue('ann_cat_id'))).'">' . noHTML($announcement->getValue('cat_name')).'</a>
+                    ' <a href="'.ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php?headline='. $getHeadline.'&amp;cat_id'.$announcement->getValue('ann_cat_id').'">' . $announcement->getValue('cat_name').'</a>
                 </div>
             </div>
         </div>');
     }  // Ende foreach
 
     // If necessary show links to navigate to next and previous recordsets of the query
-    $baseUrl = safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php', array('headline' => $getHeadline, 'cat_id' => $getCatId));
-    $page->addHtml(admFuncGeneratePagination($baseUrl, $announcementsCount, $announcementsPerPage, $getStart));
+    $baseUrl = ADMIDIO_URL.FOLDER_MODULES.'/announcements/announcements.php?headline='.$getHeadline.'&cat_id='.$getCatId;
+    $page->addHtml(admFuncGeneratePagination($baseUrl, $announcementsCount, $announcementsPerPage, $getStart, true));
 }
 
 // show html of complete page

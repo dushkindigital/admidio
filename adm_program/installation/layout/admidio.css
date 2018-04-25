@@ -2,7 +2,7 @@
  ***********************************************************************************************
  * Cascading-Style-Sheets file for Admidio
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -116,8 +116,12 @@ h3 {
     text-align: left;
 }
 
+.alert {
+    margin-top: 15px;
+}
+
 .alert-small {
-    margin-top: 25px;
+    margin-top: 5px;
     padding: 5px;
 }
 
@@ -550,9 +554,5 @@ input[data-provide="datepicker"], input[type="number"], input[type="time"] {
     border-left-color: #555555;
     border-right-width: 0;
     margin-top: 1px;
-}
-
-#system_language {
-    margin-top: 7px;
 }
 

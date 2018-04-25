@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * verschiedene Funktionen fuer das Profil
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  *
@@ -21,9 +21,9 @@
  * mem_id  : Id of role membership to should be edited
  ***********************************************************************************************
  */
-require_once(__DIR__ . '/../../system/common.php');
-require_once(__DIR__ . '/roles_functions.php');
-require(__DIR__ . '/../../system/login_valid.php');
+require_once('../../system/common.php');
+require_once('../../system/login_valid.php');
+require_once('roles_functions.php');
 
 // Initialize and check the parameters
 $getUserId   = admFuncVariableIsValid($_GET, 'user_id', 'int');
@@ -46,17 +46,21 @@ if($getMode === 1)
 
     $filename = $user->getValue('FIRST_NAME'). ' '. $user->getValue('LAST_NAME');
 
-    $filename = FileSystemUtils::getSanitizedPathEntry($filename) . '.vcf';
+    // for IE the filename must have special chars in hexadecimal
+    if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false)
+    {
+        $filename = urlencode($filename);
+    }
 
     header('Content-Type: text/x-vcard; charset=iso-8859-1');
-    header('Content-Disposition: attachment; filename="'.$filename.'"');
+    header('Content-Disposition: attachment; filename="'.$filename.'.vcf"');
 
     // necessary for IE, because without it the download with SSL has problems
     header('Cache-Control: private');
     header('Pragma: public');
 
     // create vcard and check if user is allowed to edit profile, so he can see more data
-    echo $user->getVCard();
+    echo $user->getVCard($gCurrentUser->hasRightEditProfile($user));
 }
 elseif($getMode === 2)
 {
@@ -100,18 +104,20 @@ elseif($getMode === 3)
 elseif($getMode === 4)
 {
     // reload role memberships
-    $roleStatement  = getRolesFromDatabase($getUserId);
-    $countRole      = $roleStatement->rowCount();
-    echo getRoleMemberships('role_list', $user, $roleStatement);
+    $count_show_roles = 0;
+    $roleStatement    = getRolesFromDatabase($getUserId);
+    $count_role       = $roleStatement->rowCount();
+    getRoleMemberships('role_list', $user, $roleStatement, $count_role, true);
 }
 elseif($getMode === 5)
 {
     // reload former role memberships
-    $roleStatement  = getFormerRolesFromDatabase($getUserId);
-    $countRole      = $roleStatement->rowCount();
-    echo getRoleMemberships('former_role_list', $user, $roleStatement);
+    $count_show_roles = 0;
+    $roleStatement    = getFormerRolesFromDatabase($getUserId);
+    $count_role       = $roleStatement->rowCount();
+    getRoleMemberships('former_role_list', $user, $roleStatement, $count_role, true);
 
-    if($countRole === 0)
+    if($count_role === 0)
     {
         echo '<script type="text/javascript">$("#profile_former_roles_box").css({ \'display\':\'none\' })</script>';
     }
@@ -123,11 +129,12 @@ elseif($getMode === 5)
 elseif($getMode === 6)
 {
     // reload future role memberships
-    $roleStatement  = getFutureRolesFromDatabase($getUserId);
-    $countRole      = $roleStatement->rowCount();
-    echo getRoleMemberships('future_role_list', $user, $roleStatement);
+    $count_show_roles = 0;
+    $roleStatement    = getFutureRolesFromDatabase($getUserId);
+    $count_role       = $roleStatement->rowCount();
+    getRoleMemberships('future_role_list', $user, $roleStatement, $count_role, true);
 
-    if($countRole === 0)
+    if($count_role === 0)
     {
         echo '<script type="text/javascript">$("#profile_future_roles_box").css({ \'display\':\'none\' })</script>';
     }
@@ -155,10 +162,10 @@ elseif($getMode === 7)
     $formatedEndDate   = '';
 
     // Check das Beginn Datum
-    $startDate = \DateTime::createFromFormat($gSettingsManager->getString('system_date'), $getMembershipStart);
+    $startDate = DateTime::createFromFormat($gPreferences['system_date'], $getMembershipStart);
     if($startDate === false)
     {
-        exit($gL10n->get('SYS_DATE_INVALID', array($gL10n->get('SYS_START'), $gSettingsManager->getString('system_date'))));
+        exit($gL10n->get('SYS_DATE_INVALID', $gL10n->get('SYS_START'), $gPreferences['system_date']));
     }
     else
     {
@@ -169,10 +176,10 @@ elseif($getMode === 7)
     // Falls gesetzt wird das Enddatum gecheckt
     if($getMembershipEnd !== '')
     {
-        $endDate = \DateTime::createFromFormat($gSettingsManager->getString('system_date'), $getMembershipEnd);
+        $endDate = DateTime::createFromFormat($gPreferences['system_date'], $getMembershipEnd);
         if($endDate === false)
         {
-            exit($gL10n->get('SYS_DATE_INVALID', array($gL10n->get('SYS_END'), $gSettingsManager->getString('system_date'))));
+            exit($gL10n->get('SYS_DATE_INVALID', $gL10n->get('SYS_END'), $gPreferences['system_date']));
         }
         else
         {
@@ -205,7 +212,11 @@ elseif ($getMode === 8)
         $role     = new TableRoles($gDb, $getRoleId);
         $filename = $gCurrentOrganization->getValue('org_shortname'). '-'. str_replace('.', '', $role->getValue('rol_name')). '.vcf';
 
-        $filename = FileSystemUtils::getSanitizedPathEntry($filename);
+        // for IE the filename must have special chars in hexadecimal
+        if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false)
+        {
+            $filename = urlencode($filename);
+        }
 
         header('Content-Type: text/x-vcard; charset=iso-8859-1');
         header('Content-Disposition: attachment; filename="'.$filename.'"');
@@ -217,17 +228,17 @@ elseif ($getMode === 8)
         // Ein Leiter darf nur Rollen zuordnen, bei denen er auch Leiter ist
         $sql = 'SELECT mem_usr_id
                   FROM '.TBL_MEMBERS.'
-                 WHERE mem_rol_id = ? -- $getRoleId
-                   AND mem_begin <= ? -- DATE_NOW
-                   AND mem_end    > ? -- DATE_NOW';
-        $pdoStatement = $gDb->queryPrepared($sql, array($getRoleId, DATE_NOW, DATE_NOW));
+                 WHERE mem_rol_id = '.$getRoleId.'
+                   AND mem_begin <= \''.DATE_NOW.'\'
+                   AND mem_end > \''.DATE_NOW.'\'';
+        $pdoStatement = $gDb->query($sql);
 
         while($memberUserId = $pdoStatement->fetchColumn())
         {
             // create user object
             $user = new User($gDb, $gProfileFields, (int) $memberUserId);
             // create vcard and check if user is allowed to edit profile, so he can see more data
-            echo $user->getVCard();
+            echo $user->getVCard($gCurrentUser->hasRightEditProfile($user));
         }
     }
 }

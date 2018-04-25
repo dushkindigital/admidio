@@ -3,58 +3,38 @@
  ***********************************************************************************************
  * Class to manage dependencies between different roles.
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
+/**
+ * @class RoleDependency
+ */
 class RoleDependency
 {
-    /**
-     * @var Database An object of the class Database for communication with the database
-     */
-    protected $db;
-    /**
-     * @var int
-     */
-    protected $roleIdParent = 0;
-    /**
-     * @var int
-     */
-    protected $roleIdChild  = 0;
-    /**
-     * @var string
-     */
-    protected $comment = '';
-    /**
-     * @var int
-     */
-    protected $usrId = 0;
-    /**
-     * @var string
-     */
-    protected $timestamp = '';
-    /**
-     * @var int
-     */
-    protected $roleIdParentOrig = 0;
-    /**
-     * @var int
-     */
-    protected $roleIdChildOrig = 0;
-    /**
-     * @var bool
-     */
-    protected $persisted = false;
+    protected $db;          ///< An object of the class Database for communication with the database
+
+    public $roleIdParent;
+    public $roleIdChild;
+    public $comment;
+    public $usr_id;
+    public $timestamp;
+
+    public $roleIdParentOrig;
+    public $roleIdChildOrig;
+
+    public $persisted;
 
     /**
      * Constructor that will create an object of a recordset of the specified table.
-     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
+     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
      */
-    public function __construct(Database $database)
+    public function __construct(&$database)
     {
         $this->db =& $database;
+        $this->clear();
     }
 
     /**
@@ -65,10 +45,12 @@ class RoleDependency
         $this->roleIdParent     = 0;
         $this->roleIdChild      = 0;
         $this->comment          = '';
-        $this->usrId            = 0;
+        $this->usr_id           = 0;
         $this->timestamp        = '';
+
         $this->roleIdParentOrig = 0;
         $this->roleIdChildOrig  = 0;
+
         $this->persisted        = false;
     }
 
@@ -77,10 +59,10 @@ class RoleDependency
      */
     public function delete()
     {
-        $sql = 'DELETE FROM '.TBL_ROLE_DEPENDENCIES.'
-                 WHERE rld_rol_id_child  = ? -- $this->roleIdChildOrig
-                   AND rld_rol_id_parent = ? -- $this->roleIdParentOrig';
-        $this->db->queryPrepared($sql, array($this->roleIdChildOrig, $this->roleIdParentOrig));
+        $sql = 'DELETE FROM '. TBL_ROLE_DEPENDENCIES.
+               ' WHERE rld_rol_id_child  = '.$this->roleIdChildOrig.
+                 ' AND rld_rol_id_parent = '.$this->roleIdParentOrig;
+        $this->db->query($sql);
 
         $this->clear();
     }
@@ -101,21 +83,21 @@ class RoleDependency
         }
 
         $sql = 'SELECT *
-                  FROM '. TBL_ROLE_DEPENDENCIES.'
-                 WHERE rld_rol_id_child  = ? -- $childRoleId
-                   AND rld_rol_id_parent = ? -- $parentRoleId';
-        $roleDependenciesStatement = $this->db->queryPrepared($sql, array($childRoleId, $parentRoleId));
+                  FROM '. TBL_ROLE_DEPENDENCIES.
+               ' WHERE rld_rol_id_child  = '.$childRoleId.'
+                   AND rld_rol_id_parent = '.$parentRoleId;
+        $roleDependenciesStatement = $this->db->query($sql);
 
-        $row = $roleDependenciesStatement->fetch();
+        $row = $roleDependenciesStatement->fetchObject();
         if ($row)
         {
-            $this->roleIdParent     = $row['rld_rol_id_parent'];
-            $this->roleIdChild      = $row['rld_rol_id_child'];
-            $this->comment          = $row['rld_comment'];
-            $this->timestamp        = $row['rld_timestamp'];
-            $this->usrId            = $row['rld_usr_id'];
-            $this->roleIdParentOrig = $row['rld_rol_id_parent'];
-            $this->roleIdChildOrig  = $row['rld_rol_id_child'];
+            $this->roleIdParent     = $row->rld_rol_id_parent;
+            $this->roleIdChild      = $row->rld_rol_id_child;
+            $this->comment          = $row->rld_comment;
+            $this->timestamp        = $row->rld_timestamp;
+            $this->usr_id           = $row->rld_usr_id;
+            $this->roleIdParentOrig = $row->rld_rol_id_parent;
+            $this->roleIdChildOrig  = $row->rld_rol_id_child;
 
             return true;
         }
@@ -124,20 +106,20 @@ class RoleDependency
     }
 
     /**
-     * @param Database $database
-     * @param int      $childId
-     * @return array<int,int>
+     * @param \Database $database
+     * @param int       $childId
+     * @return int[]
      */
-    public static function getParentRoles(Database $database, $childId)
+    public static function getParentRoles(&$database, $childId)
     {
         $allParentIds = array();
 
         if ($childId > 0)
         {
             $sql = 'SELECT rld_rol_id_parent
-                      FROM '.TBL_ROLE_DEPENDENCIES.'
-                     WHERE rld_rol_id_child = ? -- $childId';
-            $pdoStatement = $database->queryPrepared($sql, array($childId));
+                      FROM '.TBL_ROLE_DEPENDENCIES.
+                ' WHERE rld_rol_id_child = '.$childId;
+            $pdoStatement = $database->query($sql);
 
             if ($pdoStatement->rowCount() > 0)
             {
@@ -152,20 +134,20 @@ class RoleDependency
     }
 
     /**
-     * @param Database $database
-     * @param int      $parentId
-     * @return array<int,int>
+     * @param \Database $database
+     * @param int       $parentId
+     * @return int[]
      */
-    public static function getChildRoles(Database $database, $parentId)
+    public static function getChildRoles(&$database, $parentId)
     {
         $allChildIds = array();
 
         if ($parentId > 0)
         {
             $sql = 'SELECT rld_rol_id_child
-                      FROM '.TBL_ROLE_DEPENDENCIES.'
-                     WHERE rld_rol_id_parent = ? -- $parentId';
-            $pdoStatement = $database->queryPrepared($sql, array($parentId));
+                      FROM '. TBL_ROLE_DEPENDENCIES.
+                   ' WHERE rld_rol_id_parent = '.$parentId;
+            $pdoStatement = $database->query($sql);
 
             if ($pdoStatement->rowCount() > 0)
             {
@@ -197,10 +179,9 @@ class RoleDependency
         if ($loginUserId > 0 && !$this->isEmpty())
         {
             $sql = 'INSERT INTO '.TBL_ROLE_DEPENDENCIES.'
-                           (rld_rol_id_parent, rld_rol_id_child, rld_comment, rld_usr_id, rld_timestamp)
-                    VALUES (?, ?, ?, ?, ?) -- $this->roleIdParent, $this->roleIdChild, $this->comment, $loginUserId, DATETIME_NOW';
-            $queryParams = array($this->roleIdParent, $this->roleIdChild, $this->comment, $loginUserId, DATETIME_NOW);
-            $this->db->queryPrepared($sql, $queryParams);
+                                (rld_rol_id_parent,rld_rol_id_child,rld_comment,rld_usr_id,rld_timestamp)
+                         VALUES ('.$this->roleIdParent.', '.$this->roleIdChild.', \''.$this->comment.'\', '.$loginUserId.', \''.DATETIME_NOW.'\') ';
+            $this->db->query($sql);
             $this->persisted = true;
 
             return true;
@@ -210,17 +191,17 @@ class RoleDependency
     }
 
     /**
-     * @param Database $database
-     * @param int      $parentId
+     * @param \Database $database
+     * @param int       $parentId
      * @return bool
      */
-    public static function removeChildRoles(Database $database, $parentId)
+    public static function removeChildRoles(&$database, $parentId)
     {
         if ($parentId > 0)
         {
-            $sql = 'DELETE FROM '.TBL_ROLE_DEPENDENCIES.'
-                     WHERE rld_rol_id_parent = ? -- $parentId';
-            $database->queryPrepared($sql, array($parentId));
+            $sql = 'DELETE FROM '.TBL_ROLE_DEPENDENCIES.
+                   ' WHERE rld_rol_id_parent = '.$parentId;
+            $database->query($sql);
 
             return true;
         }
@@ -271,24 +252,14 @@ class RoleDependency
     {
         if ($loginUserId > 0 && !$this->isEmpty())
         {
-            $sql = 'UPDATE '.TBL_ROLE_DEPENDENCIES.'
-                       SET rld_rol_id_parent = ? -- $this->roleIdParent
-                         , rld_rol_id_child  = ? -- $this->roleIdChild
-                         , rld_comment       = ? -- $this->comment
-                         , rld_timestamp     = ? -- DATETIME_NOW
-                         , rld_usr_id        = ? -- $loginUserId
-                     WHERE rld_rol_id_parent = ? -- $this->roleIdParentOrig
-                       AND rld_rol_id_child  = ? -- $this->roleIdChildOrig';
-            $queryParams = array(
-                $this->roleIdParent,
-                $this->roleIdChild,
-                $this->comment,
-                DATETIME_NOW,
-                $loginUserId,
-                $this->roleIdParentOrig,
-                $this->roleIdChildOrig
-            );
-            $this->db->queryPrepared($sql, $queryParams);
+            $sql = 'UPDATE '.TBL_ROLE_DEPENDENCIES.' SET rld_rol_id_parent = \''.$this->roleIdParent.'\'
+                                                       , rld_rol_id_child  = \''.$this->roleIdChild.'\'
+                                                       , rld_comment       = \''.$this->comment.'\'
+                                                       , rld_timestamp     = \''.DATETIME_NOW.'\'
+                                                       , rld_usr_id        = '.$loginUserId.'
+                     WHERE rld_rol_id_parent = '.$this->roleIdParentOrig.'
+                       AND rld_rol_id_child  = '.$this->roleIdChildOrig;
+            $this->db->query($sql);
             $this->persisted = true;
 
             return true;
@@ -311,11 +282,11 @@ class RoleDependency
         }
 
         $sql = 'SELECT mem_usr_id
-                  FROM '.TBL_MEMBERS.'
-                 WHERE mem_rol_id = ? -- $this->roleIdChild
-                   AND mem_begin <= ? -- DATE_NOW
-                   AND mem_end    > ? -- DATE_NOW';
-        $membershipStatement = $this->db->queryPrepared($sql, array($this->roleIdChild, DATE_NOW, DATE_NOW));
+                  FROM '.TBL_MEMBERS.
+               ' WHERE mem_rol_id = '.$this->roleIdChild.'
+                   AND mem_begin <= \''.DATE_NOW.'\'
+                   AND mem_end    > \''.DATE_NOW.'\'';
+        $membershipStatement = $this->db->query($sql);
 
         if ($membershipStatement->rowCount() > 0)
         {

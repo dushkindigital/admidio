@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * ical - Feed for events
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -26,7 +26,7 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/../../system/common.php');
+require_once('../../system/common.php');
 
 unset($_SESSION['dates_request']);
 
@@ -39,28 +39,28 @@ $getDateTo   = admFuncVariableIsValid($_GET, 'date_to',   'date');
 // Daterange defined in preferences
 if($getDateFrom == '')
 {
-    $now = new \DateTime();
-    $dayOffsetPast   = new \DateInterval('P'.$gSettingsManager->getInt('dates_ical_days_past').'D');
-    $dayOffsetFuture = new \DateInterval('P'.$gSettingsManager->getInt('dates_ical_days_future').'D');
+    $now = new DateTime();
+    $dayOffsetPast   = new DateInterval('P'.$gPreferences['dates_ical_days_past'].'D');
+    $dayOffsetFuture = new DateInterval('P'.$gPreferences['dates_ical_days_future'].'D');
     $getDateFrom = $now->sub($dayOffsetPast)->format('Y-m-d');
     $getDateTo   = $now->add($dayOffsetFuture)->format('Y-m-d');
 }
 
 // Message if module is disabled
-if((int) $gSettingsManager->get('enable_dates_module') === 0)
+if($gPreferences['enable_dates_module'] == 0)
 {
     // Module disabled
     $gMessage->show($gL10n->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
-elseif((int) $gSettingsManager->get('enable_dates_module') === 2)
+elseif($gPreferences['enable_dates_module'] == 2)
 {
     // only with valid login
-    require(__DIR__ . '/../../system/login_valid.php');
+    require_once('../../system/login_valid.php');
 }
 
 // If Ical enabled and module is public
-if (!$gSettingsManager->getBool('enable_dates_ical'))
+if ($gPreferences['enable_dates_ical'] != 1)
 {
     $gMessage->setForwardUrl($gHomepage);
     $gMessage->show($gL10n->get('SYS_ICAL_DISABLED'));
@@ -95,16 +95,20 @@ if($datesResult['numResults'] > 0)
     {
         $date->clear();
         $date->setArray($row);
-        $iCal .= $date->getIcalVEvent(DOMAIN);
+        $iCal .= $date->getIcalVEvent($_SERVER['HTTP_HOST']);
     }
 }
 
 $iCal .= $date->getIcalFooter();
 
-$filename = FileSystemUtils::getSanitizedPathEntry($getHeadline) . '.ics';
+// for IE the filename must have special chars in hexadecimal
+if (isset($_SERVER['HTTP_USER_AGENT']) && strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false)
+{
+    $getHeadline = urlencode($getHeadline);
+}
 
 header('Content-Type: text/calendar; charset=utf-8');
-header('Content-Disposition: attachment; filename="'. $filename. '"');
+header('Content-Disposition: attachment; filename="'. $getHeadline. '.ics"');
 
 // necessary for IE, because without it the download with SSL has problems
 header('Cache-Control: private');

@@ -1,58 +1,44 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Handle organization data of Admidio and is connected to database table adm_organizations
+ * @class Organization
+ * @brief Handle organization data of Admidio and is connected to database table adm_organizations
  *
  * This class creates the organization object and manages the access to the
  * organization specific preferences of the table adm_preferences. There
  * are also some method to read the relationship of organizations if the
  * database contains more then one organization.
- *
- * **Code example:**
- * ```
- * // create object and read the value of the language preference
- * $organization    = new Organization($gDb, $organizationId);
- * $settingsManager =& $organization->getSettingsManager();
- * $language        = $settingsManager->get('system_language');
- * // language = 'de'
- * ```
+ * @par Examples
+ * @code // create object and read the value of the language preference
+ * $organization = new Organization($gDb, $organizationId);
+ * $preferences  = $organization->getPreferences();
+ * $language     = $gPreferences['system_language'];
+ * // language = 'de' @endcode
  ***********************************************************************************************
  */
 class Organization extends TableAccess
 {
-    /**
-     * @var bool Flag will be set if the class had already search for child organizations
-     */
-    protected $bCheckChildOrganizations = false;
-    /**
-     * @var array<int,string> Array with all child organizations of this organization
-     */
-    protected $childOrganizations = array();
-    /**
-     * @var SettingsManager Manager for organization preferences
-     */
-    protected $settingsManager;
-    /**
-     * @var int Number of all organizations in database
-     */
-    protected $countOrganizations = 0;
+    protected $bCheckChildOrganizations = false;   ///< Flag will be set if the class had already search for child organizations
+    protected $childOrganizations       = array(); ///< Array with all child organizations of this organization
+    protected $preferences              = array(); ///< Array with all preferences of this organization. Array key is the column @b prf_name and array value is the column @b prf_value.
+    protected $countOrganizations       = 0;       ///< Number of all organizations in database
 
     /**
      * Constructor that will create an object of a recordset of the table adm_organizations.
      * If the id is set than the specific organization will be loaded.
-     * @param Database   $database     Object of the class Database. This should be the default global object **$gDb**.
+     * @param \Database  $database     Object of the class Database. This should be the default global object @b $gDb.
      * @param int|string $organization The recordset of the organization with this id will be loaded.
      *                                 The organization can be the table id or the organization shortname.
      *                                 If id isn't set than an empty object of the table is created.
      */
-    public function __construct(Database $database, $organization = '')
+    public function __construct(&$database, $organization = '')
     {
         parent::__construct($database, TBL_ORGANIZATIONS, 'org');
 
@@ -64,24 +50,6 @@ class Organization extends TableAccess
         {
             $this->readDataByColumns(array('org_shortname' => $organization));
         }
-
-        if((int) $this->getValue('org_id') > 0)
-        {
-            $this->settingsManager = new SettingsManager($database, (int) $this->getValue('org_id'));
-        }
-    }
-
-    /**
-     * @return SettingsManager
-     */
-    public function &getSettingsManager()
-    {
-        if(!$this->settingsManager instanceof SettingsManager)
-        {
-            $this->settingsManager = new SettingsManager($this->db, (int) $this->getValue('org_id'));
-        }
-
-        return $this->settingsManager;
     }
 
     /**
@@ -94,10 +62,7 @@ class Organization extends TableAccess
 
         $this->bCheckChildOrganizations = false;
         $this->childOrganizations       = array();
-        if ($this->settingsManager instanceof SettingsManager)
-        {
-            $this->settingsManager->clearAll();
-        }
+        $this->preferences              = array();
     }
 
     /**
@@ -127,8 +92,8 @@ class Organization extends TableAccess
         // read id of system user from database
         $sql = 'SELECT usr_id
                   FROM '.TBL_USERS.'
-                 WHERE usr_login_name = ? -- $gL10n->get(\'SYS_SYSTEM\')';
-        $systemUserStatement = $this->db->queryPrepared($sql, array($gL10n->get('SYS_SYSTEM')));
+                 WHERE usr_login_name LIKE \''.$gL10n->get('SYS_SYSTEM').'\'';
+        $systemUserStatement = $this->db->query($sql);
         $systemUserId = (int) $systemUserStatement->fetchColumn();
 
         // create all systemmail texts and write them into table adm_texts
@@ -156,75 +121,36 @@ class Organization extends TableAccess
         }
 
         // create default category for roles, events and weblinks
-        $sql = 'INSERT INTO '.TBL_CATEGORIES.'
-                       (cat_org_id, cat_type, cat_name_intern, cat_name, cat_default, cat_sequence, cat_usr_id_create, cat_timestamp_create)
-                VALUES (?, \'ROL\', \'COMMON\', \'SYS_COMMON\', 1, 1, ?, ?)';
-        $queryParams = array($orgId, $systemUserId, DATETIME_NOW);
-        $this->db->queryPrepared($sql, $queryParams);
+        $sql = 'INSERT INTO '.TBL_CATEGORIES.' (cat_org_id, cat_type, cat_name_intern, cat_name, cat_hidden, cat_default, cat_sequence, cat_usr_id_create, cat_timestamp_create)
+                                        VALUES ('.$orgId.', \'ROL\', \'COMMON\', \'SYS_COMMON\', 0, 1, 1, '.$systemUserId.', \''.DATETIME_NOW.'\')';
+        $this->db->query($sql);
         $categoryCommon = $this->db->lastInsertId();
 
-        $sql = 'INSERT INTO '.TBL_CATEGORIES.'
-                       (cat_org_id, cat_type, cat_name_intern, cat_name, cat_default, cat_system, cat_sequence, cat_usr_id_create, cat_timestamp_create)
-                VALUES (?, \'ROL\', \'GROUPS\',    \'INS_GROUPS\',    0, 0, 2, ?, ?)
-                     , (?, \'ROL\', \'COURSES\',   \'INS_COURSES\',   0, 0, 3, ?, ?)
-                     , (?, \'ROL\', \'TEAMS\',     \'INS_TEAMS\',     0, 0, 4, ?, ?)
-                     , (?, \'ROL\', \'EVENTS\',    \'SYS_EVENTS_CONFIRMATION_OF_PARTICIPATION\', 0, 1, 5, ?, ?)
-                     , (?, \'LNK\', \'COMMON\',    \'SYS_COMMON\',    1, 0, 1, ?, ?)
-                     , (?, \'LNK\', \'INTERN\',    \'INS_INTERN\',    0, 0, 2, ?, ?)
-                     , (?, \'ANN\', \'COMMON\',    \'SYS_COMMON\',    1, 0, 1, ?, ?)
-                     , (?, \'ANN\', \'IMPORTANT\', \'SYS_IMPORTANT\', 0, 0, 2, ?, ?)
-                     , (?, \'DAT\', \'COMMON\',    \'SYS_COMMON\',    1, 0, 1, ?, ?)
-                     , (?, \'DAT\', \'TRAINING\',  \'INS_TRAINING\',  0, 0, 2, ?, ?)
-                     , (?, \'DAT\', \'COURSES\',   \'INS_COURSES\',   0, 0, 3, ?, ?)';
-        $queryParams = array(
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW,
-            $orgId, $systemUserId, DATETIME_NOW
-        );
-        $this->db->queryPrepared($sql, $queryParams);
-
-        // if the second organization is added than also create global categories
-        if($this->countAllRecords() === 2)
-        {
-            $categoryAnnouncement = new TableCategory($this->db);
-            $categoryAnnouncement->setValue('cat_type', 'ANN');
-            $categoryAnnouncement->setValue('cat_name_intern', 'ANN_ALL_ORGANIZATIONS');
-            $categoryAnnouncement->setValue('cat_name', 'SYS_ALL_ORGANIZATIONS');
-            $categoryAnnouncement->save();
-
-            $categoryEvents = new TableCategory($this->db);
-            $categoryEvents->setValue('cat_type', 'DAT');
-            $categoryEvents->setValue('cat_name_intern', 'DAT_ALL_ORGANIZATIONS');
-            $categoryEvents->setValue('cat_name', 'SYS_ALL_ORGANIZATIONS');
-            $categoryEvents->save();
-
-            $categoryWeblinks = new TableCategory($this->db);
-            $categoryWeblinks->setValue('cat_type', 'LNK');
-            $categoryWeblinks->setValue('cat_name_intern', 'LNK_ALL_ORGANIZATIONS');
-            $categoryWeblinks->setValue('cat_name', 'SYS_ALL_ORGANIZATIONS');
-            $categoryWeblinks->save();
-        }
+        $sql = 'INSERT INTO '.TBL_CATEGORIES.' (cat_org_id, cat_type, cat_name_intern, cat_name, cat_hidden, cat_default, cat_system, cat_sequence, cat_usr_id_create, cat_timestamp_create)
+                                        VALUES ('.$orgId.', \'ROL\', \'GROUPS\',    \'INS_GROUPS\',    0, 0, 0, 2, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'ROL\', \'COURSES\',   \'INS_COURSES\',   0, 0, 0, 3, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'ROL\', \'TEAMS\',     \'INS_TEAMS\',     0, 0, 0, 4, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'LNK\', \'COMMON\',    \'SYS_COMMON\',    0, 1, 0, 1, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'LNK\', \'INTERN\',    \'INS_INTERN\',    1, 0, 0, 2, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'ANN\', \'COMMON\',    \'SYS_COMMON\',    0, 1, 0, 1, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'ANN\', \'IMPORTANT\', \'SYS_IMPORTANT\', 0, 0, 0, 2, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'DAT\', \'COMMON\',    \'SYS_COMMON\',    0, 1, 0, 1, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'DAT\', \'TRAINING\',  \'INS_TRAINING\',  0, 0, 0, 2, '.$systemUserId.', \''.DATETIME_NOW.'\')
+                                             , ('.$orgId.', \'DAT\', \'COURSES\',   \'INS_COURSES\',   0, 0, 0, 3, '.$systemUserId.', \''.DATETIME_NOW.'\')';
+        $this->db->query($sql);
 
         // insert root folder name for download module
-        $sql = 'INSERT INTO '.TBL_FOLDERS.'
-                       (fol_org_id, fol_type, fol_name, fol_path, fol_locked, fol_public, fol_usr_id, fol_timestamp)
-                VALUES (?, \'DOWNLOAD\', ?, ?, 0, 1, ?, ?)';
-        $queryParams = array($orgId, TableFolder::getRootFolderName(), FOLDER_DATA, $systemUserId, DATETIME_NOW);
-        $this->db->queryPrepared($sql, $queryParams);
+        $sql = 'INSERT INTO '.TBL_FOLDERS.' (fol_org_id, fol_type, fol_name, fol_path,
+                                             fol_locked, fol_public, fol_usr_id, fol_timestamp)
+                                     VALUES ('.$orgId.', \'DOWNLOAD\', \''.TableFolder::getRootFolderName().'\', \'' . FOLDER_DATA . '\',
+                                             0, 1, '.$systemUserId.', \''.DATETIME_NOW.'\')';
+        $this->db->query($sql);
 
         // now create default roles
 
         // Create role administrator
         $roleAdministrator = new TableRoles($this->db);
-        $roleAdministrator->setValue('rol_cat_id', $categoryCommon, false);
+        $roleAdministrator->setValue('rol_cat_id', $categoryCommon);
         $roleAdministrator->setValue('rol_name', $gL10n->get('SYS_ADMINISTRATOR'));
         $roleAdministrator->setValue('rol_description', $gL10n->get('INS_DESCRIPTION_ADMINISTRATOR'));
         $roleAdministrator->setValue('rol_assign_roles', 1);
@@ -243,11 +169,12 @@ class Organization extends TableAccess
         $roleAdministrator->setValue('rol_this_list_view', 1);
         $roleAdministrator->setValue('rol_all_lists_view', 1);
         $roleAdministrator->setValue('rol_administrator', 1);
+        $roleAdministrator->setValue('rol_inventory', 1);
         $roleAdministrator->save();
 
         // Create role member
         $roleMember = new TableRoles($this->db);
-        $roleMember->setValue('rol_cat_id', $categoryCommon, false);
+        $roleMember->setValue('rol_cat_id', $categoryCommon);
         $roleMember->setValue('rol_name', $gL10n->get('SYS_MEMBER'));
         $roleMember->setValue('rol_description', $gL10n->get('INS_DESCRIPTION_MEMBER'));
         $roleMember->setValue('rol_mail_this_role', 2);
@@ -258,7 +185,7 @@ class Organization extends TableAccess
 
         // Create role board
         $roleManagement = new TableRoles($this->db);
-        $roleManagement->setValue('rol_cat_id', $categoryCommon, false);
+        $roleManagement->setValue('rol_cat_id', $categoryCommon);
         $roleManagement->setValue('rol_name', $gL10n->get('INS_BOARD'));
         $roleManagement->setValue('rol_description', $gL10n->get('INS_DESCRIPTION_BOARD'));
         $roleManagement->setValue('rol_announcements', 1);
@@ -288,17 +215,16 @@ class Organization extends TableAccess
         $addressList->addColumn(1, $gProfileFields->getProperty('LAST_NAME', 'usf_id'), 'ASC');
         $addressList->addColumn(2, $gProfileFields->getProperty('FIRST_NAME', 'usf_id'), 'ASC');
         $addressList->addColumn(3, $gProfileFields->getProperty('BIRTHDAY', 'usf_id'));
-        $addressList->addColumn(4, $gProfileFields->getProperty('STREET', 'usf_id'));
+        $addressList->addColumn(4, $gProfileFields->getProperty('ADDRESS', 'usf_id'));
         $addressList->addColumn(5, $gProfileFields->getProperty('POSTCODE', 'usf_id'));
         $addressList->addColumn(6, $gProfileFields->getProperty('CITY', 'usf_id'));
         $addressList->save();
 
         // set addresslist to default configuration
-        $sql = 'UPDATE '.TBL_PREFERENCES.'
-                   SET prf_value  = ? -- $addressList->getValue(\'lst_id\')
-                 WHERE prf_org_id = ? -- $orgId
-                   AND prf_name   = \'lists_default_configuration\'';
-        $this->db->queryPrepared($sql, array($addressList->getValue('lst_id'), $orgId));
+        $sql = 'UPDATE '.TBL_PREFERENCES.' SET prf_value = \''.$addressList->getValue('lst_id').'\'
+                 WHERE prf_org_id = '.$orgId.'
+                   AND prf_name   = \'lists_default_configuration\' ';
+        $this->db->query($sql);
 
         $phoneList = new ListConfiguration($this->db);
         $phoneList->setValue('lst_name', $gL10n->get('INS_PHONE_LIST'));
@@ -319,7 +245,7 @@ class Organization extends TableAccess
         $contactList->addColumn(1, $gProfileFields->getProperty('LAST_NAME', 'usf_id'), 'ASC');
         $contactList->addColumn(2, $gProfileFields->getProperty('FIRST_NAME', 'usf_id'), 'ASC');
         $contactList->addColumn(3, $gProfileFields->getProperty('BIRTHDAY', 'usf_id'));
-        $contactList->addColumn(4, $gProfileFields->getProperty('STREET', 'usf_id'));
+        $contactList->addColumn(4, $gProfileFields->getProperty('ADDRESS', 'usf_id'));
         $contactList->addColumn(5, $gProfileFields->getProperty('POSTCODE', 'usf_id'));
         $contactList->addColumn(6, $gProfileFields->getProperty('CITY', 'usf_id'));
         $contactList->addColumn(7, $gProfileFields->getProperty('PHONE', 'usf_id'));
@@ -337,24 +263,6 @@ class Organization extends TableAccess
         $formerList->addColumn(4, 'mem_begin');
         $formerList->addColumn(5, 'mem_end');
         $formerList->save();
-
-        $participantList = new ListConfiguration($this->db);
-        $participantList->setValue('lst_name', $gL10n->get('SYS_PARTICIPANTS'));
-        $participantList->setValue('lst_org_id', $orgId);
-        $participantList->setValue('lst_global', 1);
-        $participantList->addColumn(1, $gProfileFields->getProperty('LAST_NAME', 'usf_id'), 'ASC');
-        $participantList->addColumn(2, $gProfileFields->getProperty('FIRST_NAME', 'usf_id'), 'ASC');
-        $participantList->addColumn(3, 'mem_approved');
-        $participantList->addColumn(4, 'mem_comment');
-        $participantList->addColumn(5, 'mem_count_guests');
-        $participantList->save();
-
-        // set participant list to default configuration in date module settings
-        $sql = 'UPDATE '.TBL_PREFERENCES.'
-                   SET prf_value = ? -- $participantList->getValue(\'lst_id\')
-                 WHERE prf_name   = \'dates_default_list_configuration\'
-                   AND prf_org_id = ? -- $orgId';
-        $this->db->queryPrepared($sql, array($participantList->getValue('lst_id'), $orgId));
     }
 
     /**
@@ -366,7 +274,7 @@ class Organization extends TableAccess
      */
     public function getFamilySQL($shortname = false)
     {
-        $organizations = $this->getOrganizationsInRelationship();
+        $organizations = $this->getOrganizationsInRelationship(true, true);
 
         if($shortname)
         {
@@ -392,52 +300,76 @@ class Organization extends TableAccess
 
     /**
      * Read all child and parent organizations of this organization and returns an array with them.
-     * @param bool $child    If set to **true** (default) then all child organizations will be in the array
-     * @param bool $parent   If set to **true** (default) then the parent organization will be in the array
-     * @param bool $longname If set to **true** then the value of the array will be the **org_longname**
-     *                       otherwise it will be **org_shortname**
-     * @return array<int,string> Returns an array with all child and parent organizations e.g. array('org_id' => 'org_shortname')
+     * @param bool $child    If set to @b true (default) then all child organizations will be in the array
+     * @param bool $parent   If set to @b true (default) then the parent organization will be in the array
+     * @param bool $longname If set to @b true then the value of the array will be the @b org_longname
+     *                       otherwise it will be @b org_shortname
+     * @return string[] Returns an array with all child and parent organizations e.g. array('org_id' => 'org_shortname')
      */
     public function getOrganizationsInRelationship($child = true, $parent = true, $longname = false)
     {
-        $sqlWhere = array();
-        $queryParams = array();
-
-        if ($child)
-        {
-            $sqlWhere[] = 'org_org_id_parent = ?';
-            $queryParams[] = $this->getValue('org_id');
-        }
-        $orgParentId = (int) $this->getValue('org_org_id_parent');
-        if ($parent && $orgParentId > 0)
-        {
-            $sqlWhere[] = 'org_id = ?';
-            $queryParams[] = $orgParentId;
-        }
-
         $sql = 'SELECT org_id, org_longname, org_shortname
                   FROM '.TBL_ORGANIZATIONS.'
-                 WHERE '.implode(' OR ', $sqlWhere);
-        $pdoStatement = $this->db->queryPrepared($sql, $queryParams);
+                 WHERE ';
+        if($child)
+        {
+            $sql .= ' org_org_id_parent = '.$this->getValue('org_id');
+        }
+        if($parent && $this->getValue('org_org_id_parent') > 0)
+        {
+            if($child)
+            {
+                $sql .= ' OR ';
+            }
+            $sql .= ' org_id = '.$this->getValue('org_org_id_parent');
+        }
+        $organizationsStatement = $this->db->query($sql);
 
         $childOrganizations = array();
-        while ($row = $pdoStatement->fetch())
+        while($row = $organizationsStatement->fetch())
         {
-            $orgId = (int) $row['org_id'];
-            if ($longname)
+            if($longname)
             {
-                $childOrganizations[$orgId] = $row['org_longname'];
+                $childOrganizations[$row['org_id']] = $row['org_longname'];
             }
             else
             {
-                $childOrganizations[$orgId] = $row['org_shortname'];
+                $childOrganizations[$row['org_id']] = $row['org_shortname'];
             }
         }
         return $childOrganizations;
     }
 
     /**
-     * @return array<int,string> Returns an array with all child organizations
+     * Reads all preferences of the current organization out of the database table adm_preferences.
+     * If the object has read the preferences than the method will return the stored values of the object.
+     * @param bool $update Should the preferences data be updated.
+     * @return array Returns an array with all preferences of this organization.
+     *               Array key is the column @b prf_name and array value is the column @b prf_value.
+     */
+    public function getPreferences($update = false)
+    {
+        if($update || count($this->preferences) === 0)
+        {
+            $sql = 'SELECT prf_name, prf_value
+                      FROM '.TBL_PREFERENCES.'
+                     WHERE prf_org_id = '. $this->getValue('org_id');
+            $preferencesStatement = $this->db->query($sql);
+
+            // clear old data
+            $this->preferences = array();
+
+            while($prfRow = $preferencesStatement->fetch())
+            {
+                $this->preferences[$prfRow['prf_name']] = $prfRow['prf_value'];
+            }
+        }
+
+        return $this->preferences;
+    }
+
+    /**
+     * @return string[] Returns an array with all child organizations
      */
     protected function getChildOrganizations()
     {
@@ -452,35 +384,84 @@ class Organization extends TableAccess
     }
 
     /**
-     * Method checks if the organization is configured as a child organization in the recordset.
-     * @return bool Return **true** if the organization is a child of another organization
+     * Method checks if this organization is the parent of other organizations.
+     * @return bool Return @b true if the organization has child organizations.
      */
-    public function isChildOrganization()
-    {
-        return $this->getValue('org_org_id_parent') > 0;
-    }
-
-    /**
-     * Method checks if the organization is configured as a parent organization in the recordset.
-     * @return bool Return **true** if the organization is the parent of a least one other organization
-     */
-    public function isParentOrganization()
+    public function hasChildOrganizations()
     {
         return count($this->getChildOrganizations()) > 0;
     }
 
     /**
+     * Method checks if the organization is configured as a child organization in the recordset.
+     * @param int $organizationId The @b org_shortname or @b org_id of the organization that should be set.
+     *                            If parameter isn't set than check the organization of this object.
+     * @return bool Return @b true if the organization is a child of another organization
+     */
+    public function isChildOrganization($organizationId = 0)
+    {
+        // if no organization was set in parameter then check the organization of this object
+        if($organizationId === 0)
+        {
+            $organizationId = $this->getValue('org_id');
+        }
+
+        return array_key_exists($organizationId, $this->getChildOrganizations());
+    }
+
+    /**
+     * Writes all preferences of the array @b $preferences in the database table @b adm_preferences.
+     * The method will only insert or update changed preferences.
+     * @param array $preferences Array with all preferences that should be stored in database.
+     *                           array('name_of_preference' => 'value')
+     * @param bool  $update      If set to @b false then no update will be done, only inserts
+     */
+    public function setPreferences(array $preferences, $update = true)
+    {
+        $this->db->startTransaction();
+        $this->getPreferences();
+
+        $orgId = $this->getValue('org_id');
+
+        foreach($preferences as $key => $value)
+        {
+            if(array_key_exists($key, $this->preferences))
+            {
+                if($update && $value != $this->preferences[$key])
+                {
+                    // Pref existiert in DB, aber Wert hat sich geaendert
+                    $sql = 'UPDATE '.TBL_PREFERENCES.' SET prf_value = \''.$value.'\'
+                             WHERE prf_org_id = '.$orgId.'
+                               AND prf_name   = \''.$key.'\' ';
+                    $this->db->query($sql);
+                }
+            }
+            else
+            {
+                // Parameter existiert noch nicht in DB
+                $sql = 'INSERT INTO '.TBL_PREFERENCES.' (prf_org_id, prf_name, prf_value)
+                             VALUES ('.$orgId.', \''.$key.'\', \''.$value.'\') ';
+                $this->db->query($sql);
+            }
+        }
+
+        // Update the preferences cache
+        $this->getPreferences(true);
+        $this->db->endTransaction();
+    }
+
+    /**
      * Set a new value for a column of the database table.
-     * The value is only saved in the object. You must call the method **save** to store the new value to the database
+     * The value is only saved in the object. You must call the method @b save to store the new value to the database
      * @param string $columnName The name of the database column whose value should get a new value
      * @param mixed  $newValue   The new value that should be stored in the database field
-     * @param bool   $checkValue The value will be checked if it's valid. If set to **false** than the value will not be checked.
-     * @return bool Returns **true** if the value is stored in the current object and **false** if a check failed
+     * @param bool   $checkValue The value will be checked if it's valid. If set to @b false than the value will not be checked.
+     * @return bool Returns @b true if the value is stored in the current object and @b false if a check failed
      */
     public function setValue($columnName, $newValue, $checkValue = true)
     {
         // org_shortname shouldn't be edited
-        if($columnName === 'org_shortname' && !$this->newRecord)
+        if($columnName === 'org_shortname' && !$this->new_record)
         {
             return false;
         }
@@ -495,13 +476,5 @@ class Organization extends TableAccess
             }
         }
         return parent::setValue($columnName, $newValue, $checkValue);
-    }
-
-    /**
-     * @return array<string,mixed>
-     */
-    public function getDbColumns()
-    {
-        return $this->dbColumns;
     }
 }

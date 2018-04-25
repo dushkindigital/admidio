@@ -1,6 +1,6 @@
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -96,7 +96,8 @@ Chat.prototype.send = function(message) {
             url: "process.php",
             data: {
                 "function": "send",
-                "message": message
+                "message": message,
+                "state": this.state
             },
             dataType: "json",
             success: function() {

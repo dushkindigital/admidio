@@ -3,7 +3,7 @@
  ***********************************************************************************************
  * Redirect to chosen url
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
@@ -16,7 +16,7 @@
  *
  *****************************************************************************/
 
-require_once(__DIR__ . '/common.php');
+require_once('common.php');
 
 // Initialize and check the parameters
 $getUrl = admFuncVariableIsValid($_GET, 'url', 'string', array('requireValue' => true));
@@ -31,13 +31,10 @@ if (filter_var($getUrl, FILTER_VALIDATE_URL) === false)
 $page = new HtmlPage($gL10n->get('LNK_REDIRECT'));
 
 // add special header for automatic redirection after x seconds
-$page->addHeader('<meta http-equiv="refresh" content="' . $gSettingsManager->getInt('weblinks_redirect_seconds') . '; url=' . $getUrl . '">');
+$page->addHeader('<meta http-equiv="refresh" content="' . $gPreferences['weblinks_redirect_seconds'] . '; url=' . $getUrl . '">');
 
 // Counter zählt die sekunden bis zur Weiterleitung runter
 $page->addJavascript('
-    /**
-     * @param {bool} init
-     */
     function countDown(init) {
         if (init || --document.getElementById("counter").firstChild.nodeValue > 0) {
             window.setTimeout("countDown()", 1000);
@@ -51,11 +48,11 @@ $page->addHtml(
     '<p class="lead">' .
         $gL10n->get(
             'LNK_REDIRECT_DESC',
-            array($gCurrentOrganization->getValue('org_longname'),
-            '<span id="counter">' . $gSettingsManager->getInt('weblinks_redirect_seconds') . '</span>',
+            $gCurrentOrganization->getValue('org_longname'),
+            '<span id="counter">' . $gPreferences['weblinks_redirect_seconds'] . '</span>',
             '<strong>' . $getUrl . '</strong>',
             '<a href="' . $getUrl . '" target="_self">',
-            '</a>')
+            '</a>'
         ) .
     '</p>'
 );

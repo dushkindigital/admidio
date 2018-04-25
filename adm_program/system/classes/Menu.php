@@ -3,13 +3,14 @@
  ***********************************************************************************************
  * Class manages display of menus
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
+ * @class Menu
  * Create, modify and display menus. Each menu item is defined by
  *
  *      - $id   : identifier of the menu item
@@ -22,18 +23,9 @@
  */
 class Menu
 {
-    /**
-     * @var string
-     */
     protected $id;
-    /**
-     * @var string
-     */
     protected $title;
-    /**
-     * @var array<string,array<string,string|array<string,string>>>
-     */
-    protected $items = array();
+    protected $items;
 
     /**
      * constructor
@@ -42,8 +34,9 @@ class Menu
      */
     public function __construct($id, $title)
     {
-        $this->id    = $id;
-        $this->title = $title;
+        $this->id        = $id;
+        $this->title     = $title;
+        $this->items     = array();
     }
 
     /**
@@ -52,22 +45,19 @@ class Menu
      * @param string $text
      * @param string $icon
      * @param string $desc
-     * @throws AdmException
      * @return array<string,string|array>
      */
-    private function buildItem($id, $link, $text, $icon, $desc = '')
+    private function mkItem($id, $link, $text, $icon, $desc = '')
     {
         // add root path to link unless the full URL is given
         if (preg_match('/^http(s?):\/\//', $link) === 0)
         {
             $link = ADMIDIO_URL . $link;
         }
-
-        // if icon is imagefile or imageurl then show image
-        if (preg_match('/^http(s?):\/\//', $icon) === 0 && admStrIsValidFileName($icon, true)
-        && (StringUtils::strEndsWith($icon, '.png', false) || StringUtils::strEndsWith($icon, '.jpg', false)))
+        // add THEME_URL to images unless the full URL is given
+        if (preg_match('/^http(s?):\/\//', $icon) === 0)
         {
-            $icon = THEME_URL . '/icons/' . $icon;
+            $icon = THEME_URL . $icon;
         }
 
         return array(
@@ -86,11 +76,10 @@ class Menu
      * @param string $text
      * @param string $icon
      * @param string $desc
-     * @throws AdmException
      */
     public function addItem($id, $link, $text, $icon, $desc = '')
     {
-        $this->items[$id] = $this->buildItem($id, $link, $text, $icon, $desc);
+        $this->items[$id] = $this->mkItem($id, $link, $text, $icon, $desc);
     }
 
     /**
@@ -129,11 +118,10 @@ class Menu
      * @param string $text
      * @param string $icon
      * @param string $desc
-     * @throws AdmException
      */
     public function insertItem($position, $id, $link, $text, $icon, $desc = '')
     {
-        $item = $this->buildItem($id, $link, $text, $icon, $desc);
+        $item = $this->mkItem($id, $link, $text, $icon, $desc);
         $insert = array($id => $item);
         $this->items = array_splice($this->items, $position, 0, $insert);
     }
@@ -142,17 +130,12 @@ class Menu
      * Create the html menu from the internal array that must be filled before.
      * You have the option to create a simple menu with icon and link or
      * a more complex menu with submenu and description text.
-     * @param bool $complex Create a @b simple menu as default. If you set the param to **true**
+     * @param bool $complex Create a @b simple menu as default. If you set the param to @b true
      *                      then you will create a menu with submenus and description
      * @return string Return the html code of the form.
      */
     public function show($complex = false)
     {
-        if (count($this->items) === 0)
-        {
-            return '';
-        }
-
         $html = '';
 
         if ($complex)
@@ -212,6 +195,11 @@ class Menu
 
         $html .= '</menu>'; // closes main-menu "menu.list-unstyled"
 
-        return $html;
+        if (count($this->items) > 0)
+        {
+            return $html;
+        }
+
+        return '';
     }
 }

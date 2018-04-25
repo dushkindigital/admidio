@@ -3,46 +3,38 @@
  ***********************************************************************************************
  * RSS - Klasse
  *
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Diese Klasse erzeugt ein RssFeed-Objekt nach RSS 2.0.
+ * @class RSSfeed
+ * Diese Klasse erzeugt ein RSSfeed-Objekt nach RSS 2.0.
  *
  * Das Objekt wird erzeugt durch Aufruf des Konstruktors:
- * function RssFeed($homepage, $title, $description)
+ * function RSSfeed($homepage, $title, $description)
  * Parameters:  $homepage       - Link zur Homepage
  *              $title          - Titel des RSS-Feeds
  *              $description    - Ergaenzende Beschreibung zum Titel
  *
- * Dem RssFeed koennen ueber die Funktion addItem Inhalt zugeordnet werden:
+ * Dem RSSfeed koennen ueber die Funktion addItem Inhalt zugeordnet werden:
  * function addItem($title, $description, $date, $guid)
  * Parameters:  $title          - Titel des Items
  *              $description    - der Inhalt des Items
  *              $date           - Das Erstellungsdatum des Items
  *              $link           - Ein Link zum Termin/Newsbeitrag etc.
  *
- * Wenn alle benoetigten Items zugeordnet sind, wird der RssFeed generiert mit:
+ * Wenn alle benoetigten Items zugeordnet sind, wird der RSSfeed generiert mit:
  * function buildFeed()
  *
  * Spezifikation von RSS 2.0: http://www.feedvalidator.org/docs/rss2.html
  */
-class RssFeed
+class RSSfeed
 {
-    /**
-     * @var array
-     */
-    protected $channel = array();
-    /**
-     * @var array<int,array<string,string>>
-     */
-    protected $items = array();
-    /**
-     * @var string
-     */
+    protected $channel;
+    protected $items;
     protected $feed;
 
     /**
@@ -54,11 +46,13 @@ class RssFeed
      */
     public function __construct($title, $link, $description, $copyright)
     {
+        $this->channel = array();
         $this->channel['title'] = $title;
         $this->channel['link']  = $link;
         $this->channel['description'] = $description;
         $this->channel['copyright']   = $copyright;
-        $this->feed = CURRENT_URL;
+        $this->items = array();
+        $this->feed  = 'http://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     }
 
     /**
@@ -71,7 +65,8 @@ class RssFeed
      */
     public function addItem($title, $description, $link, $author, $date)
     {
-        $this->items[] = array('title' => $title, 'description' => $description, 'link' => $link, 'author' => $author, 'pubDate' => $date);
+        $item = array('title' => $title, 'description' => $description, 'link' => $link, 'author' => $author, 'pubDate' => $date);
+        $this->items[] = $item;
     }
 
     /**

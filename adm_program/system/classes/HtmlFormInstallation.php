@@ -1,51 +1,35 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2018 The Admidio Team
+ * @copyright 2004-2017 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * Create the html script for an installation / update form
+ * @class HtmlFormInstallation
+ * @brief Create the html script for an installation / update form
  *
  * This class will create the complete html for a installation / update page.
  * First you set the modus (update or installation) and then you can optional
  * add custom text to the page. The main configuration part will be the
  * form. You can use the complete methods of the Form class.
- *
- * **Code example:**
- * ```
- * // create a simple installation form with a free text, a text field and a submit button
+ * @par Examples
+ * @code // create a simple installation form with a free text, a text field and a submit button
  * $form = new HtmlFormInstallation('installation-form', 'next_html_page.php');
  * $form->setText('This is an example.');
  * $form->addSubmitButton('next_page', $gL10n->get('SYS_NEXT'), array('icon' => 'layout/forward.png', 'type' => 'button'));
  * $form->show();
- * ```
+ * @endcode
  */
 class HtmlFormInstallation extends HtmlForm
 {
-    /**
-     * @var string Title of the html page
-     */
-    private $title = '';
-    /**
-     * @var string Headline of the form
-     */
-    private $headline = '';
-    /**
-     * @var string A title for the description of the form. This will be displayed as h2
-     */
-    private $descriptionTitle = '';
-    /**
-     * @var string A text that will be shown after the headline before the form will be set
-     */
-    private $descriptionText = '';
-    /**
-     * @var array<int,string>
-     */
-    private $headers = array();
+    private $descriptionTitle;  ///< A title for the description of the form. This will be displayed as h2
+    private $descriptionText;   ///< A text that will be shown after the headline before the form will be set
+    private $headline;          ///< Headline of the form
+    private $title;             ///< Title of the html page
+    private $headers;
 
     /**
      * Constructor creates the form element
@@ -55,14 +39,12 @@ class HtmlFormInstallation extends HtmlForm
     public function __construct($id, $action)
     {
         parent::__construct($id, $action);
-    }
 
-    /**
-     * @param $header string
-     */
-    public function addHeader($header)
-    {
-        $this->headers[] = $header;
+        $this->title = '';
+        $this->headline = '';
+        $this->descriptionText  = '';
+        $this->descriptionTitle = '';
+        $this->headers = array();
     }
 
     /**
@@ -87,7 +69,7 @@ class HtmlFormInstallation extends HtmlForm
         global $gL10n;
 
         $this->title = $gL10n->get('INS_INSTALLATION');
-        $this->headline = $gL10n->get('INS_INSTALLATION_VERSION', array(ADMIDIO_VERSION_TEXT));
+        $this->headline = $gL10n->get('INS_INSTALLATION_VERSION', ADMIDIO_VERSION_TEXT);
     }
 
     /**
@@ -98,16 +80,27 @@ class HtmlFormInstallation extends HtmlForm
         global $gL10n;
 
         $this->title = $gL10n->get('INS_UPDATE');
-        $this->headline = $gL10n->get('INS_UPDATE_VERSION', array(ADMIDIO_VERSION_TEXT));
+        $this->headline = $gL10n->get('INS_UPDATE_VERSION', ADMIDIO_VERSION_TEXT);
+    }
+
+    /**
+     * @param $header string
+     */
+    public function addHeader($header)
+    {
+        $this->headers[] = $header;
     }
 
     /**
      * This method will create the whole html installation/update code. It will show the headline,
      * text and the configured form. If no modus is set the installation modus will be set here.
+     * @param bool $directOutput This is only used for compatibility to show method of parent class HtmlForm
      * @return string Return the html code of the form.
      */
-    public function show()
+    public function show($directOutput = true)
     {
+        global $gL10n;
+
         // if no modus set then set installation modus
         if ($this->title === '')
         {
@@ -119,9 +112,9 @@ class HtmlFormInstallation extends HtmlForm
         <!DOCTYPE html>
         <html>
         <head>
-            <!-- (c) 2004 - 2018 The Admidio Team - ' . ADMIDIO_HOMEPAGE . ' -->
+            <!-- (c) 2004 - 2017 The Admidio Team - ' . ADMIDIO_HOMEPAGE . ' -->
 
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <meta http-equiv="content-type" content="text/html; charset=utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <meta name="author"   content="Admidio Team" />
             <meta name="robots"   content="noindex" />
@@ -133,12 +126,12 @@ class HtmlFormInstallation extends HtmlForm
             <link rel="icon" type="image/png" href="layout/favicon-16x16.png" sizes="16x16" />
             <link rel="apple-touch-icon" type="image/png" href="layout/apple-touch-icon.png" sizes="180x180" />
 
-            <link rel="stylesheet" type="text/css" href="'.ADMIDIO_URL.FOLDER_LIBS_CLIENT.'/bootstrap/css/bootstrap.min.css" />
+            <link rel="stylesheet" type="text/css" href="../libs/bootstrap/css/bootstrap.min.css" />
             <link rel="stylesheet" type="text/css" href="layout/admidio.css" />
 
-            <script type="text/javascript" src="'.ADMIDIO_URL.FOLDER_LIBS_CLIENT.'/jquery/dist/jquery.min.js"></script>
-            <script type="text/javascript" src="'.ADMIDIO_URL.FOLDER_LIBS_CLIENT.'/bootstrap/js/bootstrap.min.js"></script>
-            <script type="text/javascript" src="'.ADMIDIO_URL.'/adm_program/system/js/common_functions.js"></script>
+            <script type="text/javascript" src="../libs/jquery/jquery.min.js"></script>
+            <script type="text/javascript" src="../libs/bootstrap/js/bootstrap.min.js"></script>
+            <script type="text/javascript" src="../system/js/common_functions.js"></script>
 
             <script type="text/javascript">
                 $(function() {
@@ -161,7 +154,7 @@ class HtmlFormInstallation extends HtmlForm
                     $html .= '<p>' . $this->descriptionText . '</p>';
                 }
                 // now show the configured form
-                $html .= parent::show();
+                $html .= parent::show(false);
             $html .= '</div>
         </body>
         </html>';
