@@ -24,6 +24,8 @@
 
 require_once('../../system/common.php');
 
+require_once (__DIR__ . '/../../../l4p/engine/bootstrap.php');
+
 // Initialize and check the parameters
 $getUserId    = admFuncVariableIsValid($_GET, 'user_id',  'int');
 $getNewUser   = admFuncVariableIsValid($_GET, 'new_user', 'int');
@@ -169,6 +171,14 @@ foreach($gProfileFields->mProfileFields as $field)
     {
         // bei der vollstaendigen Registrierung alle Felder anzeigen
         $showField = true;
+    
+    } elseif (($getNewUser === 2) and ($gPreferences['registration_mode'] == \cantabnyc\get_configs()->preference->registration_mode)) {
+			# temp registration
+			$l4p_fields = [ 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'L4P_DB_MEMBERSHIP', 'L4P_DB_SCHOOL', 'L4P_DB_AFFILIATION', 'L4P_DB_MATRICULATION', 'L4P_DB_MESSAGE'];
+			
+			if (\in_array($field->getValue('usf_name_intern'), $l4p_fields)) {
+				$showField = true;
+			}
     }
     elseif($getNewUser !== 2
     && ($getUserId === (int) $gCurrentUser->getValue('usr_id') || $gCurrentUser->hasRightEditProfile($user)))
