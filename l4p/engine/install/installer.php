@@ -66,9 +66,7 @@ function db_user_fields ( $db, $category_id ) {
  */
 function db_installer ($db) {
 	
-	#$category_id = db_category( $db );
-	
-	$category_id = '17';
+	$category_id = db_category( $db );
 	
 	db_user_fields( $db, $category_id );
 }
