@@ -143,6 +143,8 @@ $page = new HtmlPage($headline);
 $page->enableModal();
 $page->addJavascriptFile('adm_program/libs/zxcvbn/dist/zxcvbn.js');
 
+#$page->addHtml('<script type="text/javascript" src="' . ADMIDIO_URL . '/l4p/asset/js/form.js"></script>');
+
 // add back link to module menu
 $profileEditMenu = $page->getMenu();
 $profileEditMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');

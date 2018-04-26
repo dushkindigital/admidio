@@ -25,7 +25,7 @@ function db_category ( $db ) {
 function db_user_fields ( $db, $category_id ) {
 	
 	# membership
-	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_description`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_MEMBERSHIP', 'L4P_DB_MEMBERSHIP', '<a href=\"https://www.cantabnyc.org/p/membership_types.html\" target=\"_blank\">membership types</a>', 'Member\nAssociate', '100', '1', NOW() )";
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_description`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_MEMBERSHIP', 'L4P_DB_MEMBERSHIP', '<a href=\"https://www.cantabnyc.org/p/membership.html\" target=\"_blank\">membership types</a>', 'Member\nAssociate', '100', '1', NOW() )";
 	$db->query($sql, true);
 	
 	# school
@@ -44,7 +44,7 @@ function db_user_fields ( $db, $category_id ) {
 	$db->query($sql, true);
 	
 	# message
-	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT', 'L4P_DB_MESSAGE', 'L4P_DB_MESSAGE', '104', '1', NOW() )";
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT_BIG', 'L4P_DB_MESSAGE', 'L4P_DB_MESSAGE', '104', '1', NOW() )";
 	$db->query($sql, true);
 	
 	# state - NB not visible in forms

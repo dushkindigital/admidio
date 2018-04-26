@@ -24,9 +24,9 @@ if ($GLOBALS['gPreferences']['registration_mode'] == 0) {
 function build_form ($form, $datum_user) {
 	
 	$export_field_names = array(
-		'usr_login_name'   => 'usr_login_name',
-		'usr_password'     => 'usr_password',
-		'password_confirm' => 'password_confirm'
+		'usr_login_name'   => 'usr_login_name'#,
+		#'usr_password'     => 'usr_password',
+		#'password_confirm' => 'password_confirm'
 	);
 	
 	// *******************************************************************************
@@ -59,12 +59,6 @@ function build_form ($form, $datum_user) {
 					$showField = true;
 				}
 			}
-			elseif (($getUserId === (int) $GLOBALS['gCurrentUser']->getValue('usr_id') || $GLOBALS['gCurrentUser']->hasRightEditProfile($user)))
-			{
-					// bei fremden Profilen duerfen versteckte Felder nur berechtigten Personen angezeigt werden
-					// Leiter duerfen dies nicht !!!
-					$showField = true;
-			}
 	
 			// Kategorienwechsel den Kategorienheader anzeigen
 			// bei schneller Registrierung duerfen nur die Pflichtfelder ausgegeben werden
@@ -80,6 +74,7 @@ function build_form ($form, $datum_user) {
 					$form->addHtml('<a id="cat-'. $field->getValue('cat_id'). '"></a>');
 					$form->openGroupBox('gb_category_'.$field->getValue('cat_name_intern'), $field->getValue('cat_name'));
 	
+					/*
 					if($field->getValue('cat_name_intern') === 'MASTER_DATA')
 					{
 				
@@ -90,8 +85,8 @@ function build_form ($form, $datum_user) {
 						$fieldProperty = FIELD_REQUIRED;
 
 						$form->addInput('usr_login_name', $GLOBALS['gL10n']->get('SYS_USERNAME'), $datum_user->getValue('usr_login_name'), array('maxLength' => 35, 'property' => $fieldProperty, 'helpTextIdLabel' => $fieldHelpId, 'class' => 'form-control-small'));
-
-				
+						
+						
 						// at registration add password and password confirm to form
 						$form->addInput(
 								'usr_password', $GLOBALS['gL10n']->get('SYS_PASSWORD'), null,
@@ -102,6 +97,7 @@ function build_form ($form, $datum_user) {
 						
 						$form->addLine();
 					}
+					*/
 			}
 	
 			// bei schneller Registrierung duerfen nur die Pflichtfelder ausgegeben werden
@@ -200,7 +196,7 @@ function build_form ($form, $datum_user) {
 							$form->addMultilineTextInput(
 									'usf-'. $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_id'),
 									$GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_name'),
-									$user->getValue($usfNameIntern),
+									$datum_user->getValue($usfNameIntern),
 									3,
 									array(
 											'maxLength'       => 4000,
@@ -304,6 +300,8 @@ function build_page () {
 	$page->addJavascriptFile('adm_program/libs/zxcvbn/dist/zxcvbn.js');
 	
 	$page->addHtml('<script type="text/javascript" src="' . ADMIDIO_URL . '/l4p/asset/js/form.js"></script>');
+	
+	$page->addCssFile( "l4p/asset/css/component_membership_2.min.css" );
 	
 	$page->hideMenu();
 	

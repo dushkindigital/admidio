@@ -48,7 +48,7 @@ require_once (__DIR__ . '/engine/bootstrap.php');
 				</select>
 				<br />
 				<p>
-					<a href="https://www.cantabnyc.org/p/membership_types.html" target="_blank">membership types</a>
+					<a href="https://www.cantabnyc.org/p/membership.html" target="_blank">membership types</a>
 				</p>
 			</div>
 			<!-- -->
