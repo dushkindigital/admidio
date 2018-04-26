@@ -1,0 +1,21 @@
+/**
+ * specific css overrides
+ */
+ 
+/* header */
+body > #page > #header-block {
+	display: none;
+	visibility: hidden;
+}
+
+/* footer */
+body > #copyright {
+	display: none;
+	visibility: hidden;
+}
+
+/* right block */
+body > #page #right-block {
+	display: none;
+	visibility: hidden;
+}
