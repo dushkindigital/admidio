@@ -8,6 +8,10 @@ body > #page > #header-block {
 	visibility: hidden;
 }
 
+body > #page #left-block  h1.admidio-module-headline {
+	border: none;
+}
+
 /* footer */
 body > #copyright {
 	display: none;
