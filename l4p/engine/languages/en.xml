@@ -4,18 +4,25 @@
 	<string name="L4P_NO_PENDING_MEMBERS">No pending members awaiting processing</string>
 	
 	<!-- db -->
+	<string name="L4P_DB_AFFILIATION">Affiliation</string>
 	<string name="L4P_DB_CATEGORY">CantabNYC</string>
 	<string name="L4P_DB_DATA">CantabNYC User Fields</string>
-	<string name="L4P_DB_AFFILIATION">Affiliation</string>
+	<string name="L4P_DB_EXPIRES">Expiry</string>
 	<string name="L4P_DB_MATRICULATION">Matriculation</string>
 	<string name="L4P_DB_MEMBERSHIP">Membership</string>
 	<string name="L4P_DB_MESSAGE">Message</string>
+	<string name="L4P_DB_PASSWORD">Password</string>
 	<string name="L4P_DB_SCHOOL">School</string>
 	<string name="L4P_DB_STATE_REG">State Registration</string>
-	<string name="L4P_DB_EXPIRES">Expiry</string>
 	
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
+	
+	<!-- password reset -->
+	<string name="L4P_PASSWORD_RESET">Password Reset</string>
+	
+	<!-- pending user profile -->
+	<string name="L4P_PENDING_USER_PROFILE">Pending User Profile Found</string>
 	
 	<!-- reg received -->
 	<string name="L4P_REGISTRATION_RECEIVED">Registration data received</string>

@@ -83,7 +83,9 @@ class SystemMail extends Email
             '/#administrator_email#/'     => $gPreferences['email_administrator'],
             '/#organization_short_name#/' => $this->smOrganization->getValue('org_shortname'),
             '/#organization_long_name#/'  => $this->smOrganization->getValue('org_longname'),
-            '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage')
+            '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage'),
+            
+            '/#user_lp4_db_password#/'    => $user->getValue('L4P_DB_PASSWORD', 'database')
         );
 
         $mailSrcText = preg_replace(array_keys($pregRepArray), array_values($pregRepArray), $mailSrcText);

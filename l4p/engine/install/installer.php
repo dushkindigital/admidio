@@ -55,6 +55,10 @@ function db_user_fields ( $db, $category_id ) {
 	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`, `usf_disabled`) VALUES ('{$category_id}', 'DATE', 'L4P_DB_EXPIRES', 'L4P_DB_EXPIRES', '106', '1', NOW(), '1' )";
 	$db->query($sql, true);
 	
+	# temp password for the accept email
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`, `usf_disabled`) VALUES ('{$category_id}', 'DATE', 'L4P_DB_PASSWORD', 'L4P_DB_PASSWORD', '107', '1', NOW(), '1' )";
+	$db->query($sql, true);
+	
 	# email
 	$sql = "UPDATE " . \TBL_USER_FIELDS . " SET `usf_description`='If you are applying as a Member, you must register with your school-issued cantab.net email ID. <a href=\"https://www.alumni.cam.ac.uk/benefits/email-for-life\" target=\"_blank\">more...</a>' WHERE `usf_name_intern`='EMAIL' AND `usf_name`='SYS_EMAIL'";
 	$db->query($sql, true);

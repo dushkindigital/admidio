@@ -1,0 +1,7 @@
+#subject# in registration at #organization_long_name# rejected.
+#content#Dear #user_first_name#,
+
+After careful review, it is our regret to inform you that your application was not approved. If you feel that our decision was in error or you would like more detail, you are welcome to respond to this email address. While we do not guarantee a response to every inquiry, we will handle follow-ups on a case-by-case basis.
+
+Kind regards,
+The Cantab NYC Membership Review Committee

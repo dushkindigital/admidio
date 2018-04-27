@@ -137,8 +137,9 @@ function handle_form_post ( $organisation_id ) {
 	}
 	
 	# add in the state and expiry fields
-	$user->setValue( 'L4P_DB_STATE_REG', '2' ); # NB pending is 2nd on the list
 	$user->setValue( 'L4P_DB_EXPIRES',   \date('Y-m-d', \time() + \cantabnyc\get_configs()->expiry*24*60*60) );
+	$user->setValue( 'L4P_DB_PASSWORD',  $_POST['usr_password'] ); # keep raw password for the accept email
+	$user->setValue( 'L4P_DB_STATE_REG', '2' ); # NB pending is 2nd on the list
 	
 	/*------------------------------------------------------------*/
 	// Save user data to database
