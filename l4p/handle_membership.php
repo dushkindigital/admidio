@@ -15,10 +15,25 @@ $organisation_id = $GLOBALS['gCurrentOrganization']->getValue('org_id');
 /**
  * handle the form POST
  */
-function handle_form_post () {
+function handle_form_post ( $organisation_id ) {
 	
+	# create a registration
+	$getNewUser = 2;
+	
+	# splice in fields we need
+	$email_field_post_index = 'usf-'. $GLOBALS['gProfileFields']->mProfileFields['EMAIL']->getValue('usf_id');
+	
+	$_POST['usr_login_name']   = \cantabnyc\extract_username_from_email( $_POST[$email_field_post_index] );
+	$_POST['usr_password']     = \cantabnyc\auto_generate_password();
+	$_POST['password_confirm'] = $_POST['usr_password'];
+	
+	# process
 	$user = new UserRegistration( $GLOBALS['gDb'],  $GLOBALS['gProfileFields'], 0);
 	$user->setOrganization( $organisation_id );
+	
+	# set the username/password for saving
+	$user->setValue('usr_login_name', $_POST['usr_login_name']);
+	$user->setPassword($_POST['usr_password']);
 	
 	# ensure fields set
 	if ($_POST['usr_login_name'] === '') {
@@ -43,19 +58,19 @@ function handle_form_post () {
 		// => EXIT
 	}
 	
-	if (PasswordHashing::passwordStrength($_POST['usr_password'], $user->getPasswordUserData()) < $gPreferences['password_min_strength']) {
+	if (PasswordHashing::passwordStrength($_POST['usr_password'], $user->getPasswordUserData()) < $GLOBALS['gPreferences']['password_min_strength']) {
 		$GLOBALS['gMessage']->show($GLOBALS['gL10n']->get('PRO_PASSWORD_NOT_STRONG_ENOUGH'));
 		// => EXIT
 	}
 	
 	// nun alle Profilfelder pruefen
-	foreach($gProfileFields->mProfileFields as $field) {
+	foreach($GLOBALS['gProfileFields']->mProfileFields as $field) {
 		
 			$post_id = 'usf-'. $field->getValue('usf_id');
 			
 			// check and save only fields that aren't disabled
 			if ($field->getValue('usf_disabled') == 0
-			|| ($field->getValue('usf_disabled') == 1 && $gCurrentUser->hasRightEditProfile($user, false))
+			|| ($field->getValue('usf_disabled') == 1 && $GLOBALS['gCurrentUser']->hasRightEditProfile($user, false))
 			|| ($field->getValue('usf_disabled') == 1 && $getNewUser > 0))
 			{
 					if(isset($_POST[$post_id]))
@@ -122,7 +137,7 @@ function handle_form_post () {
 	}
 	
 	# add in the state and expiry fields
-	$user->setValue( 'L4P_DB_STATE_REG', 'pending' );
+	$user->setValue( 'L4P_DB_STATE_REG', '2' ); # NB pending is 2nd on the list
 	$user->setValue( 'L4P_DB_EXPIRES',   \date('Y-m-d', \time() + \cantabnyc\get_configs()->expiry*24*60*60) );
 	
 	/*------------------------------------------------------------*/
@@ -144,13 +159,15 @@ function handle_form_post () {
 	$GLOBALS['gDb']->endTransaction();
 	
 	// wenn Daten des eingeloggten Users geaendert werden, dann Session-Variablen aktualisieren
-	if((int) $user->getValue('usr_id') === (int) $gCurrentUser->getValue('usr_id')) {
+	if((int) $user->getValue('usr_id') === (int) $GLOBALS['gCurrentUser']->getValue('usr_id')) {
 		$gCurrentUser = $user;
 	}
 	
 	unset($_SESSION['profile_request']);
 	$GLOBALS['gNavigation']->deleteLastUrl();
 	
+	# show page
+	build_page();
 }
 
 /**
@@ -174,11 +191,10 @@ EOD;
 	
 	$page->addHtml( $html );
 	
+	$page->addCssFile( "l4p/asset/css/handle_membership.min.css" );
+	
 	$page->show();
 }
 
 ###
-build_page();
-
-
-?>
+handle_form_post( $organisation_id );
