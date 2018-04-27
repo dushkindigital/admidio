@@ -74,6 +74,10 @@
 			self.dom.elements['Matriculation'].parent().parent().removeClass('admidio-form-group-required');
 			self.dom.elements['School'       ].parent().parent().removeClass('admidio-form-group-required');
 			
+			self.dom.elements['Affiliation'  ].removeAttr('required');
+			self.dom.elements['Matriculation'].removeAttr('required');
+			self.dom.elements['School'       ].removeAttr('required');
+			
 			if (picked == 'Associate') {
 				self.dom.elements['Affiliation'].parent().parent().show();
 				

@@ -8,9 +8,12 @@ namespace cantabnyc;
  */
 function auto_generate_password (int $length = 8) : string {
 	
-	$result = \random_bytes( $length );
+	$result = \random_bytes( $length + 4); # add some more bytes so base64 delimit chars arent visible
 	
 	$result = \base64_encode( $result );
+	
+	$result = \str_replace('+', '', $result );
+	$result = \str_replace('=', '', $result );
 	
 	$result = \substr( $result, 0, $length );
 	
