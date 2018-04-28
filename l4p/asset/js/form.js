@@ -4,8 +4,6 @@
 (
 	function () {
 		
-		console.log( 'BANG' );
-		
 		/**
 		 * keep a global reference around
 		 */
@@ -37,19 +35,19 @@
 			}
 			
 			// email and membership insert txt
-			self.dom.elements['E-mail'    ].parent().append("<p>" + jQuery('label img', self.dom.elements['E-mail'    ].parent().parent()).data('content') + "</p>");
-			self.dom.elements['Membership'].parent().append("<p>" + jQuery('label img', self.dom.elements['Membership'].parent().parent()).data('content') + "</p>");
+			self.dom.elements['E-mail'         ].parent().append("<p>" + jQuery('label img', self.dom.elements['E-mail'         ].parent().parent()).data('content') + "</p>");
+			self.dom.elements['Membership Type'].parent().append("<p>" + jQuery('label img', self.dom.elements['Membership Type'].parent().parent()).data('content') + "</p>");
 			
 			// update validation
-			self.dom.elements['Affiliation'  ].prop('maxlength',  '250');
+			//self.dom.elements['Affiliation'  ].prop('maxlength',  '250');
 			self.dom.elements['E-mail'       ].prop('maxlength',  '100');
 			self.dom.elements['First name'   ].prop('maxlength',  '100');
 			self.dom.elements['Surname'      ].prop('maxlength',  '100');
-			self.dom.elements['Matriculation'].prop('maxlength',    '4');
+			self.dom.elements['Matriculation Year'].prop('maxlength',    '4');
 			self.dom.elements['Message'      ].prop('maxlength', '4000');
 			
 			// event handlers
-			this.dom.elements['Membership'].on( 'change', null, {self: self}, function (evnt) {evnt.data.self.onchange_membership(evnt); } );
+			this.dom.elements['Membership Type'].on( 'change', null, {self: self}, function (evnt) {evnt.data.self.onchange_membership(evnt); } );
 			
 			// startup
 			thingy.onchange_membership();
@@ -62,10 +60,10 @@
 			
 			const self = this;
 			
-			const val = self.dom.elements['Membership'].val();
+			const val = self.dom.elements['Membership Type'].val();
 			
 			const picked = jQuery( 'option[value="' + val + '"]', self.dom.elements['Membership'] ).text();
-			
+			/*
 			self.dom.elements['Affiliation'  ].parent().parent().hide();
 			self.dom.elements['Matriculation'].parent().parent().hide();
 			self.dom.elements['School'       ].parent().parent().hide();
@@ -96,6 +94,7 @@
 				self.dom.elements['Matriculation'].parent().parent().addClass('admidio-form-group-required');
 				self.dom.elements['School'       ].parent().parent().addClass('admidio-form-group-required');
 			}
+			*/
 		};
 		
 		

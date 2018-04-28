@@ -3,17 +3,31 @@
 	<string name="L4P_MEMBERSHIP">CantabNYC Membership Pending</string>
 	<string name="L4P_NO_PENDING_MEMBERS">No pending members awaiting processing</string>
 	
-	<!-- db -->
-	<string name="L4P_DB_AFFILIATION">Affiliation</string>
-	<string name="L4P_DB_CATEGORY">CantabNYC</string>
-	<string name="L4P_DB_DATA">CantabNYC User Fields</string>
-	<string name="L4P_DB_EXPIRES">Expiry</string>
-	<string name="L4P_DB_MATRICULATION">Matriculation</string>
-	<string name="L4P_DB_MEMBERSHIP">Membership</string>
+	<!-- db categories -->
+	<string name="L4P_DB_CAT_APPLICATION_INFORMATION">Application Information</string>
+	<string name="L4P_DB_CAT_PROFESSIONAL_INFORMATION">Professional Information</string>
+	<string name="L4P_DB_CAT_SCHOOL_INFORMATION">School Information</string>
+	
+	<!-- db form fields -->
+	<string name="L4P_DB_MEMBERSHIP_TYPE">Membership Type</string>
 	<string name="L4P_DB_MESSAGE">Message</string>
-	<string name="L4P_DB_PASSWORD">Password</string>
+	<string name="L4P_DB_REFERENCES">References</string>
+	<string name="L4P_DB_TEMP_PASSWORD">Temp Password</string>
+	<string name="L4P_DB_TEMP_PASS_CHANGED">Temp Password Changed</string>
+	<string name="L4P_DB_TEMP_PASS_EXPIRATION">Temp Password Expiration</string>
+	
+	<string name="L4P_DB_ADDRESS_2">Address</string>
+	<string name="L4P_DB_EMAIL_2">Email</string>
+	<string name="L4P_DB_EMPLOYER">Employment</string>
+	<string name="L4P_DB_PHONE_2">Phone</string>
+	<string name="L4P_DB_POSITION">Position</string>
+	<string name="L4P_DB_WEBSITE_2">Website</string>
+	
+	<string name="L4P_DB_CLASS_OF">Class Of</string>
+	<string name="L4P_DB_DEGREE">Degree</string>
+	<string name="L4P_DB_MATRICULATION_YEAR">Matriculation Year</string>
 	<string name="L4P_DB_SCHOOL">School</string>
-	<string name="L4P_DB_STATE_REG">State Registration</string>
+	<string name="L4P_DB_SUBJECT_READ">Subject Read</string>
 	
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>

@@ -47,6 +47,33 @@ function get_configs() : \stdClass {
 		# expiry of regstration (in days)
 		'expiry' => 7,
 		
+		# form fields in reg/etc
+		'form_fields' => (object)array(
+			'reg' => array(
+					'LAST_NAME', 'FIRST_NAME', 'EMAIL',
+					
+					'L4P_DB_MEMBERSHIP_TYPE',
+					'L4P_DB_MESSAGE',
+					'L4P_DB_REFERENCES',
+					#'L4P_DB_TEMP_PASSWORD',
+					#'L4P_DB_TEMP_PASS_CHANGED',
+					#'L4P_DB_TEMP_PASS_EXPIRATION',
+					
+					'L4P_DB_ADDRESS_2',
+					'L4P_DB_EMAIL_2',
+					'L4P_DB_EMPLOYER',
+					'L4P_DB_PHONE_2',
+					'L4P_DB_POSITION',
+					'L4P_DB_WEBSITE_2',
+					
+					'L4P_DB_CLASS_OF',
+					'L4P_DB_DEGREE',
+					'L4P_DB_MATRICULATION_YEAR',
+					'L4P_DB_SCHOOL',
+					'L4P_DB_SUBJECT_READ'
+			)
+		),
+		
 		# preference settings
 		'preference' => (object)array(
 			'registration_mode' => 100
