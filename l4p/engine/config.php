@@ -52,6 +52,10 @@ function get_configs() : \stdClass {
 			'reg' => array(
 					'LAST_NAME', 'FIRST_NAME', 'EMAIL',
 					
+					'L4P_DB_SCHOOL',
+					'L4P_DB_MESSAGE'
+					
+					/*
 					'L4P_DB_MEMBERSHIP_TYPE',
 					'L4P_DB_MESSAGE',
 					'L4P_DB_REFERENCES',
@@ -71,6 +75,7 @@ function get_configs() : \stdClass {
 					'L4P_DB_MATRICULATION_YEAR',
 					'L4P_DB_SCHOOL',
 					'L4P_DB_SUBJECT_READ'
+					*/
 			)
 		),
 		
