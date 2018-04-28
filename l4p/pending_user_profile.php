@@ -4,22 +4,6 @@ require_once (__DIR__ . '/../adm_program/system/common.php');
 
 require_once (__DIR__ . '/engine/bootstrap.php');
 
-if ( $GLOBALS['gPreferences']['registration_mode'] == 0) {
-	$GLOBALS['gMessage']->show($GLOBALS['gL10n']->get('SYS_MODULE_DISABLED'));
-	// => EXIT
-}
-
-# org
-$organisation_id = $GLOBALS['gCurrentOrganization']->getValue('org_id');
-
-/**
- * handle the form POST
- */
-function handle_form_post ( $organisation_id ) {
-	
-	
-}
-
 /**
  * build the page
  */
@@ -46,5 +30,45 @@ EOD;
 	$page->show();
 }
 
+/**
+ * handle the request
+ */
+function handle_request () {
+	
+	# check permissions
+	if ( $GLOBALS['gPreferences']['registration_mode'] == 0) {
+		$GLOBALS['gMessage']->show($GLOBALS['gL10n']->get('SYS_MODULE_DISABLED'));
+		// => EXIT
+	}
+	
+	# Initialize and check the parameters
+	$get_user_id = admFuncVariableIsValid($_GET, 'user_id',  'int');
+	
+	# org
+	$organisation_id = $GLOBALS['gCurrentOrganization']->getValue('org_id');
+	
+	# read user data
+	$datum_user = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], $get_user_id);
+	
+	if (\sizeof($_POST) > 0) {
+		
+		handle_request_post( $organisation_id, $datum_user );
+		
+	} else {
+		
+		build_page();
+	}
+	
+	
+}
+
+/**
+ * handle the form POST
+ */
+function handle_request_post ( $organisation_id, $datum_user ) {
+	
+	
+}
+
 ###
-handle_form_post( $organisation_id );
+handle_request();
