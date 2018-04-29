@@ -17,6 +17,8 @@ require_once('../../system/common.php');
 require_once('../../system/login_valid.php');
 require_once('roles_functions.php');
 
+require_once (__DIR__ . '/../../../l4p/engine/bootstrap.php');
+
 // Initialize and check the parameters
 $getUserId = admFuncVariableIsValid($_GET, 'user_id', 'int', array('defaultValue' => (int) $gCurrentUser->getValue('usr_id')));
 

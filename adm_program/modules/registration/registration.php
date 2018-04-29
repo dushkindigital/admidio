@@ -109,7 +109,8 @@ while($row = $usrStatement->fetch())
 
     // create array with all column values
     $columnValues = array(
-        '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
+        #'<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
+        '<a href="' . ADMIDIO_URL . '/l4p/pending_user_profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
         $datetimeCreate,
         $row['usr_login_name'],
         $mailLink,
