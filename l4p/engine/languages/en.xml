@@ -32,6 +32,11 @@
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
 	
+	<!-- password expiry -->
+	<string name="L4P_PASSWORD_EXPIRY">Password Expiry</string>
+	<string name="L4P_PASSWORD_EXPIRY_MESSAGE">Your password has been re-sent</string>
+	<string name="L4P_PASSWORD_EXPIRY_RESEND">Resend Password</string>
+	
 	<!-- password reset -->
 	<string name="L4P_PASSWORD_RESET">Password Reset</string>
 	
