@@ -117,10 +117,12 @@ function db_user_fields ( $db, array $list_category_id ) {
 	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT', 'L4P_DB_MATRICULATION_YEAR', 'L4P_DB_MATRICULATION_YEAR', '104', '1', NOW() )";
 	$db->query($sql, true);
 	
-	$school_value_list = \cantabnyc\get_configs()->colleges;
-	$school_value_list = \implode("\n", $school_value_list);
-	$school_value_list = \addslashes($school_value_list);
-	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_SCHOOL', 'L4P_DB_SCHOOL', '{$school_value_list}', '101', '1', NOW() )";
+	# school
+	#$school_value_list = \cantabnyc\get_configs()->colleges;
+	#$school_value_list = \implode("\n", $school_value_list);
+	#$school_value_list = \addslashes($school_value_list);
+	#$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_value_list`, `usf_sequence`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'DROPDOWN', 'L4P_DB_SCHOOL', 'L4P_DB_SCHOOL', '{$school_value_list}', '101', '1', NOW() )";
+	$sql = "INSERT INTO " . \TBL_USER_FIELDS . " (`usf_cat_id`, `usf_type`, `usf_name_intern`, `usf_name`, `usf_value_list`, `usf_usr_id_create`, `usf_timestamp_create`) VALUES ('{$category_id}', 'TEXT', 'L4P_DB_SCHOOL', 'L4P_DB_SCHOOL', '101', '1', NOW() )";
 	$db->query($sql, true);
 	
 	# subject read
