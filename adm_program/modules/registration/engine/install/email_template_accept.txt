@@ -1,0 +1,12 @@
+#subject# in registration at #organization_long_name# accepted.
+#content#Dear #user_first_name#,
+
+Good news! We reviewed your application and your request has been approved. You have been temporarily assigned a password. Please change it immediately. You can complete your registration here:
+
+http://www.cantabnyc.org/p/members-pages.html
+Password: #user_lp4_db_password#
+
+We look forward to seeing you at some events!
+
+Cheers,
+The Cantab NYC Membership Review Committee

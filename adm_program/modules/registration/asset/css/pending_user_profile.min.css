@@ -1,0 +1,28 @@
+/**
+ * specific css overrides
+ */
+ 
+/* header */
+body > #page > #header-block {
+	display: none;
+	visibility: hidden;
+}
+
+body > #page #left-block  h1.admidio-module-headline {
+	border: none;
+	
+	display: none;
+	visibility: hidden;
+}
+
+/* footer */
+body > #copyright {
+	display: none;
+	visibility: hidden;
+}
+
+/* right block */
+body > #page #right-block {
+	display: none;
+	visibility: hidden;
+}

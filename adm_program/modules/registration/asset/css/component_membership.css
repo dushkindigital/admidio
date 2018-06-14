@@ -1,0 +1,81 @@
+/**
+ * style the membership form
+ */
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+form {
+	width: 60%;
+	margin: 0 auto 0 auto;
+}
+
+form .box {
+	position: relative;
+	width: 100%;
+	margin: 10px 0 10px 0;
+	padding: 5px;
+}
+form .box:after {
+	content: "";
+	display: table;
+	clear: both;
+}
+form .box:nth-child(2n) {
+	background-color: #eee;
+}
+
+
+form .box > label {
+	display: block;
+	float: left;
+	width: 30%;
+}
+
+form .box > input,
+form .box > select,
+form .box > textarea {
+	
+	display: block;
+	float: left;
+	width: 70%;
+	
+	padding: 5px;
+}
+
+form .box > input[type="submit"] {
+	float: none;
+	width: auto;
+	margin: 0 auto 0 auto;
+}
+
+form .box p {
+	margin: 5px;
+}
+
+/** ======================================================================== **/
+/** viewport related overrides **/
+
+@media only screen and (max-width: 1024px) {
+	form {
+		width: 80%;
+	}
+}
+
+@media only screen and (max-width: 600px) {
+	
+	form .box > label {
+		float: none;
+		width: 100%;
+	}
+	form .box > input,
+	form .box > select,
+	form .box > textarea {
+		float: none;
+		width: 100%;
+	}
+}
+
+

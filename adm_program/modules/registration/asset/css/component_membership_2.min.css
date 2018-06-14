@@ -1,0 +1,59 @@
+/**
+ * specific css overrides
+ */
+
+/* header */
+body > #page > #header-block {
+	display: none;
+	visibility: hidden;
+}
+
+body > #page #left-block  h1.admidio-module-headline {
+	border: none;
+
+	display: none;
+	visibility: hidden;
+}
+
+/* footer */
+body > #copyright {
+	display: none;
+	visibility: hidden;
+}
+
+/* right block */
+body > #page #right-block {
+	display: none;
+	visibility: hidden;
+}
+
+/** style the embedded form **/
+body > #page .admidio-form-required-notice {
+	display: none;
+	visibility: hidden;
+}
+
+body > #page #component_membership_form .panel {
+	border: none;
+	margin-bottom: 0;
+}
+
+body > #page #component_membership_form .panel > .panel-heading {
+	display: none;
+	visibility: hidden;
+}
+body > #page #component_membership_form .panel > .panel-body {
+	padding-bottom: 0;
+	padding-top: 0;
+}
+
+#component_membership_form .col-sm-3,
+#component_membership_form .col-sm-9 {
+	padding-left: 0;
+}
+#component_membership_form .form-group {
+    display: grid;
+}
+.form__fieldset {
+    margin-bottom: 5px !important;
+}
