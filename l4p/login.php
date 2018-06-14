@@ -8,6 +8,13 @@
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
+// @akshay: hiding some elements for the emebeded form in front-end: Starts here
+$isEmbeded = false;
+if(isset($_GET['is_embed']) && $_GET['is_embed'] == 'true')
+{
+    $isEmbeded = true;
+}
+// @akshay: hiding some elements for the emebeded form in front-end: Ends here
 require_once (__DIR__ . '/../adm_program/system/common.php');
 
 require_once (__DIR__ . '/engine/bootstrap.php');
@@ -33,11 +40,21 @@ $roleAdministrator = new TableRoles($gDb, $pdoStatement->fetchColumn());
 
 // create html page object
 $page = new HtmlPage($headline);
+if($isEmbeded)
+{
+    $embededFrameStyle = '
+        <style>
+            .navbar-menu, #header-block {
+                display: none !important;
+            }
+        </style>
+    ';
+    $page->addHtml($embededFrameStyle);
+}
 
 // add back link to module menu
 $loginMenu = $page->getMenu();
 $loginMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
-
 // show form
 $form = new HtmlForm('login_form', ADMIDIO_URL . '/l4p/login_check.php', $page, array('showRequiredFields' => false));
 

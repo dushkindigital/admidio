@@ -1,7 +1,7 @@
 /**
  * specific css overrides
  */
- 
+
 /* header */
 body > #page > #header-block {
 	display: none;
@@ -10,7 +10,7 @@ body > #page > #header-block {
 
 body > #page #left-block  h1.admidio-module-headline {
 	border: none;
-	
+
 	display: none;
 	visibility: hidden;
 }
@@ -50,4 +50,31 @@ body > #page #component_membership_form .panel > .panel-body {
 #component_membership_form .col-sm-3,
 #component_membership_form .col-sm-9 {
 	padding-left: 0;
+}
+body {
+    background: #452e76 !important;
+}
+.admidio-container {
+    border-radius: 0 !important;
+    background: none !important;
+    border: 0 !important;
+}
+.alert-default {
+    background: white;
+    border: 1px solid darkgray !important;
+}
+.lead-content {
+    font-weight: bold;
+}
+.alert,
+.lead-content {
+    font-size: 17px;
+}
+.page__header,
+.lead-content,
+.lead-content a {
+    color: white !important;
+}
+hr {
+    border: 1px solid #ffffff8c !important;
 }
