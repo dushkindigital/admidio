@@ -110,8 +110,8 @@ $columnHeading = array(
     '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/profile.png"
         alt="'.$gL10n->get('SYS_MEMBER_OF_ORGANIZATION', $orgName).'"
         title="'.$gL10n->get('SYS_MEMBER_OF_ORGANIZATION', $orgName).'" />',
-    $gL10n->get('SYS_NAME'),
-    $gL10n->get('SYS_USER'),
+    'First',
+    'Last',
     '<img class="admidio-icon-info" alt="'.$gL10n->get('SYS_GENDER').'" title="" src="'.THEME_URL.'/icons/gender.png" data-original-title="'.$gL10n->get('SYS_GENDER').'">',
     $gL10n->get('SYS_BIRTHDAY'),
     $gL10n->get('MEM_UPDATED_ON'),

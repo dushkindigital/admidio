@@ -51,9 +51,6 @@ body > #page #component_membership_form .panel > .panel-body {
 #component_membership_form .col-sm-9 {
 	padding-left: 0;
 }
-body {
-    background: #452e76 !important;
-}
 .admidio-container {
     border-radius: 0 !important;
     background: none !important;

@@ -57,3 +57,6 @@ body > #page #component_membership_form .panel > .panel-body {
 .form__fieldset {
     margin-bottom: 5px !important;
 }
+.form-control--matriculation_year {
+    width: 80px;
+}

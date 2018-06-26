@@ -35,13 +35,20 @@ var regFormFields = window.regFormFields;
 			if (this.dom.elements[name].length == 0) {
 				this.dom.elements[name] = jQuery('textarea[name="' + k + '"]', this.dom.form);
 			}
-		}
+        }
 
         // event handlers
         this.dom.elements['Membership Type'].on('change', null, { self: self }, function (evnt) {
             evnt.data.self.onchange_membership(evnt);
         });
         // startup
+        if($('.form-control--matriculation_year').length) {
+            $('.form-control--matriculation_year').attr('type', 'number')
+                                                .attr('min', 1900)
+                                                .attr('maxlength', 4)
+                                                .attr('max', (new Date).getFullYear());
+        }
+
         // thingy.onchange_membership();
 	};
 

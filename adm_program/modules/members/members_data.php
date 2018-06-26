@@ -71,8 +71,8 @@ $memberOfOtherOrganizationSelect = '';
 $searchCondition = '';
 $limitCondition = '';
 $orderCondition = '';
-$orderColumns = array('no', 'member_this_orga', 'name', 'usr_login_name', 'gender', 'birthday', 'timestamp');
-$searchColumns = array('COALESCE(name, \' \')', 'COALESCE(usr_login_name, \' \')', 'CASE WHEN gender = \'1\' THEN \''.$gL10n->get('SYS_MALE').'\' WHEN gender = \'2\' THEN \''.$gL10n->get('SYS_FEMALE').'\' ELSE \' \' END ', 'COALESCE(birthday, \'1900-02-01\')', 'COALESCE(timestamp, \'1900-02-01\')');
+$orderColumns = array('no', 'member_this_orga', 'first_name', 'last_name', 'gender', 'birthday', 'timestamp');
+$searchColumns = array('COALESCE(first_name, \' \')', 'COALESCE(last_name, \' \')', 'CASE WHEN gender = \'1\' THEN \''.$gL10n->get('SYS_MALE').'\' WHEN gender = \'2\' THEN \''.$gL10n->get('SYS_FEMALE').'\' ELSE \' \' END ', 'COALESCE(birthday, \'1900-02-01\')', 'COALESCE(timestamp, \'1900-02-01\')');
 
 // create order statement
 if(array_key_exists('order', $_GET))
@@ -258,12 +258,15 @@ while($row = $mglStatement->fetch())
              src="'.THEME_URL.'/icons/'.$icon.'" alt="'.$iconText.'" title="'.$iconText.'" /></a>';
 
     // Add "Lastname" and "Firstname"
-    $columnValues[] = '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$row['name'].'</a>';
+    $nameArr = explode(' ', $row['name']);
+    $firstName = $nameArr[1];
+    $lastName = str_replace(',', '', $nameArr[0]);
+    $columnValues[] = '<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$firstName.'</a>';
 
     // Add "Loginname"
     if(strlen($row['usr_login_name']) > 0)
     {
-        $columnValues[] = $row['usr_login_name'];
+        $columnValues[] = $lastName;
     }
     else
     {

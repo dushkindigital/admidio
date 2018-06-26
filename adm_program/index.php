@@ -18,7 +18,7 @@ if(!is_file('../adm_my_files/config.php'))
 
 require_once('system/common.php');
 
-$headline = 'Admidio '.$gL10n->get('SYS_OVERVIEW');
+$headline = 'Member Pages '.$gL10n->get('SYS_OVERVIEW');
 
 // Navigation of the module starts here
 $gNavigation->addStartUrl(CURRENT_URL, $headline);
