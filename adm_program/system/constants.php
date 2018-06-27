@@ -165,3 +165,5 @@ if (!defined('JSON_UNESCAPED_SLASHES'))
     define('JSON_UNESCAPED_SLASHES', 64);
     define('JSON_UNESCAPED_UNICODE', 256);
 }
+
+define('TBL_APPLICATIONS', $g_tbl_praefix .'_user_applications');

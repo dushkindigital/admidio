@@ -35,6 +35,9 @@ class UserRegistration extends User
 {
     private $sendEmail; ///< Flag if the object will send a SystemMail if registration is accepted or deleted.
     private $tableRegistration;
+    private $tableApplication;
+    protected $userAppFields; // array holds the fields for specific users
+    public $organizationId;
 
     /**
      * Constructor that will create an object of a recordset of the users table.
@@ -51,18 +54,45 @@ class UserRegistration extends User
     {
         global $gCurrentOrganization;
 
+        $this->organizationId = $organizationId;
+
         $this->sendEmail = true;
 
-        parent::__construct($database, $userFields, $userId);
-
-        if($organizationId > 0)
+        /**
+         * @author: Akshay
+         * Pluck hidden fields from @var $userFields and return to @var $userAppFieldsResult
+         */
+        if($this->organizationId > 0)
         {
-            $this->setOrganization($organizationId);
+            $this->setOrganization($this->organizationId);
         }
-
+        $this->userAppFields = [
+            76, 78, 79, 82,
+        ]; // TODO: Pick Field Ids from adm_user_applications table
+        $userAppFieldsResult = new ProfileFields($database, $this->organizationId);
+        $arr = (array) $userFields->mProfileFields;
+        foreach ($arr as $arrKey => $arrValue) {
+            foreach($this->userAppFields as $appFieldKey => $appFieldValue)
+            {
+                if($arrValue->getValue('usf_id') == $appFieldValue) {
+                    $userAppFieldsResult->setValue(
+                        $arrValue->getValue('usf_name_intern'),
+                        $_POST['usf-'.$appFieldValue]
+                    );
+                    unset($userFields->mProfileFields[$arrKey]);
+                }
+            }
+        }
+        parent::__construct($database, $userFields, $userId);
         // create recordset for registration table
         $this->tableRegistration = new TableAccess($this->db, TBL_REGISTRATIONS, 'reg');
         $this->tableRegistration->readDataByColumns(array('reg_org_id' => $this->organizationId, 'reg_usr_id' => $userId));
+
+
+        // create recordset for application table
+        $this->tableApplication = new TableAccess($this->db, TBL_APPLICATIONS, 'reg');
+        $this->tableApplication->readDataByColumns(array('reg_org_id' => $this->organizationId, 'reg_usr_id' => $userId));
+        // die('woks ');
     }
 
     /**
@@ -180,6 +210,13 @@ class UserRegistration extends User
         // if new registration is saved then save also record in registration table and send notification mail
         if($this->tableRegistration->isNewRecord())
         {
+            $this->saveChangesWithoutRights();
+            // save special fields
+            $this->tableApplication->setValue('reg_org_id', $this->organizationId);
+            $this->tableApplication->setValue('reg_usr_id', $this->getValue('usr_id'));
+            $this->tableApplication->setValue('reg_timestamp', DATETIME_NOW);
+            $this->tableApplication->save();
+
             // save registration record
             $this->tableRegistration->setValue('reg_org_id', $this->organizationId);
             $this->tableRegistration->setValue('reg_usr_id', $this->getValue('usr_id'));
