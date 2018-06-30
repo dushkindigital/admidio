@@ -1,9 +1,9 @@
 <?php
 
 require_once (__DIR__ . '/../../../adm_program/system/common.php');
-require_once (__DIR__ . '/../adm_program/system/login_valid.php');
+require_once (__DIR__ . '/../../system/login_valid.php');
 
-require_once (__DIR__ . '/../adm_program/modules/profile/roles_functions.php');
+require_once (__DIR__ . '/../../modules/profile/roles_functions.php');
 
 require_once (__DIR__ . '/engine/bootstrap.php');
 
@@ -37,13 +37,37 @@ function build_page ( $datum_user ) {
 		'<img alt="profile icon" src="' . ADMIDIO_URL . '/adm_themes/modern/icons/profile.png" /> <span style="font-weight: normal; text-decoration: underline;">' . $datum_user->getValue('FIRST_NAME') . ' ' . $datum_user->getValue('FIRST_NAME') . "</span>",
 		$datum_user->getValue('EMAIL')
 	);
+	
+	// Content presentation: starts here
+	$registeredUserId = $datum_user->getValue('usr_id');
+	$fetchMembershipTypeQuery = "SELECT membership_type FROM ".TBL_APPLICATIONS." WHERE uapp_usr_id = $registeredUserId";
+	$fetchMembershipType = $GLOBALS['gDb']->query($fetchMembershipTypeQuery);
+	$fetchMembershipType = $fetchMembershipType->fetch();
+	$fetchMembershipType = $fetchMembershipType['membership_type'];
+	if( $fetchMembershipType == 'member' ) {
+		# school
+		$form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $datum_user->getValue('L4P_DB_SCHOOL') );
+	
+		// Name (Also Appears In Profile)
+		// Email Address (Also Appears In Profile)
+		// Application Type (Does Not Appear In Profile)
+		// School (Appears In Profile)
+		// Matriculation Year (Also Appears In Profile)
+		// Message (Does Not Appear In Profile)
 
-	# school
-	$form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $datum_user->getValue('L4P_DB_SCHOOL') );
+	} elseif($fetchMembershipType == 'associate') {
+		# message
+		$form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $datum_user->getValue('L4P_DB_MESSAGE') );
+		// Content presentation: starts here
+		// Name (Also Appears In Profile)
+		// Email Address (Also Appears In Profile)
+		// Application Type (Does Not Appear In Profile)
+		// Reference 1 (Does Not Appear In Profile)
+		// Reference 2 (Does Not Appear In Profile)
+		// Message (Does Not Appear In Profile)
 
-	# message
-	$form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $datum_user->getValue('L4P_DB_MESSAGE') );
-
+	}
+	
 	$page->addHtml( $form->show(false) );
 
 	# $page->addCssFile( "adm_program/modules/registration/asset/css/pending_user_profile.min.css" );
