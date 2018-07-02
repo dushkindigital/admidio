@@ -157,9 +157,20 @@ $form = new HtmlForm('edit_profile_form', ADMIDIO_URL.FOLDER_MODULES.'/profile/p
 // *******************************************************************************
 
 $category = '';
+/**
+ * TODO: Only access to those who have ‘Organize and assign registrations’ rights
+ */
+$tableApplication = new TableAccess($GLOBALS['gDb'], TBL_APPLICATIONS, '');
+$privateColumns = array_keys(array_change_key_case($tableApplication->dbColumns, CASE_UPPER));
+$privateData = [];
 
-foreach($gProfileFields->mProfileFields as $field)
+foreach($gProfileFields->mProfileFields as $key => $field)
 {
+    if(in_array($field->getValue('usf_name_intern'), $privateColumns)) {
+        // $privateData[$field->getValue('usf_name_intern')] = $_POST['usf-'.$field->getValue('usf_id')];
+        unset($gProfileFields->mProfileFields[$key]);
+    }
+
     $showField = false;
 
     // bei schneller Registrierung duerfen nur die Pflichtfelder ausgegeben werden
@@ -173,11 +184,11 @@ foreach($gProfileFields->mProfileFields as $field)
     {
         // bei der vollstaendigen Registrierung alle Felder anzeigen
         $showField = true;
-    
+
     } elseif (($getNewUser === 2) and ($gPreferences['registration_mode'] == \cantabnyc\get_configs()->preference->registration_mode)) {
 			# temp registration
 			$l4p_fields = [ 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'L4P_DB_MEMBERSHIP', 'L4P_DB_SCHOOL', 'L4P_DB_AFFILIATION', 'L4P_DB_MATRICULATION', 'L4P_DB_MESSAGE'];
-			
+
 			if (\in_array($field->getValue('usf_name_intern'), $l4p_fields)) {
 				$showField = true;
 			}
