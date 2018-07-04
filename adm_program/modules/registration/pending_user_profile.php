@@ -32,60 +32,16 @@ function build_page ( $datum_user ) {
 	$form = new HtmlForm('pending_user_profile_form', null);
 	// Content presentation: starts here
     $registeredUserId = $datum_user->getValue('usr_id');
-    $sql = "SELECT DISTINCT
-                u.usr_id 'Id',
-                u.usr_login_name 'Username',
-                ua.application_type 'Type',
-                ua.reference_1 'Reference 1',
-                ua.reference_2 'Reference 2',
-                ua.message 'Message',
-                (
-                SELECT
-                    usd_value
-                FROM
-                    adm_user_data
-                WHERE
-                    usd_usr_id = $registeredUserId AND usd_usf_id = 52
-            ) AS YEAR,
-            (
-                SELECT
-                    usd_value
-                FROM
-                    adm_user_data
-                WHERE
-                    usd_usr_id = $registeredUserId AND usd_usf_id = 51
-            ) AS School,
-            (
-                SELECT
-                    usd_value
-                FROM
-                    adm_user_data
-                WHERE
-                    usd_usr_id = $registeredUserId AND usd_usf_id = 2
-            ) AS FirstName,
-            (
-                SELECT
-                    usd_value
-                FROM
-                    adm_user_data
-                WHERE
-                    usd_usr_id = $registeredUserId AND usd_usf_id = 1
-            ) AS LastName
-            FROM
-                adm_users u,
-                adm_user_data ud,
-                adm_user_applications ua
-            WHERE
-                u.usr_id = ud.usd_usr_id AND u.usr_id = ua.uapp_usr_id AND u.usr_id = $registeredUserId ";
-    $fetchapplicationTypeQuery = "SELECT *
+    // $getApplicationQuery = "CALL sp_GetUserApplication($registeredUserId)";
+    $getApplicationTypeQuery = "SELECT `application_type`, `message`, `reference_1`, `reference_2`
                                     FROM ".TBL_APPLICATIONS."
                                     WHERE uapp_usr_id = $registeredUserId";
 
-	$fetchapplicationType = $GLOBALS['gDb']->query($fetchapplicationTypeQuery);
-    $fetchapplicationType = $application = $fetchapplicationType->fetch();
-    // echo json_encode($application);die;
-    $applicationType = $fetchapplicationType['application_type'];
-    $message = $fetchapplicationType['message'];
+	$application = $GLOBALS['gDb']->query($getApplicationTypeQuery);
+    $application = $application = $application->fetch();
+
+    $applicationType = $application['application_type'];
+    $message = $application['message'];
     $memberName = $datum_user->getValue('FIRST_NAME').' '.$datum_user->getValue('LAST_NAME');
     $form->addStaticControl('LABEL_NAME', $GLOBALS['gL10n']->get('LABEL_NAME'),  $memberName);
     $form->addStaticControl('L4P_DB_EMAIL_2', $GLOBALS['gL10n']->get('L4P_DB_EMAIL_2'), $datum_user->getValue('EMAIL') );
@@ -100,9 +56,9 @@ function build_page ( $datum_user ) {
 	} elseif( !empty($applicationType) && $applicationType == 'associate' ) {
         # message
 
-        $associate = $application;
-        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $associate['reference_1'] );
-        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $associate['reference_2'] );
+        // $application = $application;
+        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $application['reference_1'] );
+        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $application['reference_2'] );
 
     }
     $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $message );
