@@ -49,17 +49,24 @@ function get_configs() : \stdClass {
 
 		# form fields in reg/etc
 		'form_fields' => (object) array(
+            'application_fields' => [
+                'public' => [
+                    'SCHOOL', // required only if the member type 'member'
+                    'MATRICULATION_YEAR',
+                ],
+                'private' => [
+                    'MESSAGE',
+                    'REFERENCE_1',
+                    'REFERENCE_2',
+                    'APPLICATION_TYPE',
+                ],
+            ],
 			'reg' => array(
                     'LAST_NAME',
                     'FIRST_NAME',
                     'EMAIL',
-                    'MEMBERSHIP_TYPE',
                     'SCHOOL', // required only if the member type 'member'
                     'MATRICULATION_YEAR',
-                    'MATRICULATION',
-                    'REFERENCE',
-                    'REFERENCE_2',
-                    'MESSAGE', // optional
 					/*
 					'L4P_DB_MEMBERSHIP_TYPE',
 					'L4P_DB_MESSAGE',

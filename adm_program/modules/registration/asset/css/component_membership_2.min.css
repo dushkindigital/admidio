@@ -60,3 +60,9 @@ body > #page #component_membership_form .panel > .panel-body {
 .form-control--matriculation_year {
     width: 80px;
 }
+.mb-15 {
+    margin-bottom: 15px !important;
+}
+.btn-default {
+    margin-top: 15px;
+}

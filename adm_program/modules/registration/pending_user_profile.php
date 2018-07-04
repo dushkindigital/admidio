@@ -26,53 +26,88 @@ function build_page ( $datum_user ) {
 
 	if ($GLOBALS['gNavigation']->count() > 1) {
 		$profileMenu->addItem('menu_item_back', $GLOBALS['gNavigation']->getPreviousUrl(), $GLOBALS['gL10n']->get('SYS_BACK'), 'back.png');
-	}
 
+	}
 	# show data
 	$form = new HtmlForm('pending_user_profile_form', null);
 	// Content presentation: starts here
-	$registeredUserId = $datum_user->getValue('usr_id');
-    $fetchMembershipTypeQuery = "SELECT membership_type FROM ".TBL_APPLICATIONS." WHERE uapp_usr_id = $registeredUserId";
+    $registeredUserId = $datum_user->getValue('usr_id');
+    $sql = "SELECT DISTINCT
+                u.usr_id 'Id',
+                u.usr_login_name 'Username',
+                ua.application_type 'Type',
+                ua.reference_1 'Reference 1',
+                ua.reference_2 'Reference 2',
+                ua.message 'Message',
+                (
+                SELECT
+                    usd_value
+                FROM
+                    adm_user_data
+                WHERE
+                    usd_usr_id = $registeredUserId AND usd_usf_id = 52
+            ) AS YEAR,
+            (
+                SELECT
+                    usd_value
+                FROM
+                    adm_user_data
+                WHERE
+                    usd_usr_id = $registeredUserId AND usd_usf_id = 51
+            ) AS School,
+            (
+                SELECT
+                    usd_value
+                FROM
+                    adm_user_data
+                WHERE
+                    usd_usr_id = $registeredUserId AND usd_usf_id = 2
+            ) AS FirstName,
+            (
+                SELECT
+                    usd_value
+                FROM
+                    adm_user_data
+                WHERE
+                    usd_usr_id = $registeredUserId AND usd_usf_id = 1
+            ) AS LastName
+            FROM
+                adm_users u,
+                adm_user_data ud,
+                adm_user_applications ua
+            WHERE
+                u.usr_id = ud.usd_usr_id AND u.usr_id = ua.uapp_usr_id AND u.usr_id = $registeredUserId ";
+    $fetchapplicationTypeQuery = "SELECT *
+                                    FROM ".TBL_APPLICATIONS."
+                                    WHERE uapp_usr_id = $registeredUserId";
 
-	$fetchMembershipType = $GLOBALS['gDb']->query($fetchMembershipTypeQuery);
-	$fetchMembershipType = $fetchMembershipType->fetch();
-    $membershipType = $fetchMembershipType['membership_type'];
+	$fetchapplicationType = $GLOBALS['gDb']->query($fetchapplicationTypeQuery);
+    $fetchapplicationType = $application = $fetchapplicationType->fetch();
+    // echo json_encode($application);die;
+    $applicationType = $fetchapplicationType['application_type'];
+    $message = $fetchapplicationType['message'];
     $memberName = $datum_user->getValue('FIRST_NAME').' '.$datum_user->getValue('LAST_NAME');
     $form->addStaticControl('LABEL_NAME', $GLOBALS['gL10n']->get('LABEL_NAME'),  $memberName);
     $form->addStaticControl('L4P_DB_EMAIL_2', $GLOBALS['gL10n']->get('L4P_DB_EMAIL_2'), $datum_user->getValue('EMAIL') );
-    $form->addStaticControl('L4P_DB_MEMBERSHIP_TYPE', $GLOBALS['gL10n']->get('L4P_DB_MEMBERSHIP_TYPE'), $membershipType);
+    $form->addStaticControl('L4P_DB_MEMBERSHIP_TYPE', $GLOBALS['gL10n']->get('L4P_DB_MEMBERSHIP_TYPE'), $applicationType);
 
-	if( !empty($membershipType) && $membershipType == 'member' ) {
+	if( !empty($applicationType) && $applicationType == 'member' ) {
         # school
 
         $form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $datum_user->getValue('SCHOOL') );
         $form->addStaticControl('L4P_DB_MATRICULATION_YEAR', $GLOBALS['gL10n']->get('L4P_DB_MATRICULATION_YEAR'), $datum_user->getValue('MATRICULATION_YEAR') );
 
-	} elseif( !empty($membershipType) && $membershipType == 'associate' ) {
+	} elseif( !empty($applicationType) && $applicationType == 'associate' ) {
         # message
-        $associateQuery = "SELECT
-                        reference,
-                        reference_2
-                    FROM
-                        adm_user_applications
-                    WHERE
-                        uapp_usr_id = $registeredUserId";
 
-        $associate = $GLOBALS['gDb']->query($associateQuery);
-        $associate = (object) $associate->fetch();
-        $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $datum_user->getValue('L4P_DB_MESSAGE') );
-        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $associate->reference );
-        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $associate->reference_2 );
-		// Reference 1 (Does Not Appear In Profile)
-		// Reference 2 (Does Not Appear In Profile)
-		// Message (Does Not Appear In Profile)
+        $associate = $application;
+        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $associate['reference_1'] );
+        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $associate['reference_2'] );
 
     }
-    $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $datum_user->getValue('L4P_DB_MESSAGE') );
+    $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $message );
 
 	$page->addHtml( $form->show(false) );
-
-	# $page->addCssFile( "adm_program/modules/registration/asset/css/pending_user_profile.min.css" );
 
 	$page->show();
 }

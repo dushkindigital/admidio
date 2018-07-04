@@ -93,12 +93,6 @@ function build_form($form, $datum_user)
             # keep track of names to ids
             $export_field_names['usf-' . $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_id')] = $field->getValue('usf_name');
 
-			//$reg_form_fields[$cat_name_intern][] = [];
-			$reg_form_fields[$cat_name_intern][] = [
-				'label' => $field->getValue('usf_name'),
-				'name' => $field->getValue('usf_name_intern'),
-				'id' => 'usf-' . $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_id'),
-			];
             $fieldTypeCol = $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_type');
 			//'usf-' . $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_id')
 
@@ -130,7 +124,7 @@ function build_form($form, $datum_user)
                     (bool) $datum_user->getValue($usfNameIntern),
                     array(
                         'property' => $fieldProperty,
-						'class' => 'form-control--'.strtolower($field->getValue('usf_name_intern')),
+						'class' => strtolower($field->getValue('usf_name_intern')),
                         'helpTextIdLabel' => $helpId,
 						'htmlAfter' => $htmlAfterFormCtrl,
                         'icon' => $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_icon', 'database'),
@@ -169,7 +163,7 @@ function build_form($form, $datum_user)
                     array(
                         'property' => $fieldProperty,
                         'defaultValue' => $defaultValue,
-						'class' => 'form-control--'.strtolower($field->getValue('usf_name_intern')),
+						'class' => strtolower($field->getValue('usf_name_intern')),
                         'helpTextIdLabel' => $helpId,
 						'htmlAfter' => $htmlAfterFormCtrl,
                         'icon' => $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_icon', 'database'),
@@ -188,7 +182,7 @@ function build_form($form, $datum_user)
                     array(
                         'property' => $fieldProperty,
                         'defaultValue' => $datum_user->getValue($usfNameIntern, 'database'),
-						'class' => 'form-control--'.strtolower($field->getValue('usf_name_intern')),
+						'class' => strtolower($field->getValue('usf_name_intern')),
                         'showNoValueButton' => $showDummyRadioButton,
                         'helpTextIdLabel' => $helpId,
 						'htmlAfter' => $htmlAfterFormCtrl,
@@ -204,7 +198,7 @@ function build_form($form, $datum_user)
                     array(
                         'maxLength' => 4000,
                         'property' => $fieldProperty,
-						'class' => 'form-control--'.strtolower($field->getValue('usf_name_intern')),
+						'class' => strtolower($field->getValue('usf_name_intern')),
                         'helpTextIdLabel' => $helpId,
 						'htmlAfter' => $htmlAfterFormCtrl,
                         'icon' => $GLOBALS['gProfileFields']->getProperty($usfNameIntern, 'usf_icon', 'database'),
@@ -243,7 +237,7 @@ function build_form($form, $datum_user)
                     array(
                         'type' => $fieldType,
                         'maxLength' => $maxlength,
-						'class' => 'form-control--'.strtolower($field->getValue('usf_name_intern')),
+						'class' => strtolower($field->getValue('usf_name_intern')),
                         'property' => $fieldProperty,
                         'helpTextIdLabel' => $helpId,
 						'htmlAfter' => $htmlAfterFormCtrl,
@@ -258,6 +252,51 @@ function build_form($form, $datum_user)
 
     // div-Container admGroupBoxBody und admGroupBox schliessen
     $form->closeGroupBox();
+    $form->openGroupBox('public_mandatory_fields', null, 'form-group mb-15');
+    // membership field: Starts here
+    $form->addLabel('Membership type', 'application_type');
+    $form->addSelect(
+        'application_type',
+        'application_type',
+        [
+            'class' => 'form-control',
+            'required' => 'required',
+        ]
+    );
+    $form->addOption('', 'Select Membership Type');
+    $form->addOption('member', 'Member');
+    $form->addOption('associate', 'Associate');
+    $form->closeSelect();
+    // membership field: Ends here
+    $form->closeGroupBox();
+    $form->openGroupBox('application_fields');
+    $form->addInput(
+        'reference_1', // name/id
+        'Reference 1', // label
+        '' // value
+    );
+    $form->addInput(
+        'reference_2', // name/id
+        'Reference 2', // label
+        '' // value
+    );
+    //
+    $form->closeGroupBox();
+
+    $form->addLabel('Message (Optional)', 'message');
+    $form->addTextArea(
+        'message',
+        null, //rows
+        null, //cols
+        '', // value
+        'message', // id,
+        [
+            'class' => 'form-control',
+            'maxlength' => '4000',
+        ]
+    );
+    $form->closeFieldSet();
+    // add textarea input : Ends here
 
     # captcha
     if ($GLOBALS['gPreferences']['enable_registration_captcha'] == 1) {
@@ -269,7 +308,7 @@ function build_form($form, $datum_user)
 
     # submit button
     $form->addSubmitButton('btn_save', $GLOBALS['gL10n']->get('SYS_SEND'), array('icon' => THEME_URL . '/icons/email.png'));
-
+    $reg_form_fields = \cantabnyc\get_configs()->form_fields->application_fields;
     return [$export_field_names, $reg_form_fields];
 }
 
@@ -306,11 +345,11 @@ function build_page()
 
     // create html form
     $form = new HtmlForm('component_membership_form', ADMIDIO_URL . '/adm_program/modules/registration/handle_membership.php', $page);
+    // add textarea input: Starts here
 
     $export_field_names = $fields = build_form($form, $datum_user);
 	$export_field_names = $export_field_names[0];
 	$reg_form_fields = $fields[1];
-
     $page->addHtml($form->show(false));
 
     # splice in JS configs

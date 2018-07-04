@@ -162,12 +162,13 @@ $category = '';
  */
 $tableApplication = new TableAccess($GLOBALS['gDb'], TBL_APPLICATIONS, '');
 $privateColumns = array_keys(array_change_key_case($tableApplication->dbColumns, CASE_UPPER));
+// $privateColumns[] = 'MEMBERSHIP_TYPE';
 $privateData = [];
 
 foreach($gProfileFields->mProfileFields as $key => $field)
 {
     if(in_array($field->getValue('usf_name_intern'), $privateColumns)) {
-        // $privateData[$field->getValue('usf_name_intern')] = $_POST['usf-'.$field->getValue('usf_id')];
+        $privateData[$field->getValue('usf_name_intern')] = $_POST['usf-'.$field->getValue('usf_id')];
         unset($gProfileFields->mProfileFields[$key]);
     }
 
