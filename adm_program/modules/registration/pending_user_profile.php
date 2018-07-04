@@ -30,42 +30,39 @@ function build_page ( $datum_user ) {
 	}
 	# show data
 	$form = new HtmlForm('pending_user_profile_form', null);
-	// Content presentation: starts here
+    // Content presentation: starts here
     $registeredUserId = $datum_user->getValue('usr_id');
-    // $getApplicationQuery = "CALL sp_GetUserApplication($registeredUserId)";
-    $getApplicationTypeQuery = "SELECT `application_type`, `message`, `reference_1`, `reference_2`
-                                    FROM ".TBL_APPLICATIONS."
-                                    WHERE uapp_usr_id = $registeredUserId";
+    $getApplicationQuery = "CALL sp_GetUserApplication($registeredUserId)";
 
-	$application = $GLOBALS['gDb']->query($getApplicationTypeQuery);
-    $application = $application = $application->fetch();
-
-    $applicationType = $application['application_type'];
-    $message = $application['message'];
+    $application = $GLOBALS['gDb']->query($getApplicationQuery);
+    $application = $application->fetch();
+    $applicationType = $application['Type'];
+    $message = $application['Message'];
     $memberName = $datum_user->getValue('FIRST_NAME').' '.$datum_user->getValue('LAST_NAME');
     $form->addStaticControl('LABEL_NAME', $GLOBALS['gL10n']->get('LABEL_NAME'),  $memberName);
     $form->addStaticControl('L4P_DB_EMAIL_2', $GLOBALS['gL10n']->get('L4P_DB_EMAIL_2'), $datum_user->getValue('EMAIL') );
     $form->addStaticControl('L4P_DB_MEMBERSHIP_TYPE', $GLOBALS['gL10n']->get('L4P_DB_MEMBERSHIP_TYPE'), $applicationType);
 
-	if( !empty($applicationType) && $applicationType == 'member' ) {
-        # school
+    if( !empty($applicationType) && $applicationType == 'member' ) {
+    # school
 
-        $form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $datum_user->getValue('SCHOOL') );
-        $form->addStaticControl('L4P_DB_MATRICULATION_YEAR', $GLOBALS['gL10n']->get('L4P_DB_MATRICULATION_YEAR'), $datum_user->getValue('MATRICULATION_YEAR') );
+        $form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $application['School']);
+        $form->addStaticControl('L4P_DB_MATRICULATION_YEAR', $GLOBALS['gL10n']->get('L4P_DB_MATRICULATION_YEAR'), $application['Year']);
 
-	} elseif( !empty($applicationType) && $applicationType == 'associate' ) {
-        # message
+    } elseif( !empty($applicationType) && $applicationType == 'associate' ) {
+    # message
 
         // $application = $application;
-        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $application['reference_1'] );
-        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $application['reference_2'] );
+        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $application['Reference1'] );
+        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $application['Reference2'] );
 
     }
     $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $message );
 
-	$page->addHtml( $form->show(false) );
+    $page->addHtml( $form->show(false) );
 
-	$page->show();
+    $page->show();
+
 }
 
 /**
