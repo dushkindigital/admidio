@@ -31,8 +31,13 @@ function toggleApplicationFields(event) {
  * @since: 5 June 2018
  */
 $(document).ready(() => {
-    console.log(regFormFields)
-    hideRoleBasedFields()
+    $('input.first_name').attr('maxlength', '100');
+    $('input.last_name').attr('maxlength', '100');
+    $('input.email').attr('maxlength', '100');
+    $('input.matriculation_year').attr('type', 'text').attr('minlength', 4).attr('size', 4).attr('maxlength', 4);
+    $(`[name="reference_1"]`).attr('maxlength', '100');
+    $(`[name="reference_2"]`).attr('maxlength', '100');
+    hideRoleBasedFields();
     document.getElementById('application_type').addEventListener('change', function(event){
         toggleApplicationFields(event)
     });

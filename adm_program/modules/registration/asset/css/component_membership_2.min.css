@@ -66,3 +66,6 @@ body > #page #component_membership_form .panel > .panel-body {
 .btn-default {
     margin-top: 15px;
 }
+.matriculation_year {
+    max-width: 100px;
+}
