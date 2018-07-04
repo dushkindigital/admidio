@@ -38,23 +38,27 @@ function build_page ( $datum_user ) {
     $application = $application->fetch();
     $applicationType = $application['Type'];
     $message = $application['Message'];
-    $memberName = $datum_user->getValue('FIRST_NAME').' '.$datum_user->getValue('LAST_NAME');
-    $form->addStaticControl('LABEL_NAME', $GLOBALS['gL10n']->get('LABEL_NAME'),  $memberName);
+    $profileIconImg = '<img
+                        src="'.THEME_URL.'/icons/profile.png"
+                        class="img img--icon-xs" />';
+    $form->addStaticControl('LABEL_NAME', $profileIconImg, ucwords($memberName));
     $form->addStaticControl('L4P_DB_EMAIL_2', $GLOBALS['gL10n']->get('L4P_DB_EMAIL_2'), $datum_user->getValue('EMAIL') );
-    $form->addStaticControl('L4P_DB_MEMBERSHIP_TYPE', $GLOBALS['gL10n']->get('L4P_DB_MEMBERSHIP_TYPE'), $applicationType);
+    $form->addStaticControl('L4P_DB_MEMBERSHIP_TYPE', $GLOBALS['gL10n']->get('L4P_DB_MEMBERSHIP_TYPE'), ucwords($applicationType));
 
     if( !empty($applicationType) && $applicationType == 'member' ) {
     # school
 
-        $form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL'), $application['School']);
+        $schools = $GLOBALS['gProfileFields']->getProperty('SCHOOL', 'usf_value_list');
+        $school = $schools[$application['School']];
+        $form->addStaticControl('L4P_DB_SCHOOL', $GLOBALS['gL10n']->get('L4P_DB_SCHOOL').':', ucwords($school));
         $form->addStaticControl('L4P_DB_MATRICULATION_YEAR', $GLOBALS['gL10n']->get('L4P_DB_MATRICULATION_YEAR'), $application['Year']);
 
     } elseif( !empty($applicationType) && $applicationType == 'associate' ) {
     # message
 
         // $application = $application;
-        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), $application['Reference1'] );
-        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), $application['Reference2'] );
+        $form->addStaticControl('LABEL_REFERENCE', $GLOBALS['gL10n']->get('LABEL_REFERENCE'), ucwords($application['Reference1']) );
+        $form->addStaticControl('LABEL_REFERENCE_2', $GLOBALS['gL10n']->get('LABEL_REFERENCE_2'), ucwords($application['Reference2']) );
 
     }
     $form->addStaticControl('L4P_DB_MESSAGE', $GLOBALS['gL10n']->get('L4P_DB_MESSAGE'), $message );
