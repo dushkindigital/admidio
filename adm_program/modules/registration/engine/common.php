@@ -54,10 +54,12 @@ function extract_named_form_fields (string $email) : string {
 function dd($val = null){
     header('Content-type: application/json');
     echo json_encode($val);
-    // return $val;
     die;
 }
 function dump($val = null){
     header('Content-type: application/json');
     echo json_encode($val);
+}
+function generateActivationCode() {
+    return rand(999, 9999);
 }

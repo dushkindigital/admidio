@@ -84,7 +84,6 @@ class SystemMail extends Email
             '/#organization_short_name#/' => $this->smOrganization->getValue('org_shortname'),
             '/#organization_long_name#/'  => $this->smOrganization->getValue('org_longname'),
             '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage'),
-            
             '/#user_lp4_db_password#/'    => $user->getValue('L4P_DB_TEMP_PASSWORD', 'database')
         );
 
