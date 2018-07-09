@@ -50,8 +50,7 @@ if($action == 'get_user'){
         }else {
             echo json_encode([
                 'status' => 'ERROR',
-                'msg' => 'User found with given id and matched token',
-                'data' => $_POST
+                'msg' => 'The page you are looking is no longer valid.',
             ]);
         }
     }

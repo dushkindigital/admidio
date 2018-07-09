@@ -39,11 +39,22 @@ function getUserDetails() {
             _action: 'get_user'
         },
         success(success){
-            $rootElem.html(success.data)
-            console.info(success)
+            if(success.status == 'SUCCESS'){
+                $rootElem.html(success.data)
+            }else {
+                $rootElem.html(`
+                <div class="alert alert-warning">
+                    ${success.msg}
+                </div>
+                `)
+            }
         },
         error(error){
-            console.error(error)
+            $rootElem.html(`
+            <div class="alert alert-warning">
+                ${error.msg}
+            </div>
+            `)
         },
     });
 }
@@ -62,8 +73,8 @@ function setNewPassword(event) {
             _action: 'validate_activation_code'
         },
         success(success){
-            // $rootElem.html(success.msg)
-            console.info(success)
+            $rootElem.html(success.msg)
+            // console.info(success)
         },
         error(error){
             console.error(error)
