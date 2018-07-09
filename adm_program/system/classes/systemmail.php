@@ -73,9 +73,10 @@ class SystemMail extends Email
 
         // use unix linefeeds in mail
         $mailSrcText = str_replace("\r\n", "\n", $mailSrcText);
-
+        $activationCode = $user->getValue('usr_activation_code');
+        $hashedActivationCode = md5($activationCode);
         // now replace all parameters in email text
-        $pregRepArray = array(
+        $pregRepArray = [
             '/#user_first_name#/'         => $user->getValue('FIRST_NAME', 'database'),
             '/#user_last_name#/'          => $user->getValue('LAST_NAME', 'database'),
             '/#user_login_name#/'         => $user->getValue('usr_login_name'),
@@ -83,8 +84,10 @@ class SystemMail extends Email
             '/#administrator_email#/'     => $gPreferences['email_administrator'],
             '/#organization_short_name#/' => $this->smOrganization->getValue('org_shortname'),
             '/#organization_long_name#/'  => $this->smOrganization->getValue('org_longname'),
-            '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage')
-        );
+            '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage'),
+            // '/#user_confirmation_url#/'   => "http://localhost:8080/adm_program/modules/registration/activate-registration.php?uid={$user->getValue('usr_id')}&token={$hashedActivationCode}",
+            '/#user_confirmation_url#/'   => "https://www.cantabnyc.org/account/accept?uid={$user->getValue('usr_id')}&token={$hashedActivationCode}",
+        ];
 
         $mailSrcText = preg_replace(array_keys($pregRepArray), array_values($pregRepArray), $mailSrcText);
 
