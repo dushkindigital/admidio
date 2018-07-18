@@ -10,14 +10,13 @@
  */
 // @akshay: hiding some elements for the emebeded form in front-end: Starts here
 $isEmbeded = false;
-if(isset($_GET['is_embed']) && $_GET['is_embed'] == 'true')
-{
+if (isset($_GET['is_embed']) && $_GET['is_embed'] == 'true') {
     $isEmbeded = true;
 }
 // @akshay: hiding some elements for the emebeded form in front-end: Ends here
-require_once (__DIR__ . '/../../../adm_program/system/common.php');
+require_once __DIR__ . '/../../../adm_program/system/common.php';
 
-require_once (__DIR__ . '/engine/bootstrap.php');
+require_once __DIR__ . '/engine/bootstrap.php';
 
 $headline = $gL10n->get('SYS_LOGIN');
 
@@ -26,12 +25,12 @@ $gNavigation->addUrl(CURRENT_URL, $headline);
 
 // read id of administrator role
 $sql = 'SELECT rol_id
-          FROM '.TBL_ROLES.'
-    INNER JOIN '.TBL_CATEGORIES.'
+          FROM ' . TBL_ROLES . '
+    INNER JOIN ' . TBL_CATEGORIES . '
             ON cat_id = rol_cat_id
-         WHERE rol_name LIKE \''.$gL10n->get('SYS_ADMINISTRATOR').'\'
+         WHERE rol_name LIKE \'' . $gL10n->get('SYS_ADMINISTRATOR') . '\'
            AND rol_administrator = 1
-           AND (  cat_org_id = '. $gCurrentOrganization->getValue('org_id').'
+           AND (  cat_org_id = ' . $gCurrentOrganization->getValue('org_id') . '
                OR cat_org_id IS NULL )';
 $pdoStatement = $gDb->query($sql);
 
@@ -40,8 +39,7 @@ $roleAdministrator = new TableRoles($gDb, $pdoStatement->fetchColumn());
 
 // create html page object
 $page = new HtmlPage($headline);
-if($isEmbeded)
-{
+if ($isEmbeded) {
     $embededFrameStyle = '
         <style>
             .navbar-menu, #header-block {
@@ -59,16 +57,15 @@ $loginMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->ge
 $form = new HtmlForm('login_form', ADMIDIO_URL . '/adm_custom/login_check.php', $page, array('showRequiredFields' => false));
 
 $form->addInput('usr_login_name', $gL10n->get('SYS_USERNAME'), null,
-                array('maxLength' => 35, 'property' => FIELD_REQUIRED, 'class' => 'form-control-small'));
+    array('maxLength' => 35, 'property' => FIELD_REQUIRED, 'class' => 'form-control-small'));
 // TODO Future: 'minLength' => PASSWORD_MIN_LENGTH
 $form->addInput('usr_password', $gL10n->get('SYS_PASSWORD'), null,
-                array('type' => 'password', 'property' => FIELD_REQUIRED, 'class' => 'form-control-small'));
+    array('type' => 'password', 'property' => FIELD_REQUIRED, 'class' => 'form-control-small'));
 
 // show selectbox with all organizations of database
-if($gPreferences['system_organization_select'] == 1)
-{
+if ($gPreferences['system_organization_select'] == 1) {
     $sql = 'SELECT org_id, org_longname
-              FROM '.TBL_ORGANIZATIONS.'
+              FROM ' . TBL_ORGANIZATIONS . '
           ORDER BY org_longname ASC, org_shortname ASC';
     $form->addSelectBoxFromSql(
         'org_id', $gL10n->get('SYS_ORGANIZATION'), $gDb, $sql,
@@ -76,46 +73,39 @@ if($gPreferences['system_organization_select'] == 1)
     );
 }
 
-if($gPreferences['enable_auto_login'] == 1)
-{
+if ($gPreferences['enable_auto_login'] == 1) {
     $form->addCheckbox('auto_login', $gL10n->get('SYS_REMEMBER_ME'), false);
 }
-$form->addSubmitButton('btn_login', $gL10n->get('SYS_LOGIN'), array('icon' => THEME_URL.'/icons/key.png'));
+$form->addSubmitButton('btn_login', $gL10n->get('SYS_LOGIN'), array('icon' => THEME_URL . '/icons/key.png'));
 $page->addHtml($form->show(false));
 
-if($gPreferences['registration_mode'] > 0)
-{
+if ($gPreferences['registration_mode'] > 0) {
     $page->addHtml('
-        <div id="login_registration_link" class="public-registration-link">
+        <div id="login_registration_link">
             <small>
-                <a href="' . ADMIDIO_URL .'/adm_program/modules/registration/component_membership_2.php">'.$gL10n->get('SYS_WANT_REGISTER').'</a>
+                <a href="' . ADMIDIO_URL . '/adm_program/modules/registration/component_membership_2.php">' . $gL10n->get('SYS_WANT_REGISTER') . '</a>
             </small>
         </div>');
 }
 
 // Link bei Loginproblemen
-if($gPreferences['enable_password_recovery'] == 1 && $gPreferences['enable_system_mails'] == 1)
-{
+if ($gPreferences['enable_password_recovery'] == 1 && $gPreferences['enable_system_mails'] == 1) {
     // neues Passwort zusenden
-    $forgotPasswordLink = ADMIDIO_URL.'/adm_program/system/lost_password.php';
-}
-elseif($gPreferences['enable_mail_module'] == 1 && $roleAdministrator->getValue('rol_mail_this_role') == 3)
-{
+    $forgotPasswordLink = ADMIDIO_URL . '/adm_program/system/lost_password.php';
+} elseif ($gPreferences['enable_mail_module'] == 1 && $roleAdministrator->getValue('rol_mail_this_role') == 3) {
     // show link of message module to send mail to administrator role
-    $forgotPasswordLink = ADMIDIO_URL.FOLDER_MODULES.'/messages/messages_write.php?rol_id='.$roleAdministrator->getValue('rol_id').'&amp;subject='.$gL10n->get('SYS_LOGIN_PROBLEMS');
-}
-else
-{
+    $forgotPasswordLink = ADMIDIO_URL . FOLDER_MODULES . '/messages/messages_write.php?rol_id=' . $roleAdministrator->getValue('rol_id') . '&amp;subject=' . $gL10n->get('SYS_LOGIN_PROBLEMS');
+} else {
     // show link to send mail with local mail-client to administrator
-    $forgotPasswordLink = 'mailto:'.$gPreferences['email_administrator'].'?subject='.$gL10n->get('SYS_LOGIN_PROBLEMS');
+    $forgotPasswordLink = 'mailto:' . $gPreferences['email_administrator'] . '?subject=' . $gL10n->get('SYS_LOGIN_PROBLEMS');
 }
 
 $page->addHtml('
     <div id="login_forgot_password_link">
-        <small><a href="'.$forgotPasswordLink.'">'.$gL10n->get('SYS_FORGOT_MY_PASSWORD').'</a></small>
+        <small><a href="' . $forgotPasswordLink . '">' . $gL10n->get('SYS_FORGOT_MY_PASSWORD') . '</a></small>
     </div>
     <div id="login_admidio_link">
-        <small>Powered by <a href="'.ADMIDIO_HOMEPAGE.'">Admidio</a></small>
+        <small>Powered by <a href="' . ADMIDIO_HOMEPAGE . '">Admidio</a></small>
     </div>');
 
 $page->show();

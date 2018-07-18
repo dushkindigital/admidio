@@ -30,7 +30,7 @@ $pageContent = <<<HTML
     </div>
 </form>
 HTML;
-if($action == 'get_user'){
+if ($action == 'get_user') {
     $token = trim($_POST['token']);
 
     $user = $GLOBALS['gDb']->query("SELECT usr_login_name, usr_activation_code
@@ -39,15 +39,14 @@ if($action == 'get_user'){
 
     $user = $user->fetch();
 
-
-    if($user) {
-        if(md5($user['usr_activation_code']) == $token) {
+    if ($user) {
+        if (md5($user['usr_activation_code']) == $token) {
             echo json_encode([
                 'status' => 'SUCCESS',
                 'msg' => 'User found with given id and matched token',
                 'data' => $pageContent,
             ]);
-        }else {
+        } else {
             echo json_encode([
                 'status' => 'ERROR',
                 'msg' => 'The page you are looking is no longer valid.',
@@ -55,7 +54,7 @@ if($action == 'get_user'){
         }
     }
 
-} else if($action == 'validate_activation_code') {
+} else if ($action == 'validate_activation_code') {
     global $gPasswordHashAlgorithm;
     $cost = 10;
 
@@ -64,9 +63,9 @@ if($action == 'get_user'){
                                 WHERE usr_id = {$userId} ");
 
     $userEmail = $fetchEmail->fetch();
-	$email = $userEmail['usr_login_name'];
+    $email = $userEmail['usr_login_name'];
 
-$htmlContent = <<<HTML
+    $htmlContent = <<<HTML
 <h1 style="background: unset; border: none; padding: 0;margin: 0;
 "> Welcome to Cantab NYC!</h1>
 <hr>
@@ -81,7 +80,6 @@ Click Here to Proceed
 
 HTML;
 
-
     $password = $_POST['password'];
 
     $newPasswordHash = PasswordHashing::hash($password, $gPasswordHashAlgorithm, array('cost' => $cost));
@@ -93,29 +91,20 @@ HTML;
     $userObj = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], (int) $userId);
     $checkLoginReturn = $userObj->checkLogin($password, true, true);
     $_SESSION['login_forward_url'] = ADMIDIO_URL . '/' . $gPreferences['homepage_login'];
-	$gCurrentSession = $_SESSION['gCurrentSession'];
+    $gCurrentSession = $_SESSION['gCurrentSession'];
     $gCurrentSession->setValue('ses_usr_id', $userId);
     $gCurrentSession->setAutoLogin();
-    if($gCurrentSession->isValidLogin((int) $userId)) {
+    if ($gCurrentSession->isValidLogin((int) $userId)) {
         $gValidLogin = true;
     }
     // $$gCurrentSession
     $gCurrentSession->refreshAutoLogin();
     $autoLogin = new AutoLogin($GLOBALS['gDb'], $gCurrentSession->getValue('ses_session_id'));
 
-    $gCurrentUser   = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], $gCurrentSession->getValue('ses_usr_id'));
+    $gCurrentUser = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], $gCurrentSession->getValue('ses_usr_id'));
     $gCurrentSession->addObject('gCurrentUser', $gCurrentUser);
 
-
-    // $autoLogin->setValidLogin($gCurrentSession, $gCurrentSession->getValue('ses_session_id'));
-
-    // var_dump(
-    //     $gCurrentSession->getValue('ses_session_id'),
-    //     $gCurrentSession->getValue('ses_org_id'),
-    //     $gCurrentSession->getValue('ses_usr_id')
-    // );
-    // die;
-    if($user) {
+    if ($user) {
         echo json_encode([
             'status' => 'SUCCESS',
             'msg' => $htmlContent,

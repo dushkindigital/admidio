@@ -1,7 +1,7 @@
 /**
  * specific css overrides
  */
-
+ 
 /* header */
 body > #page > #header-block {
 	display: none;
@@ -10,7 +10,7 @@ body > #page > #header-block {
 
 body > #page #left-block  h1.admidio-module-headline {
 	border: none;
-
+	
 	display: none;
 	visibility: hidden;
 }
