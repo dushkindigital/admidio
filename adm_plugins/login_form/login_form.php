@@ -215,12 +215,12 @@ else
         if($plg_show_icons)
         {
             echo '
-            <a class="btn" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php"><img
+            <a class="btn public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php"><img
                 src="'. THEME_URL. '/icons/new_registrations.png" alt="'.$gL10n->get('SYS_REGISTRATION').'" />'.$gL10n->get('SYS_REGISTRATION').'</a>';
         }
         else
         {
-            echo '<a href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php" '. $plg_link_target. '>'.$gL10n->get('SYS_REGISTRATION').'</a>';
+            echo '<a class="public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php" '. $plg_link_target. '>'.$gL10n->get('SYS_REGISTRATION').'</a>';
         }
     }
 

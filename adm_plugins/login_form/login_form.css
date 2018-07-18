@@ -16,3 +16,11 @@
 #plugin_login_form button[type="submit"] {
     margin-bottom: 10px;
 }
+.public-registration-link,
+#menu_item_registration,
+#login_registration_link {
+    display: none !important;
+}
+#login_forgot_password_link {
+    margin-top: 10px;
+}

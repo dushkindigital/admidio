@@ -86,7 +86,7 @@ $page->addHtml($form->show(false));
 if($gPreferences['registration_mode'] > 0)
 {
     $page->addHtml('
-        <div id="login_registration_link">
+        <div id="login_registration_link" class="public-registration-link">
             <small>
                 <a href="' . ADMIDIO_URL .'/adm_program/modules/registration/component_membership_2.php">'.$gL10n->get('SYS_WANT_REGISTER').'</a>
             </small>
