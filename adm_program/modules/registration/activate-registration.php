@@ -16,4 +16,3 @@ $page->addHtml($htmlContent);
 // $page->addHtml('<script type="text/javascript" src="' . ADMIDIO_URL . '/adm_program/modules/registration/asset/js/registration.js"></script>');
 
 $page->show();
-

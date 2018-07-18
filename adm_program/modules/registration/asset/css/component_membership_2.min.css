@@ -54,8 +54,11 @@ body > #page #component_membership_form .panel > .panel-body {
 #component_membership_form .form-group {
     display: grid;
 }
-.form__fieldset {
-    margin-bottom: 5px !important;
+.form__fieldset,
+#public_mandatory_fields,
+#application_fields {
+	margin-bottom: 5px !important;
+	box-shadow: none;
 }
 .form-control--matriculation_year {
     width: 80px;
@@ -68,4 +71,9 @@ body > #page #component_membership_form .panel > .panel-body {
 }
 .matriculation_year {
     max-width: 100px;
+}
+.required-mark:after {
+	content: url('/adm_themes/modern/icons/bullet_red.png');
+    white-space: nowrap;
+    vertical-align: top;
 }

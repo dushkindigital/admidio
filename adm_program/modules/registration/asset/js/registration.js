@@ -1,21 +1,25 @@
 'use strict';
 let userId;
 let token;
-const parentWindow = window.parent;
+let parentWindow = window.parent;
+let parentLocation = window.parent.location;
 let $rootElem;
 
 $(document).ready(function () {
     // # on document ready: Starts here
     $rootElem = $('#root');
+    $('#application_fields').after($('#gb_category_SCHOOL_INFORMATION'));
     getParams();
     getUserDetails();
     // # on document ready: Ends here
 });
 
-
 function getParams() {
     try {
-        const urlObj = new URL(parentWindow.location.href);
+var url = (window.location != window.parent.location)
+           ? document.referrer
+           : document.location.href;
+        const urlObj = new URL(url);
         const params = urlObj.search.replace('?', '').split('&');
         const paramsArr = [];
         params.forEach((item, index) => {
@@ -25,7 +29,7 @@ function getParams() {
         userId = paramsArr['uid'];
         token = paramsArr['token'];
     } catch (error) {
-        throw new Error('ADM_ERROR_1. Error parsing url '. error.getMessage());
+        console.log(error.message)
     }
 }
 function getUserDetails() {

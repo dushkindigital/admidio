@@ -254,7 +254,7 @@ function build_form($form, $datum_user)
     $form->closeGroupBox();
     $form->openGroupBox('public_mandatory_fields', null, 'form-group mb-15');
     // membership field: Starts here
-    $form->addLabel('Membership type', 'application_type');
+    $form->addLabel('Membership type <span class="required-mark"></span>', 'application_type');
     $form->addSelect(
         'application_type',
         'application_type',
@@ -263,7 +263,7 @@ function build_form($form, $datum_user)
             'required' => 'required',
         ]
     );
-    $form->addOption('', 'Select Membership Type');
+    $form->addOption('', 'Select Type', null, true);
     $form->addOption('member', 'Member');
     $form->addOption('associate', 'Associate');
     $form->closeSelect();
@@ -283,7 +283,7 @@ function build_form($form, $datum_user)
     //
     $form->closeGroupBox();
 
-    $form->addLabel('Message (Optional)', 'message');
+    $form->addLabel('Message ', 'message');
     $form->addTextArea(
         'message',
         null, //rows
@@ -306,6 +306,7 @@ function build_form($form, $datum_user)
         $form->closeGroupBox();
     }
 
+    $form->addHtml('<p style="margin-top: 10px;">( <span style="margin-left:-2px; margin-top: 10px;" class="required-mark"></span>) Required fields</p>');
     # submit button
     $form->addSubmitButton('btn_save', $GLOBALS['gL10n']->get('SYS_SEND'), array('icon' => THEME_URL . '/icons/email.png'));
     $reg_form_fields = \cantabnyc\get_configs()->form_fields->application_fields;

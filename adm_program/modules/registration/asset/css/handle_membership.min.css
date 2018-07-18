@@ -67,11 +67,6 @@ body > #page #component_membership_form .panel > .panel-body {
 .lead-content {
     font-size: 17px;
 }
-.page__header,
-.lead-content,
-.lead-content a {
-    color: white !important;
-}
 hr {
     border: 1px solid #ffffff8c !important;
 }

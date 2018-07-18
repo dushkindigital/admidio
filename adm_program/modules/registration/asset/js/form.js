@@ -31,6 +31,7 @@ function toggleApplicationFields(event) {
  * @since: 5 June 2018
  */
 $(document).ready(() => {
+    $('#application_fields').after($('#gb_category_SCHOOL_INFORMATION'));
     $('input.first_name').attr('maxlength', '100');
     $('input.last_name').attr('maxlength', '100');
     $('input.email').attr('maxlength', '100');

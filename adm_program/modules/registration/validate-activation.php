@@ -58,6 +58,30 @@ if($action == 'get_user'){
 } else if($action == 'validate_activation_code') {
     global $gPasswordHashAlgorithm;
     $cost = 10;
+
+    $fetchEmail = $GLOBALS['gDb']->query("SELECT usr_login_name
+                                FROM adm_users
+                                WHERE usr_id = {$userId} ");
+
+    $userEmail = $fetchEmail->fetch();
+	$email = $userEmail['usr_login_name'];
+
+$htmlContent = <<<HTML
+<h1 style="background: unset; border: none; padding: 0;margin: 0;
+"> Welcome to Cantab NYC!</h1>
+<hr>
+<p style="font-size: 16px;">
+A new account for {$email} is all set up.
+</p>
+<button style="color: white;text-align: center !important;text-decoration: none;padding: 10px 15px;
+" class="btn btn-primary btn-lg" role="button" id="proceedToLoginBtn" onclick="window.top.location.href='https://www.cantabnyc.org/p/member-pages.html'" data-href="https://www.cantabnyc.org/p/member-pages.html">
+Click Here to Proceed
+</button>
+
+
+HTML;
+
+
     $password = $_POST['password'];
 
     $newPasswordHash = PasswordHashing::hash($password, $gPasswordHashAlgorithm, array('cost' => $cost));
@@ -65,16 +89,37 @@ if($action == 'get_user'){
     $user = $GLOBALS['gDb']->query("UPDATE adm_users
                                 SET usr_password = '{$newPasswordHash}'
                                 WHERE usr_id = {$userId} ");
+// create user object
+    $userObj = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], (int) $userId);
+    $checkLoginReturn = $userObj->checkLogin($password, true, true);
+    $_SESSION['login_forward_url'] = ADMIDIO_URL . '/' . $gPreferences['homepage_login'];
+	$gCurrentSession = $_SESSION['gCurrentSession'];
+    $gCurrentSession->setValue('ses_usr_id', $userId);
+    $gCurrentSession->setAutoLogin();
+    if($gCurrentSession->isValidLogin((int) $userId)) {
+        $gValidLogin = true;
+    }
+    // $$gCurrentSession
+    $gCurrentSession->refreshAutoLogin();
+    $autoLogin = new AutoLogin($GLOBALS['gDb'], $gCurrentSession->getValue('ses_session_id'));
 
+    $gCurrentUser   = new User($GLOBALS['gDb'], $GLOBALS['gProfileFields'], $gCurrentSession->getValue('ses_usr_id'));
+    $gCurrentSession->addObject('gCurrentUser', $gCurrentUser);
+
+
+    // $autoLogin->setValidLogin($gCurrentSession, $gCurrentSession->getValue('ses_session_id'));
+
+    // var_dump(
+    //     $gCurrentSession->getValue('ses_session_id'),
+    //     $gCurrentSession->getValue('ses_org_id'),
+    //     $gCurrentSession->getValue('ses_usr_id')
+    // );
+    // die;
     if($user) {
         echo json_encode([
             'status' => 'SUCCESS',
-            'msg' => 'Password set successful!. Please login to continue.',
+            'msg' => $htmlContent,
             'data' => $user,
-            'newPasswordHash' => $newPasswordHash
         ]);
     }
 }
-
-
-

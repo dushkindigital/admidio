@@ -1,8 +1,8 @@
 <?php
 
-require_once (__DIR__ . '/../../../adm_program/system/common.php');
+require_once(__DIR__ . '/../../../adm_program/system/common.php');
 
-require_once (__DIR__ . '/engine/bootstrap.php');
+require_once(__DIR__ . '/engine/bootstrap.php');
 
 if ( $GLOBALS['gPreferences']['registration_mode'] == 0) {
 	$GLOBALS['gMessage']->show($GLOBALS['gL10n']->get('SYS_MODULE_DISABLED'));

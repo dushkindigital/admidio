@@ -20,6 +20,7 @@ function build_page ( $datum_user ) {
 
 	// create html page object
 	$page = new HtmlPage($headline);
+    $page->addHtml('<style>#LABEL_NAME_group { display: flex; align-items: center; } #LABEL_NAME_group .form-control-static {padding-top: 0 }</style>');
 
 	# show back link
 	$profileMenu = $page->getMenu();
@@ -38,6 +39,7 @@ function build_page ( $datum_user ) {
     $application = $application->fetch();
     $applicationType = $application['Type'];
     $message = $application['Message'];
+    $memberName = $application['FirstName'].' '. $application['LastName'];
     $profileIconImg = '<img
                         src="'.THEME_URL.'/icons/profile.png"
                         class="img img--icon-xs" />';
