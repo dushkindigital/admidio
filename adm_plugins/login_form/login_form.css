@@ -18,6 +18,7 @@
 }
 .public-registration-link,
 #menu_item_registration,
+#edit_profile_form .panel-body > hr:first-child,
 #login_registration_link {
     display: none !important;
 }

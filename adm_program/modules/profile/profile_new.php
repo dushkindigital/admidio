@@ -234,7 +234,7 @@ foreach($gProfileFields->mProfileFields as $key => $field)
                     $fieldProperty = FIELD_REQUIRED;
                 }
 
-                $form->addInput('usr_login_name', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'), array('maxLength' => 35, 'property' => $fieldProperty, 'helpTextIdLabel' => $fieldHelpId, 'class' => 'form-control-small'));
+                # $form->addInput('usr_login_name', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'), array('maxLength' => 35, 'property' => $fieldProperty, 'helpTextIdLabel' => $fieldHelpId, 'class' => 'form-control-small'));
 
                 if($getNewUser === 2)
                 {

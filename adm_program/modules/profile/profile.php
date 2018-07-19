@@ -308,18 +308,18 @@ $page->addHtml('
             {
                 if ($userId !== $currUserId && $gPreferences['enable_pm_module'] == 1)
                 {
-                    $form->addStaticControl('username', $gL10n->get('SYS_USERNAME'),
-                        '<img src="'.THEME_URL.'/icons/pm.png" alt="'.$gL10n->get('PMS_SEND_PM').'" />
-                        <a href='.ADMIDIO_URL.FOLDER_MODULES.'/messages/messages_write.php?msg_type=PM&usr_id='.$userId.'>'.$user->getValue('usr_login_name').'</a>');
+                    # $form->addStaticControl('username', $gL10n->get('SYS_USERNAME'),
+                     #   '<img src="'.THEME_URL.'/icons/pm.png" alt="'.$gL10n->get('PMS_SEND_PM').'" />
+                     #   <a href='.ADMIDIO_URL.FOLDER_MODULES.'/messages/messages_write.php?msg_type=PM&usr_id='.$userId.'>'.$user->getValue('usr_login_name').'</a>');
                 }
                 else
                 {
-                    $form->addStaticControl('username', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'));
+                    #$form->addStaticControl('username', $gL10n->get('SYS_USERNAME'), $user->getValue('usr_login_name'));
                 }
             }
             else
             {
-                $form->addStaticControl('username', $gL10n->get('SYS_USERNAME'), $gL10n->get('SYS_NOT_REGISTERED'));
+                # $form->addStaticControl('username', $gL10n->get('SYS_USERNAME'), $gL10n->get('SYS_NOT_REGISTERED'));
             }
 
             $bAddressOutput = false;    // Merker, ob die Adresse schon angezeigt wurde
