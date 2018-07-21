@@ -19,12 +19,7 @@
 .public-registration-link,
 #menu_item_registration,
 #edit_profile_form .panel-body > hr:first-child,
-#login_registration_link,
-#adm_menu_item_login,
 #adm_menu_item_registration,
-#adm_menu_item_my_profile,
-#adm_menu_item_logout,
-#plugin_login_form,
 #plugin_menu {
     display: none !important;
 }
