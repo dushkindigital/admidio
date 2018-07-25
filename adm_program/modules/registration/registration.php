@@ -38,8 +38,9 @@ $headline = $gL10n->get('NWU_NEW_REGISTRATIONS');
 $gNavigation->addStartUrl(CURRENT_URL, $headline);
 
 // Select new Members of the group
-$sql = 'SELECT usr_id, usr_login_name, reg_timestamp, last_name.usd_value AS last_name,
-               first_name.usd_value AS first_name, email.usd_value AS email
+$sql = 'SELECT usr_id, reg_timestamp, last_name.usd_value AS last_name,
+               first_name.usd_value AS first_name, email.usd_value AS email,
+               adm_user_applications.application_type
           FROM '.TBL_REGISTRATIONS.'
     INNER JOIN '.TBL_USERS.'
             ON usr_id = reg_usr_id
@@ -52,11 +53,13 @@ $sql = 'SELECT usr_id, usr_login_name, reg_timestamp, last_name.usd_value AS las
      LEFT JOIN '.TBL_USER_DATA.' AS email
             ON email.usd_usr_id = usr_id
            AND email.usd_usf_id = '. $gProfileFields->getProperty('EMAIL', 'usf_id'). '
+     LEFT JOIN '.TBL_APPLICATIONS.'
+            ON
+            adm_users.usr_id = adm_user_applications.uapp_usr_id
          WHERE usr_valid = 0
            AND reg_org_id = '.$gCurrentOrganization->getValue('org_id').'
       ORDER BY last_name, first_name';
 $usrStatement = $gDb->query($sql);
-
 if ($usrStatement->rowCount() === 0)
 {
     $gMessage->setForwardUrl($gHomepage);
@@ -85,7 +88,7 @@ $table = new HtmlTable('new_user_table', $page, true);
 $columnHeading = array(
     $gL10n->get('SYS_NAME'),
     $gL10n->get('SYS_REGISTRATION'),
-    $gL10n->get('SYS_USERNAME'),
+    'Application Type',
     $gL10n->get('SYS_EMAIL'),
     '&nbsp;'
 );
@@ -112,7 +115,7 @@ while($row = $usrStatement->fetch())
         #'<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
         '<a href="' . ADMIDIO_URL . '/adm_program/modules/registration/pending_user_profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
         $datetimeCreate,
-        $row['usr_login_name'],
+        ucwords($row['application_type']),
         $mailLink,
         '<a class="admidio-icon-link" href="'.ADMIDIO_URL.FOLDER_MODULES.'/registration/registration_assign.php?new_user_id='.$row['usr_id'].'"><img
             src="'. THEME_URL. '/icons/new_registrations.png" alt="'.$gL10n->get('NWU_ASSIGN_REGISTRATION').'" title="'.$gL10n->get('NWU_ASSIGN_REGISTRATION').'" /></a>
