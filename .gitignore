@@ -25,3 +25,4 @@
 # For custom configuration
 /.php_cs
 SPRYOX
+.DS_Store
