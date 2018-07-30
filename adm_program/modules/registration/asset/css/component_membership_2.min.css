@@ -77,3 +77,6 @@ body > #page #component_membership_form .panel > .panel-body {
     white-space: nowrap;
     vertical-align: top;
 }
+.public-registration-link {
+    display: none !important;
+}

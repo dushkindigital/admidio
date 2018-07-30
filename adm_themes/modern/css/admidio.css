@@ -137,7 +137,8 @@ body > .admContent {
     #adm_menu_item_my_profile,
     #adm_menu_item_logout,
     #plugin_login_form,
-    #plugin_menu {
+    #plugin_menu,
+    #menu_item_registration {
         display: none !important;
     }
 }

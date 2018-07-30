@@ -26,3 +26,5 @@
 /.php_cs
 SPRYOX
 .DS_Store
+*.tar.gz
+*.zip
