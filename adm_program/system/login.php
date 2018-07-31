@@ -64,15 +64,15 @@ if($gPreferences['enable_auto_login'] == 1)
 $form->addSubmitButton('btn_login', $gL10n->get('SYS_LOGIN'), array('icon' => THEME_URL.'/icons/key.png'));
 $page->addHtml($form->show(false));
 
-if($gPreferences['registration_mode'] > 0)
-{
-    $page->addHtml('
-        <div id="login_registration_link">
-            <small>
-                <a href="'.ADMIDIO_URL.FOLDER_MODULES.'/registration/registration.php">'.$gL10n->get('SYS_WANT_REGISTER').'</a>
-            </small>
-        </div>');
-}
+// if($gPreferences['registration_mode'] > 0)
+// {
+//     $page->addHtml('
+//         <div id="login_registration_link">
+//             <small>
+//                 <a href="'.ADMIDIO_URL.FOLDER_MODULES.'/registration/registration.php">'.$gL10n->get('SYS_WANT_REGISTER').'</a>
+//             </small>
+//         </div>');
+// }
 
 // Link bei Loginproblemen
 if($gPreferences['enable_password_recovery'] == 1 && $gPreferences['enable_system_mails'] == 1)

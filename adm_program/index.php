@@ -44,13 +44,13 @@ else
     $mainMenu->addItem('adm_menu_item_login', ADMIDIO_URL . '/adm_program/system/login.php',
                        $gL10n->get('SYS_LOGIN'), 'key.png');
 
-    if($gPreferences['registration_mode'] > 0)
-    {
-        // show registration link
-        $mainMenu->addItem('adm_menu_item_registration',
-                           ADMIDIO_URL . FOLDER_MODULES . '/registration/registration.php',
-                           $gL10n->get('SYS_REGISTRATION'), 'new_registrations.png');
-    }
+    // if($gPreferences['registration_mode'] > 0)
+    // {
+    //     // show registration link
+    //     $mainMenu->addItem('adm_menu_item_registration',
+    //                        ADMIDIO_URL . FOLDER_MODULES . '/registration/registration.php',
+    //                        $gL10n->get('SYS_REGISTRATION'), 'new_registrations.png');
+    // }
 }
 
 // menu with links to all modules of Admidio

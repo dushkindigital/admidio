@@ -210,19 +210,19 @@ else
     echo '<div class="btn-group-vertical" role="group">';
 
     // show links for registration and help
-    if($plg_show_register_link && $gPreferences['registration_mode'])
-    {
-        if($plg_show_icons)
-        {
-            echo '
-            <a class="btn public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php"><img
-                src="'. THEME_URL. '/icons/new_registrations.png" alt="'.$gL10n->get('SYS_REGISTRATION').'" />'.$gL10n->get('SYS_REGISTRATION').'</a>';
-        }
-        else
-        {
-            echo '<a class="public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php" '. $plg_link_target. '>'.$gL10n->get('SYS_REGISTRATION').'</a>';
-        }
-    }
+    // if($plg_show_register_link && $gPreferences['registration_mode'])
+    // {
+    //     if($plg_show_icons)
+    //     {
+    //         echo '
+    //         <a class="btn public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php"><img
+    //             src="'. THEME_URL. '/icons/new_registrations.png" alt="'.$gL10n->get('SYS_REGISTRATION').'" />'.$gL10n->get('SYS_REGISTRATION').'</a>';
+    //     }
+    //     else
+    //     {
+    //         echo '<a class="public-registration-link" href="'. ADMIDIO_URL. FOLDER_MODULES. '/registration/registration.php" '. $plg_link_target. '>'.$gL10n->get('SYS_REGISTRATION').'</a>';
+    //     }
+    // }
 
     if($plg_show_email_link)
     {

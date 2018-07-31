@@ -34,6 +34,7 @@ if($_SERVER['SERVER_NAME'] == 'localhost'){
     $g_adm_port = 3306;        // Port
     $g_adm_usr  = 'root';        // User
     $g_adm_pw   = 'root';    // Password
+    $g_adm_db   = 'admidio_dev';    // Database
     $g_root_path = 'http://localhost:8888/cantabnyc-github';
 }
 

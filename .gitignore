@@ -28,3 +28,4 @@ SPRYOX
 .DS_Store
 *.tar.gz
 *.zip
+._*
