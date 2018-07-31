@@ -70,17 +70,17 @@ if ($action == 'get_user') {
     $email = $userEmail['usr_login_name'];
 
     $htmlContent = <<<HTML
-<h1 style="background: unset; border: none; padding: 0;margin: 0;
-"> Welcome to Cantab NYC!</h1>
-<hr>
-<p style="font-size: 16px;">
-A new account for {$email} is all set up.
-</p>
-<button style="color: white;text-align: center !important;text-decoration: none;padding: 10px 15px;
-" class="btn btn-primary btn-lg" role="button" id="proceedToLoginBtn" onclick="window.top.location.href='https://www.cantabnyc.org/p/member-pages.html'" data-href="https://www.cantabnyc.org/p/member-pages.html">
-Click Here to Proceed
-</button>
-
+<div class="reponse-container" style="padding: 20px; padding: 20px; background: #ECEFF1;">
+    <h1 style="background: unset; border: none; padding: 0;margin: 0; font-size: 30px; "> Welcome to Cantab NYC!</h1>
+    <hr>
+    <p style="font-size: 18px;">
+    A new account for {$email} is all set up.
+    </p>
+    <button style="border-radius: 0; color: white;text-align: center !important;text-decoration: none;padding: 10px 15px;
+    " class="btn btn-primary btn-lg" role="button" id="proceedToLoginBtn" onclick="window.top.location.href='https://www.cantabnyc.org/p/member-pages.html'" data-href="https://www.cantabnyc.org/p/member-pages.html">
+    Click Here to Proceed
+    </button>
+</div>
 
 HTML;
 
