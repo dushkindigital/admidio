@@ -34,15 +34,18 @@ $passwordStrenthScript = <<<HTML
 <script>
 $(document).ready(function(){
     $("#admidio-password-strength-minimum").css("margin-left", "calc(" + $("#admidio-password-strength").css("width") + " / 4 * 1)");
-    $("#new_password").keyup(function(e) {
-        var result = zxcvbn(e.target.value, []);
-        var cssClasses = ["progress-bar-danger", "progress-bar-danger", "progress-bar-warning", "progress-bar-info", "progress-bar-success"];
-        progressBar.attr("aria-valuenow", result.score * 25);
-        progressBar.css("width", result.score * 25 + "%");
-        progressBar.removeClass(cssClasses.join(" "));
-        progressBar.addClass(cssClasses[result.score]);
-    });
 })
+// Updating the progress bar on keyp event: Starts here
+document.querySelector("#new_password").addEventListener('keyup', function(e) {
+    var result = zxcvbn(e.target.value, []);
+    var cssClasses = ["progress-bar-danger", "progress-bar-danger", "progress-bar-warning", "progress-bar-info", "progress-bar-success"];
+    var progressBar = $("#admidio-password-strength .progress-bar");
+    progressBar.attr("aria-valuenow", result.score * 25);
+    progressBar.css("width", result.score * 25 + "%");
+    progressBar.removeClass(cssClasses.join(" "));
+    progressBar.addClass(cssClasses[result.score]);
+});
+// Updating the progress bar on keyp event: Ends here
 </script>
 HTML;
 
