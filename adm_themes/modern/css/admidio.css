@@ -857,3 +857,11 @@ tr.admidio-event-highlight,
 .btn {
     font-family: 'Cantarell', sans-serif;
 }
+.navbar-header,
+.container > .navbar-header,
+.container-fluid > .navbar-header,
+.container > .navbar-collapse,
+.container-fluid > .navbar-collapse {
+    margin-right: 0;
+    margin-left: 0;
+}

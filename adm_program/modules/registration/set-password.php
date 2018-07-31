@@ -30,11 +30,5 @@ HTML;
 $page->addHtml($htmlContent);
 $page->addHtml('<script src="' . ADMIDIO_URL . '/adm_program/libs/zxcvbn/dist/zxcvbn.js"></script>');
 $page->addHtml('<script src="' . ADMIDIO_URL . '/adm_program/modules/registration/asset/js/registration.js"></script>');
-$passwordStrenthScript = <<<HTML
-<script>
-</script>
-HTML;
-
-$page->addHtml($passwordStrenthScript);
 
 $page->show();
