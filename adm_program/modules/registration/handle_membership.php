@@ -231,20 +231,18 @@ function build_page()
     $email = $_POST[$email_field_post_index];
 
     $html = <<<EOD
-<!--<p>Thank you for registering. We will contact you shortly</p>-->
 <main>
-    <div class="layout__container text-center">
+    <div class="layout__container ">
         <output class="page">
             <div class="page__header">
                 <h3 class="h1 text-center">Almost There</h3>
             </div>
-            <div class="alert alert-default text-left">
+            <div class="alert alert-success text-left">
                 <p>
                     The membership commitee is currently reviewing your application.
                 </p>
             </div>
-            <hr>
-            <p class="lead text-center lead-content">
+            <p class="lead alert alert-warning">
                 If <strong>{$email}</strong> is not your email address, <br>
                 please <a href="javascript:history.back()">go back</a> and enter correct one.
             </p>

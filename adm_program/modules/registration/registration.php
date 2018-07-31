@@ -113,7 +113,7 @@ while($row = $usrStatement->fetch())
     // create array with all column values
     $columnValues = array(
         #'<a href="'.ADMIDIO_URL.FOLDER_MODULES.'/profile/profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
-        '<a href="' . ADMIDIO_URL . '/adm_program/modules/registration/pending_user_profile.php?user_id='.$row['usr_id'].'">'.$row['last_name'].', '.$row['first_name'].'</a>',
+        '<a href="' . ADMIDIO_URL . '/adm_program/modules/registration/pending_user_profile.php?user_id='.$row['usr_id'].'">'.$row['first_name'].', '.$row['last_name'].'</a>',
         $datetimeCreate,
         ucwords($row['application_type']),
         $mailLink,
