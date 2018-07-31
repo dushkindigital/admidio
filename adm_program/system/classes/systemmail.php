@@ -85,7 +85,6 @@ class SystemMail extends Email
             '/#organization_short_name#/' => $this->smOrganization->getValue('org_shortname'),
             '/#organization_long_name#/'  => $this->smOrganization->getValue('org_longname'),
             '/#organization_homepage#/'   => $this->smOrganization->getValue('org_homepage'),
-            // '/#user_confirmation_url#/'   => "http://localhost:8080/adm_program/modules/registration/activate-registration.php?uid={$user->getValue('usr_id')}&token={$hashedActivationCode}",
             '/#user_confirmation_url#/'   => "https://www.cantabnyc.org/account/accept?uid={$user->getValue('usr_id')}&token={$hashedActivationCode}",
         ];
 
