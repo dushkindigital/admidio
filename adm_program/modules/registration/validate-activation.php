@@ -14,6 +14,10 @@ $pageContent = <<<HTML
         <div class="col-sm-9">
             <input name="new_password" id="new_password" class="form-control" minlength="3" required type="password" />
             <p class="form-ctrl__response">Minimum 8 characters: Letters, numbers and/ or symbols</p>
+            <div id="admidio-password-strength" class="progress form-control-small">
+                <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
+                <div id="admidio-password-strength-minimum" style="margin-left: calc(74.75px);"></div>
+            </div>
         </div>
     </div>
     <div class="row form-group admidio-form-group-required">
