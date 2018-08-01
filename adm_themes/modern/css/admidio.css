@@ -12,14 +12,10 @@
 /**************************************************/
 /* Basic Admidio layout classes */
 /**************************************************/
-@import url('https://fonts.googleapis.com/css?family=Cantarell:400,700|Ruda:400,700');
-
 body {
     color: #474b4c;
     margin: auto;
     text-align: center;
-    /* font-family: 'Ruda', sans-serif; */
-    font-family: 'Cantarell', sans-serif;
 }
 
 #page {
@@ -159,7 +155,6 @@ h5 {
     color: #333333;
     font-weight: bold;
     margin: 20px 0 15px 0;
-    font-family: 'Ruda', sans-serif;
 }
 
 h2 {
@@ -204,7 +199,7 @@ h4 {
     }
 
     h1 {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: normal;
         margin: 0 -15px 15px -15px;
     }
@@ -848,20 +843,4 @@ tr.admidio-event-highlight,
 
 .admidio-plugin-content > div > a {
     white-space: normal;
-}
-
-#page #header-block + .row .col-md-9 {
-    padding: 0 !important;
-    margin: 15px 0;
-}
-.btn {
-    font-family: 'Cantarell', sans-serif;
-}
-.navbar-header,
-.container > .navbar-header,
-.container-fluid > .navbar-header,
-.container > .navbar-collapse,
-.container-fluid > .navbar-collapse {
-    margin-right: 0;
-    margin-left: 0;
 }

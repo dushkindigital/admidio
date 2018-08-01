@@ -229,41 +229,15 @@ function build_page()
     $mailToSupport = 'membership@cantabnyc.org';
     $email_field_post_index = 'usf-' . $GLOBALS['gProfileFields']->mProfileFields['EMAIL']->getValue('usf_id');
     $email = $_POST[$email_field_post_index];
-
-    $html = <<<EOD
-<main>
-    <div class="layout__container ">
-        <output class="page">
-            <div class="page__header">
-                <h3 class="h1 text-center">Almost There</h3>
-            </div>
-            <div class="alert alert-success text-left">
-                <p>
-                    The membership commitee is currently reviewing your application.
-                </p>
-            </div>
-            <p class="lead alert alert-warning">
-                If <strong>{$email}</strong> is not your email address, <br>
-                please <a href="javascript:history.back()">go back</a> and enter correct one.
-            </p>
-            <div class="alert alert-default text-left">
-                <p>
-                    If you haven't recieved a decision within 7 days, please <br>
-                    contact us at <a href="mailto:{$mailToSupport}">
-                    {$mailToSupport}
-                    </a>
-                </p>
-            </div>
-        </output>
-    </div>
-</main>
-EOD;
-
-    $page->addHtml($html);
-
-    $page->addCssFile("adm_program/modules/registration/asset/css/handle_membership.min.css");
-
-    $page->show();
+    $res_data = $email;
+    // sending json response for ajax request.
+    header('Content-type: application/json');
+    echo json_encode([
+        'status' => 'success',
+        'statusCode' => 'res_01',
+        'message' => 'Successfuly registered.',
+        'data' => $res_data,
+    ]);
 }
 
 ###
