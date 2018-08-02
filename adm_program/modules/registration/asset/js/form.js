@@ -47,30 +47,37 @@ $(document).ready(() => {
 /**
  * Submit registration form throught the ajax and redirects to other page on blogger
  */
-document.getElementById('component_membership_form').addEventListener('submit', function (event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const $form = $(event.target);
-    const formData = $form.serializeArray();
-    $.ajax({
-        url: $form.attr('action'),
-        method: 'post',
-        data: formData,
-        beforeSend(){
-            $('#btn_save').attr('disabled', true).html('Submitting.');
-        },
-        success(response) {
-            if(response.statusCode == 'res_01'){
-                top.location.href = 'http://www.cantabnyc.org/p/almost-there.html?email='+response.data;
-            }else {
-                alert('Something went wrong :(. please try again ');
-                throw new Error(`Can't register now. ${response}`);
-            }
-        },
-        error(response){
-            alert('Something went wrong :(. please try again ');
-            throw new Error(`Can't register now. ${response}`);
-        }
-    });
-    return false;
-})
+
+console.log(document.getElementById('component_membership_form'));
+
+$(document).ready(function(){
+
+	document.getElementById('component_membership_form').addEventListener('submit', function (event) {
+	    event.preventDefault();
+	    event.stopPropagation();
+	    const $form = $(event.target);
+	    const formData = $form.serializeArray();
+	    $.ajax({
+		url: $form.attr('action'),
+		method: 'post',
+		data: formData,
+		beforeSend(){
+		    $('#btn_save').attr('disabled', true).html('Submitting.');
+		},
+		success(response) {
+		    if(response.statusCode == 'res_01'){
+			top.location.href = 'http://www.cantabnyc.org/p/almost-there.html?email='+response.data;
+		    }else {
+			alert('Something went wrong :(. please try again ');
+			throw new Error(`Can't register now. ${response}`);
+		    }
+		},
+		error(response){
+		    alert('Something went wrong :(. please try again ');
+		    throw new Error(`Can't register now. ${response}`);
+		}
+	    });
+	    return false;
+	})
+
+});
