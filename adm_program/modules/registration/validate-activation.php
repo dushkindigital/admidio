@@ -15,7 +15,7 @@ $pageContent = <<<HTML
             <input name="new_password" id="new_password" class="form-control" minlength="3" required type="password" />
             <p class="form-ctrl__response">Minimum 8 characters: Letters, numbers and/ or symbols</p>
             <div id="admidio-password-strength" class="progress form-control-small">
-                <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;"></div>
+                <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
                 <div id="admidio-password-strength-minimum" style="margin-left: calc(74.75px);"></div>
             </div>
         </div>
@@ -28,7 +28,7 @@ $pageContent = <<<HTML
         </div>
     </div>
     <div class="form__footer">
-        <button class="btn btn-default  btn-primary" id="btn_submit" name="btn_submit" type="submit">
+        <button class="btn btn-default  btn-primary" id="btn_submit" name="btn_submit" type="submit" disabled>
             Set Password and Login
         </button>
     </div>
@@ -69,22 +69,8 @@ if ($action == 'get_user') {
     $userEmail = $fetchEmail->fetch();
     $email = $userEmail['usr_login_name'];
 
-    $htmlContent = <<<HTML
-<div class="reponse-container" style="padding: 20px; padding: 20px; background: #ECEFF1;">
-    <h1 style="background: unset; border: none; padding: 0;margin: 0; font-size: 30px; "> Welcome to Cantab NYC!</h1>
-    <hr>
-    <p style="font-size: 18px;">
-    A new account for {$email} is all set up.
-    </p>
-    <button style="border-radius: 0; color: white;text-align: center !important;text-decoration: none;padding: 10px 15px;
-    " class="btn btn-primary btn-lg" role="button" id="proceedToLoginBtn" onclick="window.top.location.href='https://www.cantabnyc.org/p/member-pages.html'" data-href="https://www.cantabnyc.org/p/member-pages.html">
-    Click Here to Proceed
-    </button>
-</div>
-
-HTML;
-
     $password = $_POST['password'];
+$htmlContent = 'Welcome to CantabNYC';
 
     $newPasswordHash = PasswordHashing::hash($password, $gPasswordHashAlgorithm, array('cost' => $cost));
 
@@ -111,8 +97,17 @@ HTML;
     if ($user) {
         echo json_encode([
             'status' => 'SUCCESS',
+            'statusCode' => 'res_02',
             'msg' => $htmlContent,
             'data' => $user,
         ]);
-    }
+    }else {
+
+        echo json_encode([
+            'status' => 'ERROR',
+            'statusCode' => 'res_03',
+            'msg' => $htmlContent,
+            'data' => $user,
+        ]);
+	}
 }

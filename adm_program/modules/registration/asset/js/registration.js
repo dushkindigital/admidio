@@ -77,7 +77,10 @@ function setNewPassword(event) {
             _action: 'validate_activation_code'
         },
         success(success){
-            $rootElem.html(success.msg)
+		if(success.statusCode == 'res_02') {
+			window.top.location.href = 'http://www.cantabnyc.org/p/welcome-to-cantab-nyc.html';
+		}
+            //$rootElem.html(success.msg)
             // console.info(success)
         },
         error(error){
@@ -90,15 +93,21 @@ function validateConfirmedPassword(event){
     const password = $('#new_password').val();
     const confirm_password = $('#confirm_password').val();
 
-    const responseElem = $('#'+event.target.id + ' + .form-ctrl__response');
+    const responseElem = $('#confirm_password + .form-ctrl__response');
     responseElem.hide();
     if(confirm_password != password){
         responseElem.show().html('Confirmed password does not match.');
-    }
+	$('#btn_submit').attr('disabled', true);
+    }else{
+	$('#btn_submit').removeAttr('disabled');
+	}
 }
 // password strength meter
 $(document).ready(function(){
     $("#admidio-password-strength-minimum").css("margin-left", "calc(" + $("#admidio-password-strength").css("width") + " / 4 * 1)");
+	$('[name="setNewPasswordForm"]').on('input', function(){
+validateConfirmedPassword(this);
+});
 })
 // Updating the progress bar on keyp event: Starts here
 document.querySelector("body").addEventListener('keyup', function(e) {
