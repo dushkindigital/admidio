@@ -2,12 +2,12 @@
 <resources>
 	<string name="L4P_MEMBERSHIP">CantabNYC Membership Pending</string>
 	<string name="L4P_NO_PENDING_MEMBERS">No pending members awaiting processing</string>
-	
+
 	<!-- db categories -->
 	<string name="L4P_DB_CAT_APPLICATION_INFORMATION">Application Information</string>
 	<string name="L4P_DB_CAT_PROFESSIONAL_INFORMATION">Professional Information</string>
 	<string name="L4P_DB_CAT_SCHOOL_INFORMATION">School Information</string>
-	
+
 	<!-- db form fields -->
 	<string name="L4P_DB_MEMBERSHIP_TYPE">Membership Type</string>
 	<string name="L4P_DB_MESSAGE">Message</string>
@@ -15,34 +15,36 @@
 	<string name="L4P_DB_TEMP_PASSWORD">Temp Password</string>
 	<string name="L4P_DB_TEMP_PASS_CHANGED">Temp Password Changed</string>
 	<string name="L4P_DB_TEMP_PASS_EXPIRATION">Temp Password Expiration</string>
-	
+
 	<string name="L4P_DB_ADDRESS_2">Address</string>
 	<string name="L4P_DB_EMAIL_2">Email</string>
 	<string name="L4P_DB_EMPLOYER">Employment</string>
 	<string name="L4P_DB_PHONE_2">Phone</string>
 	<string name="L4P_DB_POSITION">Position</string>
 	<string name="L4P_DB_WEBSITE_2">Website</string>
-	
+
 	<string name="L4P_DB_CLASS_OF">Class Of</string>
 	<string name="L4P_DB_DEGREE">Degree</string>
 	<string name="L4P_DB_MATRICULATION_YEAR">Matriculation Year</string>
 	<string name="L4P_DB_SCHOOL">School</string>
 	<string name="L4P_DB_SUBJECT_READ">Subject Read</string>
-	
+
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
-	
+    <string name="REGISTRATION_TXT">Registration</string>
+    <string name="REGISTRATION_MODE_HELP">Allow users to sign up or deactivate registration.</string>
+
 	<!-- password expiry -->
 	<string name="L4P_PASSWORD_EXPIRY">Password Expiry</string>
 	<string name="L4P_PASSWORD_EXPIRY_MESSAGE">Your password has been re-sent</string>
 	<string name="L4P_PASSWORD_EXPIRY_RESEND">Resend Password</string>
-	
+
 	<!-- password reset -->
 	<string name="L4P_PASSWORD_RESET">Password Reset</string>
-	
+
 	<!-- pending user profile -->
 	<string name="L4P_PENDING_USER_PROFILE">Pending User Profile Found</string>
-	
+
 	<!-- reg received -->
 	<string name="L4P_REGISTRATION_RECEIVED">Registration data received</string>
 </resources>
