@@ -272,8 +272,8 @@ $page->addHtml('
                         $form = new HtmlForm('registration_preferences_form', ADMIDIO_URL.FOLDER_MODULES.'/preferences/preferences_function.php?form=registration', $page, array('class' => 'form-preferences'));
                         $selectBoxEntries = array(
                             0 => $gL10n->get('SYS_DEACTIVATED'),
-                            1 => $gL10n->get('ORG_FAST_REGISTRATION'),
-                            2 => $gL10n->get('ORG_ADVANCED_REGISTRATION'),
+                            // 1 => $gL10n->get('ORG_FAST_REGISTRATION'),
+                            // 2 => $gL10n->get('ORG_ADVANCED_REGISTRATION'),
                             \cantabnyc\get_configs()->preference->registration_mode => $gL10n->get('L4P_PREF_TEMP_REG'),
                         );
                         $form->addSelectBox('registration_mode', $gL10n->get('SYS_REGISTRATION'), $selectBoxEntries, array('defaultValue' => $form_values['registration_mode'], 'showContextDependentFirstEntry' => false, 'helpTextIdInline' => 'ORG_REGISTRATION_MODE'));
