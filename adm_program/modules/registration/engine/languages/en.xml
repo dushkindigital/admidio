@@ -34,6 +34,8 @@
 
 	<!-- preferences -->
 	<string name="L4P_PREF_TEMP_REG">Temporary Registration</string>
+    <string name="REGISTRATION_TXT">Registration</string>
+    <string name="REGISTRATION_MODE_HELP">Allow users to sign up or deactivate registration.</string>
 
 	<!-- password expiry -->
 	<string name="L4P_PASSWORD_EXPIRY">Password Expiry</string>

@@ -274,9 +274,9 @@ $page->addHtml('
                             0 => $gL10n->get('SYS_DEACTIVATED'),
                             // 1 => $gL10n->get('ORG_FAST_REGISTRATION'),
                             // 2 => $gL10n->get('ORG_ADVANCED_REGISTRATION'),
-                            \cantabnyc\get_configs()->preference->registration_mode => $gL10n->get('L4P_PREF_TEMP_REG'),
+                            \cantabnyc\get_configs()->preference->registration_mode => $gL10n->get('REGISTRATION_TXT'),
                         );
-                        $form->addSelectBox('registration_mode', $gL10n->get('SYS_REGISTRATION'), $selectBoxEntries, array('defaultValue' => $form_values['registration_mode'], 'showContextDependentFirstEntry' => false, 'helpTextIdInline' => 'ORG_REGISTRATION_MODE'));
+                        $form->addSelectBox('registration_mode', $gL10n->get('SYS_REGISTRATION'), $selectBoxEntries, array('defaultValue' => $form_values['registration_mode'], 'showContextDependentFirstEntry' => false, 'helpTextIdInline' => 'REGISTRATION_MODE_HELP'));
                         $form->addCheckbox('enable_registration_captcha', $gL10n->get('ORG_ENABLE_CAPTCHA'), (bool) $form_values['enable_registration_captcha'], array('helpTextIdInline' => 'ORG_CAPTCHA_REGISTRATION'));
                         $form->addCheckbox('enable_registration_admin_mail', $gL10n->get('ORG_EMAIL_ALERTS'), (bool) $form_values['enable_registration_admin_mail'], array('helpTextIdInline' => array('ORG_EMAIL_ALERTS_DESC', 'ROL_RIGHT_APPROVE_USERS')));
                         $form->addSubmitButton('btn_save_registration', $gL10n->get('SYS_SAVE'), array('icon' => THEME_URL.'/icons/disk.png', 'class' => ' col-sm-offset-3'));
