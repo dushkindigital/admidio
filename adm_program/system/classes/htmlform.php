@@ -37,6 +37,14 @@ define('FIELD_HIDDEN',   4);
  */
 class HtmlForm extends HtmlFormBasic
 {
+    const FIELD_DEFAULT  = 0;
+    const FIELD_REQUIRED = 1;
+    const FIELD_DISABLED = 2;
+    const FIELD_READONLY = 3;
+    const FIELD_HIDDEN   = 4;
+    const SELECT_BOX_MODUS_EDIT = 'EDIT_CATEGORIES';
+    const SELECT_BOX_MODUS_FILTER = 'FILTER_CATEGORIES';
+
     protected $flagRequiredFields;    ///< Flag if this form has required fields. Then a notice must be written at the end of the form
     protected $flagFieldListOpen;     ///< Flag if a field list was created. This must be closed later
     protected $showRequiredFields;    ///< Flag if required fields should get a special css class to make them more visible to the user.

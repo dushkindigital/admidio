@@ -137,6 +137,7 @@ define('TBL_USER_FIELDS',         $g_tbl_praefix . '_user_fields');
 define('TBL_USER_LOG',            $g_tbl_praefix . '_user_log');
 define('TBL_USER_RELATIONS',      $g_tbl_praefix . '_user_relations');
 define('TBL_USER_RELATION_TYPES', $g_tbl_praefix . '_user_relation_types');
+define('TBL_MENU', $g_tbl_praefix . '_menu');
 
 // #####################
 // ###  OTHER STUFF  ###

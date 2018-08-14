@@ -167,10 +167,16 @@ if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles()
         $adminMenu->addItem('dbback', FOLDER_MODULES . '/backup/backup.php',
                             $gL10n->get('BAC_DATABASE_BACKUP'), '/icons/backup_big.png',
                             $gL10n->get('BAC_DATABASE_BACKUP_DESC'));
+
+        $adminMenu->addItem('menu_mod', FOLDER_MODULES . '/menu/menu.php',
+                            $gL10n->get('SYS_MENU'), '/icons/backup_big.png',
+                            $gL10n->get('SYS_MENU_DESC'));
+
         $adminMenu->addItem('orgprop', FOLDER_MODULES . '/preferences/preferences.php',
                             $gL10n->get('SYS_SETTINGS'), '/icons/options_big.png',
                             $gL10n->get('ORG_ORGANIZATION_PROPERTIES_DESC'));
     }
+
 
     $page->addHtml($adminMenu->show(true));
 }

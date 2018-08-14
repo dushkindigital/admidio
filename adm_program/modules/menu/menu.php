@@ -77,7 +77,7 @@ $gNavigation->addStartUrl(CURRENT_URL, $headline);
 // define link to create new menu
 $menuMenu->addItem(
     'admMenuItemNew', ADMIDIO_URL . FOLDER_MODULES . '/menu/menu_new.php',
-    $gL10n->get('SYS_CREATE_ENTRY'), 'fa-plus-circle'
+    $gL10n->get('SYS_CREATE_ENTRY'), 'add.png'
 );
 
 // Create table object
@@ -98,7 +98,7 @@ $sql = 'SELECT men_id, men_name
           FROM '.TBL_MENU.'
          WHERE men_men_id_parent IS NULL
       ORDER BY men_order';
-$mainMenStatement = $gDb->queryPrepared($sql);
+$mainMenStatement = $gDb->query($sql);
 
 while ($mainMen = $mainMenStatement->fetch())
 {
@@ -106,7 +106,7 @@ while ($mainMen = $mainMenStatement->fetch())
               FROM '.TBL_MENU.'
              WHERE men_men_id_parent = ? -- $mainMen[\'men_id\']
           ORDER BY men_men_id_parent DESC, men_order';
-    $menuStatement = $gDb->queryPrepared($sql, array($mainMen['men_id']));
+    $menuStatement = $gDb->query($sql, array($mainMen['men_id']));
 
     $menuGroup = 0;
 

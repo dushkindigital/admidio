@@ -1197,6 +1197,7 @@
   <string name="SYS_MEMBERS">Members</string>
   <string name="SYS_MEMORY_LIMIT">Memory limit</string>
   <string name="SYS_MENU">Menu</string>
+  <string name="SYS_MENU_DESC">The menu can be configured here. Beside the URL a description and an icon can be deposited. In addition, it can be determined who is allowed to view the menu entry.</string>
   <string name="SYS_MESSAGE">Message</string>
   <string name="SYS_MESSAGES">Messages</string>
   <string name="SYS_MINUTES">Minutes</string>

@@ -879,3 +879,33 @@ function noHTML($input, $encoding = 'UTF-8')
 
     return htmlentities($input, ENT_QUOTES | ENT_HTML5, $encoding);
 }
+/**
+ * @param string              $path
+ * @param array<string,mixed> $params
+ * @param string              $anchor
+ * @param bool                $escape
+ * @return string
+ */
+function safeUrl($path, array $params = array(), $anchor = '', $escape = false)
+{
+    $paramsText = '';
+    if (count($params) > 0)
+    {
+        $paramsText = '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    $anchorText = '';
+    if ($anchor !== '')
+    {
+        $anchorText = '#' . rawurlencode($anchor);
+    }
+
+    $url = $path . $paramsText . $anchorText;
+
+    if ($escape)
+    {
+        return noHTML($url);
+    }
+
+    return $url;
+}
