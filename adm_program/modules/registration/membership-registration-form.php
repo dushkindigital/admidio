@@ -13,6 +13,19 @@ $registrationOrgId = $GLOBALS['gCurrentOrganization']->getValue('org_id');
 
 # has the registration module been disabled in preferences
 if ($GLOBALS['gPreferences']['registration_mode'] == 0) {
+$style = <<<HTML
+<style>
+#header-block{
+	display: none;
+}
+.container-fluid {
+	padding: 0;
+}
+</style>
+
+HTML;
+echo $style;
+
     $GLOBALS['gMessage']->show($GLOBALS['gL10n']->get('SYS_MODULE_DISABLED'));
     // => EXIT
 }
