@@ -68,25 +68,25 @@ class Component extends TableAccess
 
         $returnCode = version_compare($dbVersion, $filesystemVersion);
 
-        if ($returnCode === -1) // database has minor version
-        {
-            $gLogger->warning(
-                'UPDATE: Database-Version is lower than the filesystem!',
-                array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
-            );
+        // if ($returnCode === -1) // database has minor version
+        // {
+        //     $gLogger->warning(
+        //         'UPDATE: Database-Version is lower than the filesystem!',
+        //         array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
+        //     );
 
-            throw new AdmException('SYS_DATABASE_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
-                                   '<a href="' . ADMIDIO_URL . '/adm_program/installation/update.php">', '</a>');
-        }
-        elseif ($returnCode === 1) // filesystem has minor version
-        {
-            $gLogger->warning(
-                'UPDATE: Filesystem-Version is lower than the database!',
-                array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
-            );
+        //     throw new AdmException('SYS_DATABASE_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
+        //                            '<a href="' . ADMIDIO_URL . '/adm_program/installation/update.php">', '</a>');
+        // }
+        // elseif ($returnCode === 1) // filesystem has minor version
+        // {
+        //     $gLogger->warning(
+        //         'UPDATE: Filesystem-Version is lower than the database!',
+        //         array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
+        //     );
 
-            throw new AdmException('SYS_FILESYSTEM_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
-                                   '<a href="' . ADMIDIO_HOMEPAGE . 'download.php">', '</a>');
-        }
+        //     throw new AdmException('SYS_FILESYSTEM_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
+        //                            '<a href="' . ADMIDIO_HOMEPAGE . 'download.php">', '</a>');
+        // }
     }
 }
