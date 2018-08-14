@@ -844,3 +844,6 @@ tr.admidio-event-highlight,
 .admidio-plugin-content > div > a {
     white-space: normal;
 }
+.admidio-media-menu li .media-object {
+    width: 20px;
+}

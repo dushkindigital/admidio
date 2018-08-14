@@ -169,7 +169,7 @@ if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles()
                             $gL10n->get('BAC_DATABASE_BACKUP_DESC'));
 
         $adminMenu->addItem('menu_mod', FOLDER_MODULES . '/menu/menu.php',
-                            $gL10n->get('SYS_MENU'), '/icons/backup_big.png',
+                            $gL10n->get('SYS_MENU'), '/icons/application_view_tile.png',
                             $gL10n->get('SYS_MENU_DESC'));
 
         $adminMenu->addItem('orgprop', FOLDER_MODULES . '/preferences/preferences.php',
