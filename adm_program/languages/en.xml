@@ -558,6 +558,9 @@
   <string name="MEM_USERS_PER_PAGE">Number of users per page</string>
   <string name="MEM_USERS_PER_PAGE_DESC">Number of users listed on each page. If there are multiple members in this group pages can be turned. (Default: 25)</string>
   <!--Phrases only in Messagemodule-->
+  <string name="MEN_MENU_LEVEL">Menu Level</string>
+  <string name="MEN_MODULE_RIGHTS">Module rights</string>
+  <string name="SYS_VISIBLE_FOR">Visible for</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE">Activate chat</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE_DESC">Activate chat module. Messages will be fetched dynamically from database every 3 seconds. Only 99 entries will be saved into database. As soon as the 100th entry is to be saved the first 50 entries will be deleted.</string>
   <string name="MSG_ACTIVATE_PM_MODULE">Activate private messages</string>
@@ -599,6 +602,13 @@
   <string name="NWU_USER_NO_VALID_LOGIN">User has no login yet.\nWould you like to assign the information of the selected registration to the user?</string>
   <string name="NWU_USER_VALID_LOGIN">User already has valid login information.</string>
   <!--Phrases only in Organizationadministration-->
+
+  <string name="Overview">Overview</string>
+  <string name="E-mail">E-mail</string>
+  <string name="Events">Events</string>
+  <string name="Menu">Menu</string>
+  <string name="Preferences">Preferences</string>
+
   <string name="ORG_ACCESS_TO_MODULE">Module access</string>
   <string name="ORG_ACCESS_TO_MODULE_DESC">Module can be deactivated or enabled for logged in users only. If module is only accessible to logged in users, it will be hidden for logged out users and web feed will be completely disabled for both user groups. (default: active)</string>
   <string name="ORG_ACTIVATE_SYSTEM_MAILS">Enable system notifications</string>

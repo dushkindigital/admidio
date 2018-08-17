@@ -22,6 +22,7 @@ require(__DIR__ . '/../../system/login_valid.php');
 // Initialize and check the parameters
 $getMenId = admFuncVariableIsValid($_GET, 'men_id', 'int');
 
+
 // Rechte pruefen
 if(!$gCurrentUser->isAdministrator())
 {
@@ -51,13 +52,13 @@ function subMenu(&$menuList, $level, $menId, $parentId = null)
     {
         $sqlConditionParentId .= ' AND men_men_id_parent IS NULL';
     }
-
+    // die(var_dump($menId, $queryParams));
     $sql = 'SELECT *
               FROM '.TBL_MENU.'
              WHERE men_node = 1
-               AND men_id  <> ? -- $menu->getValue(\'men_id\')
+               AND men_id  <> '.$menId.'
                    '.$sqlConditionParentId;
-    $childStatement = $gDb->queryPrepared($sql, $queryParams);
+    $childStatement = $gDb->query($sql);
 
     $parentMenu = new TableMenu($gDb);
     $einschub = str_repeat('&nbsp;', $level * 3) . '&#151;&nbsp;';
@@ -77,11 +78,11 @@ function subMenu(&$menuList, $level, $menId, $parentId = null)
 // set module headline
 if($getMenId > 0)
 {
-    $headline = $gL10n->get('SYS_EDIT_VAR', array($gL10n->get('SYS_MENU')));
+    $headline = $gL10n->get('SYS_EDIT_VAR', ($gL10n->get('SYS_MENU')));
 }
 else
 {
-    $headline = $gL10n->get('SYS_CREATE_VAR', array($gL10n->get('SYS_MENU')));
+    $headline = $gL10n->get('SYS_CREATE_VAR', ($gL10n->get('SYS_MENU')));
 }
 
 // create menu object
@@ -114,7 +115,7 @@ $page = new HtmlPage($headline);
 
 // add back link to module menu
 $menuCreateMenu = $page->getMenu();
-$menuCreateMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'fa-arrow-circle-left');
+$menuCreateMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back');
 
 // alle aus der DB aus lesen
 $sqlRoles = 'SELECT rol_id, rol_name, org_shortname, cat_name
@@ -127,7 +128,8 @@ $sqlRoles = 'SELECT rol_id, rol_name, org_shortname, cat_name
                 AND rol_system = 0
                 AND cat_name_intern <> \'EVENTS\'
            ORDER BY cat_name, rol_name';
-$rolesViewStatement = $gDb->queryPrepared($sqlRoles);
+$rolesViewStatement = $gDb->query($sqlRoles);
+// var_dump($rolesViewStatement);
 
 $parentRoleViewSet = array();
 while($rowViewRoles = $rolesViewStatement->fetch())
@@ -139,7 +141,6 @@ while($rowViewRoles = $rolesViewStatement->fetch())
         $rowViewRoles['cat_name']
     );
 }
-
 // show form
 $form = new HtmlForm('menu_edit_form', safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/menu/menu_function.php', array('men_id' => $getMenId, 'mode' => 1)), $page);
 
@@ -153,7 +154,7 @@ if((bool) $menu->getValue('men_standard'))
 }
 
 $menuList = array();
-subMenu($menuList, 1, (int) $menu->getValue('men_id'));
+// subMenu($menuList, 1, (int) $menu->getValue('men_id'));
 
 $form->addInput(
     'men_name', $gL10n->get('SYS_NAME'), $menu->getValue('men_name', 'database'),
@@ -215,12 +216,64 @@ $form->addInput(
         'class' => 'form-control-small'
     )
 );
-
-$form->addSubmitButton(
+// die(var_dump($menuList));
+$html = $form->addSubmitButton(
     'btn_save', $gL10n->get('SYS_SAVE'),
     array('icon' => 'fa-check')
 );
-
+// die($g_root_path);
 // add form to html page and show page
-$page->addHtml($form->show());
+$addMenuForm = <<<HTML
+<div class="admidio-form-required-notice"><span>Required fields</span></div>
+<form action="{$g_root_path}/adm_program/modules/menu/menu_function.php?men_id=0&mode=1"
+    id="menu_edit_form" method="post" role="form" class=" form-horizontal form-dialog">
+    <div id="men_name_group" class="form-group admidio-form-group-required"><label for="men_name" class="col-sm-3 control-label">Name<img class="admidio-icon-help" src="{$g_root_path}/adm_themes/modern/icons/help.png"
+                title="Note" alt="Help" data-toggle="popover" data-html="true" data-trigger="hover" data-placement="auto" data-content="#MEN_NAME_DESC#"
+            /></label>
+        <div class="col-sm-9"><input type="text" name="men_name" id="men_name" value="" class="form-control" minlength=""
+                maxlength="100" required /></div>
+    </div>
+    <div id="men_description_group" class="form-group"><label for="men_description" class="col-sm-3 control-label">Description</label>
+        <div class="col-sm-9"><textarea name="men_description" rows="2" cols="80" id="men_description" class="form-control"
+                maxlength="4000"></textarea>
+            <small class="characters-count">(still <span id="men_description_counter" class="">255</span> characters)</small></div>
+    </div>
+    <div id="men_men_id_parent_group" class="form-group admidio-form-group-required"><label for="men_men_id_parent" class="col-sm-3 control-label">Menu Level<img class="admidio-icon-help" src="{$g_root_path}/adm_themes/modern/icons/help.png"
+                title="Note" alt="Help" data-toggle="popover" data-html="true" data-trigger="hover" data-placement="auto" data-content="#MEN_MENU_LEVEL_DESC#"
+            /></label>
+        <div class="col-sm-9"><select name="men_men_id_parent" id="men_men_id_parent" class="form-control" ><option
+                    value="">- Select option -</option></select></div>
+    </div>
+    <div id="men_com_id_group" class="form-group"><label for="men_com_id" class="col-sm-3 control-label">Module Rights<img class="admidio-icon-help" src="{$g_root_path}/adm_themes/modern/icons/help.png"
+                title="Note" alt="Help" data-toggle="popover" data-html="true" data-trigger="hover" data-placement="auto" data-content="#MEN_MODULE_RIGHTS_DESC#"
+            /></label>
+        <div class="col-sm-9"><select name="men_com_id" id="men_com_id" class="form-control"><option value=""> </option>
+                <option
+                    value="1">Admidio Core</option>
+            </select>
+        </div>
+    </div>
+    <div id="menu_view_group" class="form-group"><label for="menu_view" class="col-sm-3 control-label">Visible For</label>
+        <div class="col-sm-9"><select name="menu_view[]" id="menu_view" class="form-control" multiple><option value=""> </option>
+        </select></div>
+    </div>
+    <div id="men_url_group" class="form-group admidio-form-group-required"><label for="men_url" class="col-sm-3 control-label">URL</label>
+        <div class="col-sm-9"><input type="text" name="men_url" id="men_url" value="" class="form-control" minlength="" maxlength="100"
+                required /></div>
+    </div>
+    <div id="men_icon_group" class="form-group"><label for="men_icon" class="col-sm-3 control-label">Icon<img class="admidio-icon-help" src="http://localhost/akshay/SO_FRVP_A1348/cantab/adm_themes/modern/icons/help.png"
+                title="Note" alt="Help" data-toggle="popover" data-html="true" data-trigger="hover" data-placement="auto" data-content="##SYS_FONT_AWESOME_DESC##"
+            /></label>
+        <div class="col-sm-9"><input type="text" name="men_icon" id="men_icon" value="" class="form-control form-control-small"
+                minlength="" maxlength="100" /></div>
+    </div><button class="btn btn-default  btn-primary" id="btn_save" name="btn_save" type="submit"><img src="fa-check" alt="Save"
+        />Save</button><div class="form-alert" style="display: none;">&nbsp;</div>
+</form>
+
+HTML;
+
+$page->addHtml($addMenuForm);
+// $page->addHtml($form->show());
+
 $page->show();
+

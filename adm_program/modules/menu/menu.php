@@ -99,82 +99,58 @@ $sql = 'SELECT men_id, men_name
          WHERE men_men_id_parent IS NULL
       ORDER BY men_order';
 $mainMenStatement = $gDb->query($sql);
-
-while ($mainMen = $mainMenStatement->fetch())
-{
+$collection = $mainMenStatement->fetchAll();
+foreach ($collection as $key => $item) {
     $sql = 'SELECT men_id, men_men_id_parent, men_name, men_description, men_standard, men_url
-              FROM '.TBL_MENU.'
-             WHERE men_men_id_parent = ? -- $mainMen[\'men_id\']
-          ORDER BY men_men_id_parent DESC, men_order';
-    $menuStatement = $gDb->query($sql, array($mainMen['men_id']));
-
-    $menuGroup = 0;
-
-    // Get data
-    while($menuRow = $menuStatement->fetch())
-    {
-        $menIdParent = (int) $menuRow['men_men_id_parent'];
-
-        if($menuGroup !== $menIdParent)
-        {
-            $blockId = 'admMenu_'.$menIdParent;
-
-            $menuOverview->addTableBody();
-            $menuOverview->addRow('', array('class' => 'admidio-group-heading'));
-            $menuOverview->addColumn('<span id="caret_'.$blockId.'" class="caret"></span>'.$gL10n->get($mainMen['men_name']),
-                              array('id' => 'group_'.$blockId, 'colspan' => '8'));
-            $menuOverview->addTableBody('id', $blockId);
-
-            $menuGroup = $menIdParent;
-        }
-
-        $menuName = Language::translateIfTranslationStrId($menuRow['men_name']);
-        $menuNameDesc = Language::translateIfTranslationStrId($menuRow['men_description']);
-
-        // add root path to link unless the full URL is given
-        if (preg_match('/^http(s?):\/\//', $menuRow['men_url']) === 0)
-        {
-            $menuLink = ADMIDIO_URL . $menuRow['men_url'];
-        }
-        else
-        {
-            $menuLink = $menuRow['men_url'];
-        }
-
-        $htmlMoveRow = '<a class="admidio-icon-link" href="javascript:moveMenu(\'UP\', '.$menuRow['men_id'].')">'.
-                            '<i class="fas fa-chevron-circle-up" data-toggle="tooltip" title="' . $gL10n->get('CAT_MOVE_UP', array($headline)) . '"></i></a>
-                        <a class="admidio-icon-link" href="javascript:moveMenu(\'DOWN\', '.$menuRow['men_id'].')">'.
-                            '<i class="fas fa-chevron-circle-down" data-toggle="tooltip" title="' . $gL10n->get('CAT_MOVE_DOWN', array($headline)) . '"></i></a>';
-
-        $htmlStandardMenu = '&nbsp;';
-        if($menuRow['men_standard'])
-        {
-            $htmlStandardMenu = '<i class="fas fa-star" data-toggle="tooltip" title="' . $gL10n->get('CAT_DEFAULT_VAR', array($gL10n->get('MEN_MENU_ITEM'))) . '"></i>';
-        }
-
-        $menuAdministration = '<a class="admidio-icon-link" href="'.safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/menu/menu_new.php', array('men_id' => $menuRow['men_id'])). '">'.
-                                '<i class="fas fa-edit" data-toggle="tooltip" title="'.$gL10n->get('SYS_EDIT').'"></i>';
-
-        // don't allow delete for standard menus
-        if(!$menuRow['men_standard'])
-        {
-            $menuAdministration .= '<a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
-                                        href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'men', 'element_id' => 'row_men_'.
-                                        $menuRow['men_id'], 'name' => $menuName, 'database_id' => $menuRow['men_id'])).'">'.
-                                        '<i class="fas fa-trash-alt" data-toggle="tooltip" title="'.$gL10n->get('SYS_DELETE').'"></i></a>';
-        }
-
-        // create array with all column values
-        $columnValues = array(
-            '<a href="'.safeUrl(ADMIDIO_URL.FOLDER_MODULES.'/menu/menu_new.php', array('men_id' => $menuRow['men_id'])). '" title="'.$menuNameDesc.'">'.$menuName.'</a>',
-            $htmlMoveRow,
-            '<a href="'.$menuLink. '" title="'.$menuNameDesc.'">'. $menuRow['men_url']. '</a>',
-            $htmlStandardMenu,
-            $menuAdministration
-        );
-        $menuOverview->addRowByArray($columnValues, 'row_men_'. $menuRow['men_id']);
+                FROM '.TBL_MENU.'
+            WHERE men_men_id_parent = '.$item['men_id'].'
+            ORDER BY men_men_id_parent DESC, men_order';
+    $menuStatement = $gDb->query($sql);
+    $collectionOfMenus = $menuStatement->fetchAll();
+    foreach ($collectionOfMenus as $menuKey => $menuItem) {
+        $menuOverview->addRowByArray([
+            $gL10n->get($menuItem['men_name']),
+<<<HTML
+<div style="text-align: left;">
+    <a class="admidio-icon-link" href="javascript:moveMenu('UP', 4)">
+        <img src="{$g_root_path}/adm_themes/modern/icons/arrow_up.png" alt="Move up Menu" title="" data-original-title="Move up Menu">
+    </a>
+    <a class="admidio-icon-link" href="javascript:moveMenu('DOWN', 4)">
+        <img src="{$g_root_path}/adm_themes/modern/icons/arrow_down.png" alt="Move down Menu" title="" data-original-title="Move down Menu"></a>
+</div>
+HTML
+,
+$menuItem['men_url'],
+<<<HTML
+<img class="admidio-icon-info" src="{$g_root_path}/adm_themes/modern/icons/star.png" alt="Standard Menu item" title="" data-original-title="Standard Menu item">
+HTML
+,
+<<<HTML
+<a class="admidio-icon-link" href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id=4"><img src="{$g_root_path}/adm_themes/modern/icons/edit.png" alt="Edit" title="" data-original-title="Edit"></a>
+HTML
+,
+        ]);
     }
+
+    // var_dump($menuRes);
 }
 
 $page->addHtml($menuOverview->show());
 $page->show();
+
+function menuAction($actionType) {
+    if($actionType == 'sortOrder') {
+        $htmlContent =
+<<<HTML
+<div style="text-align: left;">
+    <a class="admidio-icon-link" href="javascript:moveMenu('UP', 4)">
+        <img src="{$g_root_path}/adm_themes/modern/icons/arrow_up.png" alt="Move up Menu" title="" data-original-title="Move up Menu">
+    </a>
+    <a class="admidio-icon-link" href="javascript:moveMenu('DOWN', 4)">
+        <img src="{$g_root_path}/adm_themes/modern/icons/arrow_down.png" alt="Move down Menu" title="" data-original-title="Move down Menu"></a>
+</div>
+HTML;
+
+    }
+
+}
