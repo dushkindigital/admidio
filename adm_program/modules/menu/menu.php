@@ -111,6 +111,8 @@ foreach ($collection as $key => $item) {
     // add row to table: Starts here
     foreach ($collectionOfMenus as $menuKey => $menuItem) {
         $menIdParent = (int) $menuItem['men_men_id_parent'];
+        $menuName = Language::translateIfTranslationStrId($menuItem['men_name']);
+        $menuNameDesc = Language::translateIfTranslationStrId($menuItem['men_description']);
         if($menuGroup !== $menIdParent){
             $blockId = 'admMenu_'.$menIdParent;
             $menuOverview->addTableBody();
@@ -123,7 +125,7 @@ foreach ($collection as $key => $item) {
         $menuOverview->addRowByArray([
 <<<HTML
 <a href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuItem['men_id']}">
-    {$gL10n->get($menuItem['men_name'])}
+    {$menuName}
 </a>
 HTML
 ,
@@ -148,7 +150,7 @@ HTML
 HTML
 ,
 <<<HTML
-<a class="admidio-icon-link" href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id=4"><img src="{$g_root_path}/adm_themes/modern/icons/edit.png" alt="Edit" title="" data-original-title="Edit"></a>
+<a class="admidio-icon-link" href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuItem['men_id']}"><img src="{$g_root_path}/adm_themes/modern/icons/edit.png" alt="Edit" title="" data-original-title="Edit"></a>
 HTML
 ,
         ],

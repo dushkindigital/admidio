@@ -59,8 +59,8 @@ class TableMenu extends TableAccess
 
         $sql = 'SELECT men_id
                   FROM '.TBL_MENU.'
-                 WHERE men_name_intern = ? -- $newNameIntern';
-        $userFieldsStatement = $this->db->queryPrepared($sql, array($newNameIntern));
+                 WHERE men_name_intern = "'.$newNameIntern.'"';
+        $userFieldsStatement = $this->db->query($sql);
 
         if ($userFieldsStatement->rowCount() > 0)
         {
@@ -109,11 +109,11 @@ class TableMenu extends TableAccess
         {
             if($menOrder > 1)
             {
-                $sql = 'UPDATE '.TBL_MENU.'
-                           SET men_order = ? -- $menOrder
-                         WHERE men_men_id_parent = ? -- $menIdParent
-                           AND men_order = ? -- $menOrder - 1';
-                $this->db->queryPrepared($sql, array($menOrder, $menIdParent, $menOrder - 1));
+                echo $sql = 'UPDATE '.TBL_MENU.'
+                           SET men_order = '.$menOrder.'
+                         WHERE men_men_id_parent = '.$menIdParent.'
+                           AND men_order = '.$menOrder.' - 1';
+                $this->db->query($sql);
                 $this->setValue('men_order', $menOrder - 1);
                 $this->save();
             }
@@ -125,17 +125,16 @@ class TableMenu extends TableAccess
             // be mixed with the organization categories. Hidden categories are sidelined.
             $sql = 'SELECT COUNT(*) AS count
                       FROM '.TBL_MENU.'
-                     WHERE men_men_id_parent = ? -- $menIdParent';
-            $countMenuStatement = $this->db->queryPrepared($sql, array($menIdParent));
+                     WHERE men_men_id_parent = '.$menIdParent;
+            $countMenuStatement = $this->db->query($sql);
             $rowCount = $countMenuStatement->fetchColumn();
-
             if($menOrder < $rowCount)
             {
                 $sql = 'UPDATE '.TBL_MENU.'
-                           SET men_order = ? -- $menOrder
-                         WHERE men_men_id_parent = ? -- $menIdParent
-                           AND men_order = ? -- $menOrder + 1';
-                $this->db->queryPrepared($sql, array($menOrder, $menIdParent, $menOrder + 1));
+                           SET men_order = '.$menOrder.'
+                         WHERE men_men_id_parent = '.$menIdParent.'
+                           AND men_order = '.$menOrder.' + 1';
+                $this->db->query($sql);
                 $this->setValue('men_order', $menOrder + 1);
                 $this->save();
             }
@@ -204,8 +203,8 @@ class TableMenu extends TableAccess
             // beim Insert die hoechste Reihenfolgennummer der Kategorie ermitteln
             $sql = 'SELECT COUNT(*) AS count
                       FROM '.TBL_MENU.'
-                     WHERE men_men_id_parent = ? -- $this->getValue(\'men_men_id_parent\')';
-            $countMenuStatement = $this->db->queryPrepared($sql, array((int) $this->getValue('men_men_id_parent')));
+                     WHERE men_men_id_parent = '.$this->getValue('men_men_id_parent');
+            $countMenuStatement = $this->db->query($sql);
 
             $rowCount = $countMenuStatement->fetchColumn();
             $this->setValue('men_order', $rowCount + 1);

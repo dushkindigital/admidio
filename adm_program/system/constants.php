@@ -167,4 +167,15 @@ if (!defined('JSON_UNESCAPED_SLASHES'))
     define('JSON_UNESCAPED_UNICODE', 256);
 }
 
+// create an installation unique cookie prefix and remove special characters
+if(isset($g_adm_db))
+{
+    $cookiePrefix = 'ADMIDIO_' . $g_organization . '_' . DB_NAME . '_' . TABLE_PREFIX;
+}
+else
+{
+    $cookiePrefix = 'ADMIDIO_' . TABLE_PREFIX;
+}
+define('COOKIE_PREFIX', preg_replace('/\W/', '_', $cookiePrefix));
+
 define('TBL_APPLICATIONS', $g_tbl_praefix .'_user_applications');

@@ -126,6 +126,7 @@ if(array_key_exists('gCurrentSession', $_SESSION) && $_SESSION['gCurrentSession'
     // read organization data from session object
     $gCurrentOrganization =& $gCurrentSession->getObject('gCurrentOrganization');
     $gPreferences = $gCurrentOrganization->getPreferences();
+    $gSettingsManager =& $gCurrentOrganization->getSettingsManager();
 }
 else
 {

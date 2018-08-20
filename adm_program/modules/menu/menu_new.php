@@ -45,14 +45,13 @@ function subMenu(&$menuList, $level, $menId, $parentId = null)
     // Erfassen des auszugebenden Menu
     if ($parentId > 0)
     {
-        $sqlConditionParentId .= ' AND men_men_id_parent = ? -- $parentId';
+        $sqlConditionParentId .= ' AND men_men_id_parent = '.$parentId;
         $queryParams[] = $parentId;
     }
     else
     {
         $sqlConditionParentId .= ' AND men_men_id_parent IS NULL';
     }
-    // die(var_dump($menId, $queryParams));
     $sql = 'SELECT *
               FROM '.TBL_MENU.'
              WHERE men_node = 1
@@ -154,7 +153,7 @@ if((bool) $menu->getValue('men_standard'))
 }
 
 $menuList = array();
-// subMenu($menuList, 1, (int) $menu->getValue('men_id'));
+subMenu($menuList, 1, (int) $menu->getValue('men_id'));
 
 $form->addInput(
     'men_name', $gL10n->get('SYS_NAME'), $menu->getValue('men_name', 'database'),
@@ -183,6 +182,7 @@ $form->addSelectBox(
     )
 );
 
+
 $sql = 'SELECT com_id, com_name
           FROM '.TBL_COMPONENTS.'
       ORDER BY com_name';
@@ -199,6 +199,7 @@ $form->addSelectBox(
     'menu_view', $gL10n->get('SYS_VISIBLE_FOR'), $parentRoleViewSet,
     array('defaultValue' => $roleViewSet, 'multiselect' => true)
 );
+// die(var_dump($parentRoleViewSet));
 
 if((bool) $menu->getValue('men_node') === false)
 {
@@ -221,6 +222,7 @@ $html = $form->addSubmitButton(
     'btn_save', $gL10n->get('SYS_SAVE'),
     array('icon' => 'fa-check')
 );
+$form->show();
 // die($g_root_path);
 // add form to html page and show page
 $addMenuForm = <<<HTML
@@ -272,7 +274,7 @@ $addMenuForm = <<<HTML
 
 HTML;
 
-$page->addHtml($addMenuForm);
+// $page->addHtml($addMenuForm);
 // $page->addHtml($form->show());
 
 $page->show();

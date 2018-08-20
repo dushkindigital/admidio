@@ -1,21 +1,22 @@
 <?php
 /**
  ***********************************************************************************************
- * @copyright 2004-2017 The Admidio Team
+ * @copyright 2004-2018 The Admidio Team
  * @see https://www.admidio.org/
  * @license https://www.gnu.org/licenses/gpl-2.0.html GNU General Public License v2.0 only
  ***********************************************************************************************
  */
 
 /**
- * @class Component
- * @brief Handle different components of Admidio (e.g. system, plugins or modules) and manage them in the database
+ * Handle different components of Admidio (e.g. system, plugins or modules) and manage them in the database
  *
- * The class search in the database table @b adm_components for a specific component
- * and loads the data into this object. A component could be per default the @b SYSTEM
+ * The class search in the database table **adm_components** for a specific component
+ * and loads the data into this object. A component could be per default the **SYSTEM**
  * itself, a module or a plugin. There are methods to check the version of the system.
- * @par Examples
- * @code // check if database and filesystem have same version
+ *
+ * **Code example:**
+ * ```
+ * // check if database and filesystem have same version
  * try
  * {
  *     $systemComponent = new Component($gDb);
@@ -25,18 +26,19 @@
  * catch(AdmException $e)
  * {
  *     $e->showHtml();
- * } @endcode
+ * }
+ * ```
  */
 class Component extends TableAccess
 {
     /**
      * Constructor that will create an object of a recordset of the table adm_component.
      * If the id is set than the specific component will be loaded.
-     * @param \Database $database Object of the class Database. This should be the default global object @b $gDb.
-     * @param int       $comId    The recordset of the component with this id will be loaded.
-     *                            If com_id isn't set than an empty object of the table is created.
+     * @param Database $database Object of the class Database. This should be the default global object **$gDb**.
+     * @param int      $comId    The recordset of the component with this id will be loaded.
+     *                           If com_id isn't set than an empty object of the table is created.
      */
-    public function __construct(&$database, $comId = 0)
+    public function __construct(Database $database, $comId = 0)
     {
         parent::__construct($database, TBL_COMPONENTS, 'com', $comId);
     }
@@ -54,19 +56,19 @@ class Component extends TableAccess
     {
         global $gLogger;
 
-        $dbVersion = $this->getValue('com_version');
-        if ($this->getValue('com_beta') > 0)
-        {
-            $dbVersion .= '-Beta.' . $this->getValue('com_beta');
-        }
+        // $dbVersion = $this->getValue('com_version');
+        // if ($this->getValue('com_beta') > 0)
+        // {
+        //     $dbVersion .= '-Beta.' . $this->getValue('com_beta');
+        // }
 
-        $filesystemVersion = ADMIDIO_VERSION;
-        if (ADMIDIO_VERSION_BETA > 0)
-        {
-            $filesystemVersion .= '-Beta.' . ADMIDIO_VERSION_BETA;
-        }
+        // $filesystemVersion = ADMIDIO_VERSION;
+        // if (ADMIDIO_VERSION_BETA > 0)
+        // {
+        //     $filesystemVersion .= '-Beta.' . ADMIDIO_VERSION_BETA;
+        // }
 
-        $returnCode = version_compare($dbVersion, $filesystemVersion);
+        // $returnCode = version_compare($dbVersion, $filesystemVersion);
 
         // if ($returnCode === -1) // database has minor version
         // {
@@ -75,18 +77,144 @@ class Component extends TableAccess
         //         array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
         //     );
 
-        //     throw new AdmException('SYS_DATABASE_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
-        //                            '<a href="' . ADMIDIO_URL . '/adm_program/installation/update.php">', '</a>');
+        //     throw new AdmException('SYS_DATABASE_VERSION_INVALID', array($dbVersion, ADMIDIO_VERSION_TEXT,
+        //                            '<a href="' . ADMIDIO_URL . '/adm_program/installation/update.php">', '</a>'));
         // }
-        // elseif ($returnCode === 1) // filesystem has minor version
+        // if ($returnCode === 1) // filesystem has minor version
         // {
         //     $gLogger->warning(
         //         'UPDATE: Filesystem-Version is lower than the database!',
         //         array('versionDB' => $dbVersion, 'versionFileSystem' => $filesystemVersion)
         //     );
 
-        //     throw new AdmException('SYS_FILESYSTEM_VERSION_INVALID', $dbVersion, ADMIDIO_VERSION_TEXT,
-        //                            '<a href="' . ADMIDIO_HOMEPAGE . 'download.php">', '</a>');
+        //     throw new AdmException('SYS_FILESYSTEM_VERSION_INVALID', array($dbVersion, ADMIDIO_VERSION_TEXT,
+        //                            '<a href="' . ADMIDIO_HOMEPAGE . 'download.php">', '</a>'));
         // }
+    }
+
+
+    /**
+     * This method checks if the current user is allowed to view the component. Therefore
+     * special checks for each component were done.
+     * @param string $componentName The name of the component that is stored in the column com_name_intern e.g. LISTS
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @return bool Return true if the current user is allowed to view the component
+     */
+    public static function isVisible($componentName)
+    {
+        global $gValidLogin, $gCurrentUser, $gSettingsManager;
+
+        switch($componentName)
+        {
+            case 'CORE':
+                if($gValidLogin)
+                {
+                    return true;
+                }
+                break;
+
+            case 'ANNOUNCEMENTS':
+                if((int) $gSettingsManager->get('enable_announcements_module') === 1
+                || ((int) $gSettingsManager->get('enable_announcements_module') === 2 && $gValidLogin))
+                {
+                    return true;
+                }
+                break;
+
+            case 'DATES':
+                if((int) $gSettingsManager->get('enable_dates_module') === 1
+                || ((int) $gSettingsManager->get('enable_dates_module') === 2 && $gValidLogin))
+                {
+                    return true;
+                }
+                break;
+
+            case 'DOWNLOADS':
+                if($gSettingsManager->getBool('enable_download_module'))
+                {
+                    return true;
+                }
+                break;
+
+            case 'GUESTBOOK':
+                if((int) $gSettingsManager->get('enable_guestbook_module') === 1
+                || ((int) $gSettingsManager->get('enable_guestbook_module') === 2 && $gValidLogin))
+                {
+                    return true;
+                }
+                break;
+
+            case 'LINKS':
+                if((int) $gSettingsManager->get('enable_weblinks_module') === 1
+                || ((int) $gSettingsManager->get('enable_weblinks_module') === 2 && $gValidLogin))
+                {
+                    return true;
+                }
+                break;
+
+            case 'LISTS':
+                if($gSettingsManager->getBool('lists_enable_module'))
+                {
+                    return true;
+                }
+                break;
+
+            case 'MEMBERS':
+                if($gCurrentUser->editUsers())
+                {
+                    return true;
+                }
+                break;
+
+            case 'MESSAGES':
+                if ($gSettingsManager->getBool('enable_pm_module') || $gSettingsManager->getBool('enable_mail_module') || $gSettingsManager->getBool('enable_chat_module'))
+                {
+                    return true;
+                }
+                break;
+
+            case 'PHOTOS':
+                if((int) $gSettingsManager->get('enable_photo_module') === 1
+                || ((int) $gSettingsManager->get('enable_photo_module') === 2 && $gValidLogin))
+                {
+                    return true;
+                }
+                break;
+
+            case 'PROFILE':
+                if($gCurrentUser->hasRightViewProfile($gCurrentUser))
+                {
+                    return true;
+                }
+                break;
+
+            case 'REGISTRATION':
+                if($gSettingsManager->getBool('registration_enable_module') && $gCurrentUser->approveUsers())
+                {
+                    return true;
+                }
+                break;
+
+            case 'ROLES':
+                if($gCurrentUser->manageRoles())
+                {
+                    return true;
+                }
+                break;
+
+            case 'BACKUP':
+            case 'CATEGORIES':
+            case 'MENU':
+            case 'PREFERENCES':
+            case 'ROOMS':
+                if($gCurrentUser->isAdministrator())
+                {
+                    return true;
+                }
+                break;
+        }
+
+        return false;
     }
 }

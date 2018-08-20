@@ -477,4 +477,16 @@ class Organization extends TableAccess
         }
         return parent::setValue($columnName, $newValue, $checkValue);
     }
+    /**
+     * @return SettingsManager
+     */
+    public function &getSettingsManager()
+    {
+        if(!$this->settingsManager instanceof SettingsManager)
+        {
+            $this->settingsManager = new SettingsManager($this->db, (int) $this->getValue('org_id'));
+        }
+
+        return $this->settingsManager;
+    }
 }
