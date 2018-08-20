@@ -847,3 +847,6 @@ tr.admidio-event-highlight,
 .admidio-media-menu li .media-object {
     width: 20px;
 }
+.table {
+    font-size: inherit;
+}
