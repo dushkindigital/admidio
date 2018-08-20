@@ -123,15 +123,14 @@ class TableMenu extends TableAccess
         {
             // count all categories that are organization independent because these categories should not
             // be mixed with the organization categories. Hidden categories are sidelined.
-            echo $sql = 'SELECT COUNT(*) AS count
+            $sql = 'SELECT COUNT(*) AS count
                       FROM '.TBL_MENU.'
                      WHERE men_men_id_parent = '.$menIdParent;
             $countMenuStatement = $this->db->query($sql);
             $rowCount = $countMenuStatement->fetchColumn();
-            echo PHP_EOL;
             if($menOrder < $rowCount)
             {
-                echo $sql = 'UPDATE '.TBL_MENU.'
+                $sql = 'UPDATE '.TBL_MENU.'
                            SET men_order = '.$menOrder.'
                          WHERE men_men_id_parent = '.$menIdParent.'
                            AND men_order = '.$menOrder.' + 1';
