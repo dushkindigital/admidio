@@ -25,6 +25,7 @@
  */
 class Organization extends TableAccess
 {
+    public $settingsManager;
     protected $bCheckChildOrganizations = false;   ///< Flag will be set if the class had already search for child organizations
     protected $childOrganizations       = array(); ///< Array with all child organizations of this organization
     protected $preferences              = array(); ///< Array with all preferences of this organization. Array key is the column @b prf_name and array value is the column @b prf_value.

@@ -14,8 +14,8 @@
  *             true  - show uploaded photo of current session
  ***********************************************************************************************
  */
+ob_start();
 require('../../system/common.php');
-
 // Initialize and check the parameters
 $getUserId   = admFuncVariableIsValid($_GET, 'usr_id',    'int', array('requireValue' => true));
 $getNewPhoto = admFuncVariableIsValid($_GET, 'new_photo', 'bool');
@@ -78,5 +78,7 @@ else
 }
 
 header('Content-Type: '. $image->getMimeType());
+ob_end_clean();
 $image->copyToBrowser();
 $image->delete();
+
