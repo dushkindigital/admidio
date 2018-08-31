@@ -51,6 +51,15 @@ class Language
     {
         $this->languageData =& $languageDataObject;
     }
+    /**
+     * Checks if a given string is a translation-string-id
+     * @param string $string The string to check
+     * @return bool Returns true if the given string is a translation-string-id
+     */
+    public static function isTranslationStringId($string)
+    {
+        return (bool) preg_match('/^[A-Z]{3}_([A-Z0-9]_?)*[A-Z0-9]$/', $string);
+    }
 
     /**
      * Adds a new path of language files to the array with all language paths where Admidio
@@ -348,5 +357,21 @@ class Language
 
             $this->languageData->setLanguage($language);
         }
+    }
+    /**
+     * Checks if a given string is a translation-string-id and translate it
+     * @param string $string The string to check for translation
+     * @return string Returns the translated or original string
+     */
+    public static function translateIfTranslationStrId($string)
+    {
+        global $gL10n;
+
+        if (self::isTranslationStringId($string))
+        {
+            return $gL10n->get($string);
+        }
+
+        return $string;
     }
 }
