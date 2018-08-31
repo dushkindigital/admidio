@@ -558,8 +558,12 @@
   <string name="MEM_USERS_PER_PAGE">Number of users per page</string>
   <string name="MEM_USERS_PER_PAGE_DESC">Number of users listed on each page. If there are multiple members in this group pages can be turned. (Default: 25)</string>
   <!--Phrases only in Messagemodule-->
-  <string name="MEN_MENU_LEVEL">Menu Level</string>
+  <string name="MEN_MENU_LEVEL">Menu level</string>
+  <string name="MEN_MENU_ITEM">Menu item</string>
+  <string name="MEN_MENU_LEVEL_DESC">A menu item is always subordinate to another menu item. In the selection list, select a menu level in which the new menu item should be visible. </string>
   <string name="MEN_MODULE_RIGHTS">Module rights</string>
+   <string name="MEN_MODULE_RIGHTS_DESC">If you specify a module here, the menu item will only be displayed if the user also has the right to see this module.</string>
+  <string name="MEN_PLUGIN">Plugins</string>
   <string name="SYS_VISIBLE_FOR">Visible for</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE">Activate chat</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE_DESC">Activate chat module. Messages will be fetched dynamically from database every 3 seconds. Only 99 entries will be saved into database. As soon as the 100th entry is to be saved the first 50 entries will be deleted.</string>
@@ -1001,6 +1005,7 @@
   <string name="ROL_WEEKDAY">Weekday</string>
   <string name="ROL_WITHOUT_LEADER">No leader</string>
   <!--Phrases only in Roommodule-->
+  <string name="SYS_INVALID_FONT_AWESOME">Invalid icon</string>
   <string name="ROO_CAPACITY">Capacity</string>
   <string name="ROO_OVERHANG">Overhang</string>
   <string name="ROO_ROOM_MANAGEMENT">Room administration</string>
