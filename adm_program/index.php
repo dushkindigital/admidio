@@ -26,6 +26,10 @@ $gNavigation->addStartUrl(CURRENT_URL, $headline);
 // create html page object
 $page = new HtmlPage($headline);
 
+$menu = new TableMenu($gDb);
+$menuSections = array();
+subMenu($menuSections, 1, (int) $menu->getValue('men_id'));
+
 // main menu of the page
 $mainMenu = $page->getMenu();
 
@@ -43,94 +47,30 @@ else
     // show login link
     $mainMenu->addItem('adm_menu_item_login', ADMIDIO_URL . '/adm_program/system/login.php',
                        $gL10n->get('SYS_LOGIN'), 'key.png');
-
-    // if($gPreferences['registration_mode'] > 0)
-    // {
-    //     // show registration link
-    //     $mainMenu->addItem('adm_menu_item_registration',
-    //                        ADMIDIO_URL . FOLDER_MODULES . '/registration/registration.php',
-    //                        $gL10n->get('SYS_REGISTRATION'), 'new_registrations.png');
-    // }
 }
 
 // menu with links to all modules of Admidio
 $moduleMenu = new Menu('index_modules', $gL10n->get('SYS_MODULES'));
-
-if($gPreferences['enable_announcements_module'] == 1
-|| ($gPreferences['enable_announcements_module'] == 2 && $gValidLogin))
-{
-    $moduleMenu->addItem('announcements', FOLDER_MODULES . '/announcements/announcements.php',
-                         $gL10n->get('ANN_ANNOUNCEMENTS'), '/icons/announcements_big.png',
-                         $gL10n->get('ANN_ANNOUNCEMENTS_DESC'));
-}
-if($gPreferences['enable_download_module'] == 1)
-{
-    $moduleMenu->addItem('download', FOLDER_MODULES . '/downloads/downloads.php',
-                         $gL10n->get('DOW_DOWNLOADS'), '/icons/download_big.png',
-                         $gL10n->get('DOW_DOWNLOADS_DESC'));
-}
-if($gPreferences['enable_mail_module'] == 1 && !$gValidLogin)
-{
-    $moduleMenu->addItem('email', FOLDER_MODULES . '/messages/messages_write.php',
-                         $gL10n->get('SYS_EMAIL'), '/icons/email_big.png',
-                         $gL10n->get('MAI_EMAIL_DESC'));
-}
-if(($gPreferences['enable_pm_module'] == 1 || $gPreferences['enable_mail_module'] == 1) && $gValidLogin)
-{
-    $unreadBadge = '';
-
-    // get number of unread messages for user
-    $message = new TableMessage($gDb);
-    $unread = $message->countUnreadMessageRecords($gCurrentUser->getValue('usr_id'));
-
-    if($unread > 0)
-    {
-        $unreadBadge = '<span class="badge">' . $unread . '</span>';
+$getModuleMenuQuery = "SELECT men_name, men_description, men_id, men_name_intern, men_icon, men_url
+                FROM ".TBL_MENU."
+                WHERE men_men_id_parent = 1
+                ORDER BY men_order";
+$getModuleMenusResult = $gDb->query($getModuleMenuQuery);
+$getModuleMenus = $getModuleMenusResult->fetchAll();
+foreach ($getModuleMenus as $key => $value) {
+    $forOthers = false;
+    if(
+        isset($gPreferences['enable_'.$value['men_name_intern'].'_module']) &&
+        (
+            $gPreferences['enable_'.$value['men_name_intern'].'_module'] == 1 ||
+            ($gPreferences['enable_'.$value['men_name_intern'].'_module'] == 2 && $gValidLogin) ||
+            $forOthers
+        )
+    ) {
+        $moduleMenu->addItem($value['men_name_intern'], FOLDER_MODULES . $value['men_url'],
+                            $gL10n->get($value['men_name']), '/icons/'.$value['men_icon'],
+                            $gL10n->get($value['men_description']));
     }
-
-    $moduleMenu->addItem('private message', FOLDER_MODULES . '/messages/messages.php',
-                         $gL10n->get('SYS_MESSAGES') . $unreadBadge, '/icons/messages_big.png',
-                         $gL10n->get('MAI_EMAIL_DESC'));
-}
-if($gPreferences['enable_photo_module'] == 1
-|| ($gPreferences['enable_photo_module'] == 2 && $gValidLogin))
-{
-    $moduleMenu->addItem('photo', FOLDER_MODULES . '/photos/photos.php',
-                         $gL10n->get('PHO_PHOTOS'), '/icons/photo_big.png',
-                         $gL10n->get('PHO_PHOTOS_DESC'));
-}
-if($gPreferences['enable_guestbook_module'] == 1
-|| ($gPreferences['enable_guestbook_module'] == 2 && $gValidLogin))
-{
-    $moduleMenu->addItem('guestbk', FOLDER_MODULES . '/guestbook/guestbook.php',
-                         $gL10n->get('GBO_GUESTBOOK'), '/icons/guestbook_big.png',
-                         $gL10n->get('GBO_GUESTBOOK_DESC'));
-}
-$moduleMenu->addItem('lists', FOLDER_MODULES . '/lists/lists.php',
-                     $gL10n->get('LST_LISTS'), '/icons/lists_big.png',
-                     $gL10n->get('LST_LISTS_DESC'));
-if($gValidLogin)
-{
-    $moduleMenu->addSubItem('lists', 'mylist', FOLDER_MODULES . '/lists/mylist.php',
-                            $gL10n->get('LST_MY_LIST'));
-    $moduleMenu->addSubItem('lists', 'rolinac', FOLDER_MODULES . '/lists/lists.php?active_role=0',
-                            $gL10n->get('ROL_INACTIV_ROLE'));
-}
-if($gPreferences['enable_dates_module'] == 1
-|| ($gPreferences['enable_dates_module'] == 2 && $gValidLogin))
-{
-    $moduleMenu->addItem('dates', ADMIDIO_URL . FOLDER_MODULES . '/dates/dates.php',
-                         $gL10n->get('DAT_DATES'), '/icons/dates_big.png',
-                         $gL10n->get('DAT_DATES_DESC'));
-    $moduleMenu->addSubItem('dates', 'olddates', FOLDER_MODULES . '/dates/dates.php?mode=old',
-                            $gL10n->get('DAT_PREVIOUS_DATES', $gL10n->get('DAT_DATES')));
-}
-if($gPreferences['enable_weblinks_module'] == 1
-|| ($gPreferences['enable_weblinks_module'] == 2 && $gValidLogin))
-{
-    $moduleMenu->addItem('links', ADMIDIO_URL . FOLDER_MODULES . '/links/links.php',
-                         $gL10n->get('LNK_WEBLINKS'), '/icons/weblinks_big.png',
-                         $gL10n->get('LNK_WEBLINKS_DESC'));
 }
 
 $page->addHtml($moduleMenu->show(true));
@@ -140,6 +80,13 @@ if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles()
 || $gCurrentUser->approveUsers() || $gCurrentUser->editUsers())
 {
     $adminMenu = new Menu('index_administration', $gL10n->get('SYS_ADMINISTRATION'));
+
+    $getAdminMenuQuery = "SELECT men_name, men_description, men_id, men_name_intern, men_icon, men_url
+                        FROM ".TBL_MENU."
+                        WHERE men_men_id_parent = 2
+                        ORDER BY men_order";
+    $getAdminMenusResult = $gDb->query($getAdminMenuQuery);
+    $getAdminMenus = $getAdminMenusResult->fetchAll();
 
     if($gCurrentUser->approveUsers() && $gPreferences['registration_mode'] > 0)
     {

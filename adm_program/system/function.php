@@ -909,3 +909,47 @@ function safeUrl($path, array $params = array(), $anchor = '', $escape = false)
 
     return $url;
 }
+/**
+ * @param array<int,string> $menuList
+ * @param int               $level
+ * @param int               $menId
+ * @param int               $parentId
+ */
+function subMenu(&$menuList, $level, $menId, $parentId = null)
+{
+    global $gDb;
+
+    $sqlConditionParentId = '';
+    $queryParams = array($menId);
+
+    // Erfassen des auszugebenden Menu
+    if ($parentId > 0)
+    {
+        $sqlConditionParentId .= ' AND men_men_id_parent = '.$parentId;
+        $queryParams[] = $parentId;
+    }
+    else
+    {
+        $sqlConditionParentId .= ' AND men_men_id_parent IS NULL';
+    }
+    $sql = 'SELECT *
+              FROM '.TBL_MENU.'
+             WHERE men_node = 1
+               AND men_id  <> '.$menId.'
+                   '.$sqlConditionParentId;
+    $childStatement = $gDb->query($sql);
+
+    $parentMenu = new TableMenu($gDb);
+    $einschub = str_repeat('&nbsp;', $level * 3) . '&#151;&nbsp;';
+
+    while($menuEntry = $childStatement->fetch())
+    {
+        $parentMenu->clear();
+        $parentMenu->setArray($menuEntry);
+
+        // add entry to array of all menus
+        $menuList[(int) $parentMenu->getValue('men_id')] = $einschub . $parentMenu->getValue('men_name');
+
+        subMenu($menuList, ++$level, $menId, (int) $parentMenu->getValue('men_id'));
+    }
+}

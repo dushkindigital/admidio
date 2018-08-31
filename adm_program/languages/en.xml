@@ -564,6 +564,10 @@
   <string name="MEN_MODULE_RIGHTS">Module rights</string>
    <string name="MEN_MODULE_RIGHTS_DESC">If you specify a module here, the menu item will only be displayed if the user also has the right to see this module.</string>
   <string name="MEN_PLUGIN">Plugins</string>
+  <string name="MEN_EVENT_DESC">
+    You are able to create and edit events here. Users can register for this events.
+  </string>
+
   <string name="SYS_VISIBLE_FOR">Visible for</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE">Activate chat</string>
   <string name="MSG_ACTIVATE_CHAT_MODULE_DESC">Activate chat module. Messages will be fetched dynamically from database every 3 seconds. Only 99 entries will be saved into database. As soon as the 100th entry is to be saved the first 50 entries will be deleted.</string>
