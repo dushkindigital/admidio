@@ -279,3 +279,4 @@ else
 {
     $gHomepage = ADMIDIO_URL . '/' . $gPreferences['homepage_logout'];
 }
+error_reporting(0);
