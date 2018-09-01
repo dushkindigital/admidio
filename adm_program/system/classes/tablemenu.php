@@ -59,8 +59,8 @@ class TableMenu extends TableAccess
 
         $sql = 'SELECT men_id
                   FROM '.TBL_MENU.'
-                 WHERE men_name_intern = ? -- $newNameIntern';
-        $userFieldsStatement = $this->db->queryPrepared($sql, array($newNameIntern));
+                 WHERE men_name_intern = '."'$newNameIntern'";
+        $userFieldsStatement = $this->db->query($sql);
 
         if ($userFieldsStatement->rowCount() > 0)
         {
@@ -109,7 +109,7 @@ class TableMenu extends TableAccess
         {
             if($menOrder > 1)
             {
-                echo $sql = 'UPDATE '.TBL_MENU.'
+                $sql = 'UPDATE '.TBL_MENU.'
                            SET men_order = '.$menOrder.'
                          WHERE men_men_id_parent = '.$menIdParent.'
                            AND men_order = '.$menOrder.' - 1';
@@ -201,10 +201,11 @@ class TableMenu extends TableAccess
             $this->setValue('men_name_intern', $this->getNewNameIntern($this->getValue('men_name', 'database'), 1));
 
             // beim Insert die hoechste Reihenfolgennummer der Kategorie ermitteln
+            $men_men_id_parent = $this->getValue('men_men_id_parent');
             $sql = 'SELECT COUNT(*) AS count
                       FROM '.TBL_MENU.'
-                     WHERE men_men_id_parent = ? -- $this->getValue(\'men_men_id_parent\')';
-            $countMenuStatement = $this->db->queryPrepared($sql, array((int) $this->getValue('men_men_id_parent')));
+                     WHERE men_men_id_parent = '.$men_men_id_parent;
+            $countMenuStatement = $this->db->query($sql);
 
             $rowCount = $countMenuStatement->fetchColumn();
             $this->setValue('men_order', $rowCount + 1);

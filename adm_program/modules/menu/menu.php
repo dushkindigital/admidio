@@ -140,7 +140,7 @@ HTML
 HTML
 ,
 <<<HTML
-<a href="{$g_root_path}{$menuItem['men_url']}">
+<a href="{$menuItem['men_url']}">
     {$menuItem['men_url']}
 </a>
 HTML
