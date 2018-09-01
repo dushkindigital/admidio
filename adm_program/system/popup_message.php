@@ -80,6 +80,7 @@ switch ($getType)
         break;
     case 'men':
         $url = safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/menu/menu_function.php', array('mode' => 2, 'men_id' => $getDatabaseId));
+        // $text = $gL10n->get('SYS_DELETE_ENTRY', $getName);
         break;
     case 'msg':
         $url = safeUrl(ADMIDIO_URL . FOLDER_MODULES . '/messages/messages.php', array('msg_id' => $getDatabaseId));
@@ -166,7 +167,7 @@ echo '
 </div>
 <div class="modal-body row">
     <div class="col-xs-2"><i class="fas fa-times-circle fa-3x" style="color: #f93535;"></i></div>
-    <div id="message_text" class="col-xs-10">'.$gL10n->get($text, array($getName, '')).'</div>
+    <div id="message_text" class="col-xs-10">'.$gL10n->get($text, $getName).'</div>
 </div>
 <div class="modal-footer">
     <button id="btn_yes" class="btn btn-default" type="button" onclick="callUrlHideElement(\''.$getElementId.'\', \''.$url.'\''.$callbackFunction.')">
