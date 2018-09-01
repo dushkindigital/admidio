@@ -70,6 +70,7 @@ $defaultOrgPreferences = array(
     'captcha_line_color'          => '#707070',
     'captcha_charset'             => '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxy',
     'captcha_signature'           => 'Powered by Admidio.org',
+    'enable_overview_module' => 1,
 
     // Announcements
     'enable_announcements_module' => '1',

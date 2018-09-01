@@ -55,20 +55,18 @@ $getModuleMenuQuery = "SELECT men_name, men_description, men_id, men_name_intern
                 FROM ".TBL_MENU."
                 WHERE men_men_id_parent = 1
                 ORDER BY men_order";
+
 $getModuleMenusResult = $gDb->query($getModuleMenuQuery);
 $getModuleMenus = $getModuleMenusResult->fetchAll();
+
 foreach ($getModuleMenus as $key => $value) {
     $forOthers = false;
+    // var_dump($gPreferences['enable_'.$value['men_name_intern'].'_module']);
     if(
-        isset($gPreferences['enable_'.$value['men_name_intern'].'_module']) &&
-        (
-            $gPreferences['enable_'.$value['men_name_intern'].'_module'] == 1 ||
-            ($gPreferences['enable_'.$value['men_name_intern'].'_module'] == 2 && $gValidLogin) ||
-            $forOthers
-        )
+        isset($gPreferences['enable_'.$value['men_name_intern'].'_module'])
     ) {
         $moduleMenu->addItem($value['men_name_intern'], $value['men_url'],
-                            $gL10n->get($value['men_name']), '/icons/'.$value['men_icon'],
+                            trim($gL10n->get($value['men_name']), '#'), '/icons/'.$value['men_icon'],
                             $gL10n->get($value['men_description']));
     }
 }
@@ -80,14 +78,21 @@ if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles()
 || $gCurrentUser->approveUsers() || $gCurrentUser->editUsers())
 {
     $adminMenu = new Menu('index_administration', $gL10n->get('SYS_ADMINISTRATION'));
-
     $getAdminMenuQuery = "SELECT men_name, men_description, men_id, men_name_intern, men_icon, men_url
-                        FROM ".TBL_MENU."
-                        WHERE men_men_id_parent = 2
-                        ORDER BY men_order";
+                FROM ".TBL_MENU."
+                WHERE men_men_id_parent = 2
+                ORDER BY men_order";
     $getAdminMenusResult = $gDb->query($getAdminMenuQuery);
     $getAdminMenus = $getAdminMenusResult->fetchAll();
+    foreach ($getAdminMenus as $key => $value) {
+        $forOthers = false;
+        $adminMenu->addItem($value['men_name_intern'], $value['men_url'],
+                        trim($gL10n->get($value['men_name']), '#'), '/icons/'.$value['men_icon'],
+                        trim($gL10n->get($value['men_description']), '#'));
+    }
+    // END Menu
 
+    /*
     if($gCurrentUser->approveUsers() && $gPreferences['registration_mode'] > 0)
     {
         $adminMenu->addItem('newreg', FOLDER_MODULES . '/registration/registration.php',
@@ -123,6 +128,7 @@ if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles()
                             $gL10n->get('SYS_SETTINGS'), '/icons/options_big.png',
                             $gL10n->get('ORG_ORGANIZATION_PROPERTIES_DESC'));
     }
+     */
 
 
     $page->addHtml($adminMenu->show(true));
