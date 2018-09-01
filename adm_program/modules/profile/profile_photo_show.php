@@ -14,6 +14,7 @@
  *             true  - show uploaded photo of current session
  ***********************************************************************************************
  */
+ob_start();
 require('../../system/common.php');
 
 // Initialize and check the parameters
@@ -78,5 +79,6 @@ else
 }
 
 header('Content-Type: '. $image->getMimeType());
+ob_end_clean();
 $image->copyToBrowser();
 $image->delete();

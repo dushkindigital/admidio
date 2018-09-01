@@ -20,6 +20,7 @@
  *             Voreinstellung zurückgegeben
  *
  *****************************************************************************/
+ob_start();
 
 require_once('../../system/common.php');
 
@@ -97,11 +98,13 @@ if($getThumbnail)
             // nun das Thumbnail anlegen
             $image = new Image($picpath);
             $image->scaleLargerSide($gPreferences['photo_thumbs_scale']);
+            ob_end_clean();
             $image->copyToFile(null, $ordner.'/thumbnails/'.$getPhotoNr.'.jpg');
         }
         else
         {
             header('content-type: image/jpg');
+            ob_end_clean();
             readfile($ordner.'/thumbnails/'.$getPhotoNr.'.jpg');
         }
     }
@@ -146,6 +149,7 @@ if($image !== null)
 
     // Rueckgabe des neuen Bildes
     header('Content-Type: '. $image->getMimeType());
+    ob_end_clean();
     $image->copyToBrowser();
     $image->delete();
 }

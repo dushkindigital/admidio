@@ -13,6 +13,8 @@
  * file   : Name of image file that should be shown (without path)
  ***********************************************************************************************
  */
+ob_start();
+
 require_once('common.php');
 
 // Initialize and check the parameters
@@ -27,6 +29,7 @@ if(is_file($imageServerPath))
 {
     $image = new Image($imageServerPath);
     header('Content-Type: '.$image->getMimeType());
+    ob_end_clean();
     $image->copyToBrowser();
     $image->delete();
 }
