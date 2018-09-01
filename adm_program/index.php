@@ -67,7 +67,7 @@ foreach ($getModuleMenus as $key => $value) {
             $forOthers
         )
     ) {
-        $moduleMenu->addItem($value['men_name_intern'], FOLDER_MODULES . $value['men_url'],
+        $moduleMenu->addItem($value['men_name_intern'], $value['men_url'],
                             $gL10n->get($value['men_name']), '/icons/'.$value['men_icon'],
                             $gL10n->get($value['men_description']));
     }

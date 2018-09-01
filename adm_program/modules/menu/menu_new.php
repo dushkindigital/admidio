@@ -163,7 +163,6 @@ if((bool) $menu->getValue('men_node') === false)
         array('maxLength' => 100, 'property' => $fieldRequired)
     );
 }
-
 $form->addInput(
     'men_icon', $gL10n->get('SYS_ICON'), $menu->getValue('men_icon', 'database'),
     array(

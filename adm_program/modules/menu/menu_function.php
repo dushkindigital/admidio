@@ -73,11 +73,6 @@ if($getMode === 1)
 
     if($postIcon !== '')
     {
-        if(!preg_match('/^fa-[a-z]*$/', $postIcon))
-        {
-            $gMessage->show($gL10n->get('SYS_INVALID_FONT_AWESOME'));
-            // => EXIT
-        }
         $menu->setValue('men_icon', $postIcon);
     }
 

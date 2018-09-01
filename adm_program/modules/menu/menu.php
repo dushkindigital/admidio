@@ -88,7 +88,7 @@ $columnHeading = array(
     $gL10n->get('SYS_TITLE'),
     '&nbsp;',
     $gL10n->get('ORG_URL'),
-    '<i class="fas fa-star" data-toggle="tooltip" title="' . $gL10n->get('CAT_DEFAULT_VAR', array($gL10n->get('MEN_MENU_ITEM'))) . '"></i>',
+    '<i class="fas fa fa-star" data-toggle="tooltip" title="' . $gL10n->get('CAT_DEFAULT_VAR', array($gL10n->get('MEN_MENU_ITEM'))) . '"></i>',
     '&nbsp;'
 );
 $menuOverview->setColumnAlignByArray(array('left', 'left', 'left', 'center', 'right'));
@@ -109,10 +109,10 @@ foreach ($collection as $key => $item) {
     $collectionOfMenus = $menuStatement->fetchAll();
     $menuGroup = 0;
     // add row to table: Starts here
-    foreach ($collectionOfMenus as $menuKey => $menuItem) {
-        $menIdParent = (int) $menuItem['men_men_id_parent'];
-        $menuName = Language::translateIfTranslationStrId($menuItem['men_name']);
-        $menuNameDesc = Language::translateIfTranslationStrId($menuItem['men_description']);
+    foreach ($collectionOfMenus as $menuKey => $menuRow) {
+        $menIdParent = (int) $menuRow['men_men_id_parent'];
+        $menuName = Language::translateIfTranslationStrId($menuRow['men_name']);
+        $menuNameDesc = Language::translateIfTranslationStrId($menuRow['men_description']);
         if($menuGroup !== $menIdParent){
             $blockId = 'admMenu_'.$menIdParent;
             $menuOverview->addTableBody();
@@ -122,40 +122,51 @@ foreach ($collection as $key => $item) {
             $menuOverview->addTableBody('id', $blockId);
             $menuGroup = $menIdParent;
         }
+        $deleteAble = '';
+        $htmlStandardMenu = '';
+        if(!$menuRow['men_standard']) {
+
+            $deleteAble = '<a class="admidio-icon-link" data-toggle="modal" data-target="#admidio_modal"
+                            href="'.safeUrl(ADMIDIO_URL.'/adm_program/system/popup_message.php', array('type' => 'men', 'element_id' => 'row_men_'.
+                            $menuRow['men_id'], 'name' => $menuName, 'database_id' => $menuRow['men_id'])).'">'.
+                            '<img src="'. THEME_URL. '/icons/delete.png" alt="'.$gL10n->get('SYS_DELETE').'" title="'.$gL10n->get('SYS_DELETE').'" /></a>';
+        }
+        if($menuRow['men_standard']) {
+            $htmlStandardMenu = '<img class="admidio-icon-info" src="'.THEME_URL.'/icons/star.png" alt="'.$gL10n->get('CAT_DEFAULT_VAR', array($gL10n->get('MEN_MENU_ITEM'))).'" title="'.$gL10n->get('CAT_DEFAULT_VAR', array($gL10n->get('MEN_MENU_ITEM'))).'" />';
+        }
         $menuOverview->addRowByArray([
 <<<HTML
-<a href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuItem['men_id']}">
+<a href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuRow['men_id']}">
     {$menuName}
 </a>
 HTML
 ,
 <<<HTML
 <div style="text-align: left;">
-    <a class="admidio-icon-link" href="javascript:moveMenu('UP', {$menuItem['men_id']})">
+    <a class="admidio-icon-link" href="javascript:moveMenu('UP', {$menuRow['men_id']})">
         <img src="{$g_root_path}/adm_themes/modern/icons/arrow_up.png" alt="Move up Menu" title="" data-original-title="Move up Menu">
     </a>
-    <a class="admidio-icon-link" href="javascript:moveMenu('DOWN', {$menuItem['men_id']})">
+    <a class="admidio-icon-link" href="javascript:moveMenu('DOWN', {$menuRow['men_id']})">
         <img src="{$g_root_path}/adm_themes/modern/icons/arrow_down.png" alt="Move down Menu" title="" data-original-title="Move down Menu"></a>
 </div>
 HTML
 ,
 <<<HTML
-<a href="{$menuItem['men_url']}">
-    {$menuItem['men_url']}
+<a href="{$menuRow['men_url']}">
+    {$menuRow['men_url']}
 </a>
 HTML
 ,
-<<<HTML
-<img class="admidio-icon-info" src="{$g_root_path}/adm_themes/modern/icons/star.png" alt="Standard Menu item" title="" data-original-title="Standard Menu item">
-HTML
+$htmlStandardMenu
 ,
 <<<HTML
-<a class="admidio-icon-link" href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuItem['men_id']}"><img src="{$g_root_path}/adm_themes/modern/icons/edit.png" alt="Edit" title="" data-original-title="Edit"></a>
+<a class="admidio-icon-link" href="{$g_root_path}/adm_program/modules/menu/menu_new.php?men_id={$menuRow['men_id']}"><img src="{$g_root_path}/adm_themes/modern/icons/edit.png" alt="Edit" title="" data-original-title="Edit"></a>
+{$deleteAble}
 HTML
 ,
         ],
             // row attributes
-            'row_men_'.$menuItem['men_id']
+            'row_men_'.$menuRow['men_id']
         );
     }
     // add row to table: Ends here

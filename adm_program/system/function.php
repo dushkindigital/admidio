@@ -953,3 +953,4 @@ function subMenu(&$menuList, $level, $menId, $parentId = null)
         subMenu($menuList, ++$level, $menId, (int) $parentMenu->getValue('men_id'));
     }
 }
+
