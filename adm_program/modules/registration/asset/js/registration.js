@@ -76,6 +76,11 @@ function setNewPassword(event) {
             password,
             _action: 'validate_activation_code'
         },
+	beforeSend(xhr){
+		if(!validateConfirmedPassword(this)){
+			xhr.abort();
+		}
+	},
         success(success){
 		if(success.statusCode == 'res_02') {
 			window.top.location.href = 'http://www.cantabnyc.org/p/welcome-to-cantab-nyc.html';
@@ -98,8 +103,10 @@ function validateConfirmedPassword(event){
     if(confirm_password != password){
         responseElem.show().addClass('text-danger').html('Confirmed password does not match.');
 	// $('#btn_submit').attr('disabled', true);
+return false;
     }else{
 	$('#btn_submit').removeAttr('disabled');
+return true;
 	}
 }
 // password strength meter
