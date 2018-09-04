@@ -34,11 +34,13 @@ if(!$gValidLogin)
 
 // save form data in session for back navigation
 $_SESSION['profile_request'] = $_POST;
-
+/*
 if(!isset($_POST['usr_login_name']))
 {
     $_POST['usr_login_name'] = '';
 }
+*/
+unset($_POST['usr_login_name']);
 if(!isset($_POST['reg_org_id']))
 {
     $_POST['reg_org_id'] = $gCurrentOrganization->getValue('org_id');
@@ -95,11 +97,13 @@ switch($getNewUser)
 // bei Registrierung muss Loginname und Pw geprueft werden
 if($getNewUser === 2)
 {
+/*
     if($_POST['usr_login_name'] === '')
     {
         $gMessage->show($gL10n->get('SYS_FIELD_EMPTY', $gL10n->get('SYS_USERNAME')));
         // => EXIT
     }
+*/
 
     if($_POST['usr_password'] === '')
     {
@@ -253,11 +257,13 @@ if($gCurrentUser->isAdministrator() || $getNewUser > 0)
             }
         }
 
+/*
         if(!$user->setValue('usr_login_name', $_POST['usr_login_name']))
         {
             $gMessage->show($gL10n->get('SYS_FIELD_INVALID_CHAR', $gL10n->get('SYS_USERNAME')));
             // => EXIT
         }
+*/
     }
 }
 

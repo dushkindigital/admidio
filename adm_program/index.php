@@ -55,15 +55,16 @@ $getModuleMenuQuery = "SELECT men_name, men_description, men_id, men_name_intern
                 FROM ".TBL_MENU."
                 WHERE men_men_id_parent = 1
                 ORDER BY men_order";
-
 $getModuleMenusResult = $gDb->query($getModuleMenuQuery);
 $getModuleMenus = $getModuleMenusResult->fetchAll();
 
 foreach ($getModuleMenus as $key => $value) {
-    $forOthers = false;
-    // var_dump($gPreferences['enable_'.$value['men_name_intern'].'_module']);
     if(
-        isset($gPreferences['enable_'.$value['men_name_intern'].'_module'])
+	isset($gPreferences['enable_'.$value['men_name_intern'].'_module']) &&
+        (
+            $gPreferences['enable_'.$value['men_name_intern'].'_module'] == 1 ||
+            ($gPreferences['enable_'.$value['men_name_intern'].'_module'] == 2 && $gValidLogin)
+        )
     ) {
         $moduleMenu->addItem($value['men_name_intern'], $value['men_url'],
                             trim($gL10n->get($value['men_name']), '#'), '/icons/'.$value['men_icon'],

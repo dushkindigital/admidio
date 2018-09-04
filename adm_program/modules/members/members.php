@@ -113,7 +113,7 @@ $columnHeading = array(
     'First',
     'Last',
     '<img class="admidio-icon-info" alt="'.$gL10n->get('SYS_GENDER').'" title="" src="'.THEME_URL.'/icons/gender.png" data-original-title="'.$gL10n->get('SYS_GENDER').'">',
-    $gL10n->get('SYS_BIRTHDAY'),
+    $gL10n->get('SYS_EMAIL'),
     $gL10n->get('MEM_UPDATED_ON'),
     '&nbsp;'
 );

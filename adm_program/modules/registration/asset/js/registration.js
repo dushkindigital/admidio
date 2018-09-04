@@ -96,8 +96,8 @@ function validateConfirmedPassword(event){
     const responseElem = $('#confirm_password + .form-ctrl__response');
     responseElem.hide();
     if(confirm_password != password){
-        responseElem.show().html('Confirmed password does not match.');
-	$('#btn_submit').attr('disabled', true);
+        responseElem.show().addClass('text-danger').html('Confirmed password does not match.');
+	// $('#btn_submit').attr('disabled', true);
     }else{
 	$('#btn_submit').removeAttr('disabled');
 	}
@@ -106,8 +106,8 @@ function validateConfirmedPassword(event){
 $(document).ready(function(){
     $("#admidio-password-strength-minimum").css("margin-left", "calc(" + $("#admidio-password-strength").css("width") + " / 4 * 1)");
 	$('[name="setNewPasswordForm"]').on('input', function(){
-validateConfirmedPassword(this);
-});
+		validateConfirmedPassword(this);
+	});
 })
 // Updating the progress bar on keyp event: Starts here
 document.querySelector("body").addEventListener('keyup', function(e) {

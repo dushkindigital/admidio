@@ -28,7 +28,7 @@ $pageContent = <<<HTML
         </div>
     </div>
     <div class="form__footer">
-        <button class="btn btn-default  btn-primary" id="btn_submit" name="btn_submit" type="submit" disabled>
+        <button class="btn btn-default  btn-primary" id="btn_submit" name="btn_submit" type="submit" >
             Set Password and Login
         </button>
     </div>

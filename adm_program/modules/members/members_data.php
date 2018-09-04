@@ -270,7 +270,7 @@ while($row = $mglStatement->fetch())
     }
     else
     {
-        $columnValues[] = '';
+        $columnValues[] = $lastName;
     }
 
     // Add icon for "gender"
@@ -286,15 +286,14 @@ while($row = $mglStatement->fetch())
     }
 
     // Add "birthday"
-    if(strlen($row['birthday']) > 0)
+    if(strlen($row['email']) > 0)
     {
         // date must be formated
-        $date = DateTime::createFromFormat('Y-m-d', $row['birthday']);
-        $columnValues[] = $date->format($gPreferences['system_date']);
+        $columnValues[] = $row['email'];
     }
     else
     {
-        $columnValues[] = '';
+        $columnValues[] = $row['email'];
     }
 
     // Add "change date"
