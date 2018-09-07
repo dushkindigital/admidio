@@ -147,6 +147,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             if(strValidCharacters($columnValue, 'email'))
                             {
                                 $user->setValue($field->getValue('usf_name_intern'), substr($columnValue, 0, 255));
+                                $user->setValue('usr_login_name', substr($columnValue, 0, 255));
                             }
                             break;
                         case 'INTEGER':
@@ -163,6 +164,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             $user->setValue($field->getValue('usf_name_intern'), substr($columnValue, 0, 255));
                     }
                 }
+
             }
         }
     }
@@ -247,6 +249,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
             // save user data
             $user->save();
 
+
             // assign role membership to user
             if($user->setRoleMembership($_SESSION['rol_id']))
             {
@@ -261,7 +264,29 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
 
         }
     }
-
+    // change to invalid
+    $user->setValue('usr_valid', '0');
+    // Store in User_Applications : Starts here
+    $uapp_usr_id = $user->getValue('usr_id');
+    $applicationType = 'member';
+    $applicationSql = " INSERT INTO " . TBL_APPLICATIONS . "
+                    (uapp_usr_id, application_type, message)
+                    VALUES (
+                        $uapp_usr_id,
+                        '$applicationType',
+                        '$message'
+                    ) ";
+    $privateDataSaved = $gDb->query($applicationSql);
+    // for registration
+    $reg_org_id = 1;
+    $regSql = " INSERT INTO " . TBL_REGISTRATIONS . "
+                    (reg_org_id, reg_usr_id)
+                    VALUES (
+                        '$reg_org_id',
+                        '$uapp_usr_id'
+                    ) ";
+    $registered = $gDb->query($regSql);
+    // Store in User_Applications : Ends here
     $line = next($_SESSION['file_lines']);
 }
 
