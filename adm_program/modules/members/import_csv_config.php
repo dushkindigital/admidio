@@ -165,6 +165,10 @@ $htmlFieldTable = '
     $htmlFieldTable .= '</tbody>
     </table>';
 $form->addDescription($htmlFieldTable);
+
+$form->addCheckbox('move_to_new_reg', 'Move to New Registrations', false, array('property'        => FIELD_DEFAULT,
+                                                                                'helpTextIdLabel' => 'MEM_IMPORT_ACTIVATE_DEF'));
+
 $form->addSubmitButton('btn_forward', $gL10n->get('MEM_IMPORT'), array('icon' => THEME_URL.'/icons/database_in.png'));
 
 // add form to html page and show page

@@ -512,6 +512,7 @@
   <string name="MEM_ASSIGN_FIELDS_DESC">If possible, assign to database fields one column of a file.\n\nOn the left side you are able to find all types of database fields, on the right side you can find all columns of the selected file. Fields may be left empty when the file does not include every database field.</string>
   <string name="MEM_ASSIGN_ROLE">Assign role</string>
   <string name="MEM_ASSIGN_ROLE_FOR_IMPORT">Select a role for all imported users.\n\nAvailable are only roles which you have user permission for.</string>
+  <string name="MEM_IMPORT_ACTIVATE_DEF">This will move users to New Registrations.</string>
   <string name="MEM_ASSIGN_ROLES">Assign roles</string>
   <string name="MEM_CREATE_USER">Create user</string>
   <string name="MEM_CODING">Coding</string>

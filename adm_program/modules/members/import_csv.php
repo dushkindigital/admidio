@@ -78,6 +78,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
 
     foreach($columnArray as $columnKey => $columnValue)
     {
+        $thisIsNew = false;
         // Hochkomma und Spaces entfernen
         $columnValue = trim(strip_tags(str_replace('"', '', $columnValue)));
         $columnValueToLower = admStrToLower($columnValue);
@@ -238,6 +239,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
             // if user doesn't exists or should be duplicated then count as new user
             if($maxUserId === 0 || $_SESSION['user_import_mode'] == USER_IMPORT_DUPLICATE)
             {
+                $thisIsNew = true;
                 ++$countImportNewUser;
             }
             // existing users count as edited if mode is displace or complete
@@ -265,27 +267,37 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
         }
     }
     // change to invalid
-    $user->setValue('usr_valid', '0');
-    // Store in User_Applications : Starts here
+    $user->setValue('usr_valid', '1');
     $uapp_usr_id = $user->getValue('usr_id');
-    $applicationType = 'member';
-    $applicationSql = " INSERT INTO " . TBL_APPLICATIONS . "
-                    (uapp_usr_id, application_type, message)
-                    VALUES (
-                        $uapp_usr_id,
-                        '$applicationType',
-                        '$message'
-                    ) ";
-    $privateDataSaved = $gDb->query($applicationSql);
+
+    // Store in User_Applications : Starts here
+
     // for registration
-    $reg_org_id = 1;
-    $regSql = " INSERT INTO " . TBL_REGISTRATIONS . "
-                    (reg_org_id, reg_usr_id)
-                    VALUES (
-                        '$reg_org_id',
-                        '$uapp_usr_id'
-                    ) ";
-    $registered = $gDb->query($regSql);
+    if($thisIsNew){
+        $applicationType = 'member';
+        $applicationSql = " INSERT INTO " . TBL_APPLICATIONS . "
+                        (uapp_usr_id, application_type, message)
+                        VALUES (
+                            $uapp_usr_id,
+                            '$applicationType',
+                            '$message'
+                        ) ";
+        $privateDataSaved = $gDb->query($applicationSql);
+        $reg_org_id = 1;
+        $regSql = " INSERT INTO " . TBL_REGISTRATIONS . "
+                        (reg_org_id, reg_usr_id)
+                        VALUES (
+                            '$reg_org_id',
+                            '$uapp_usr_id'
+                        ) ";
+        $registered = $gDb->query($regSql);
+
+        if(isset($_POST['move_to_new_reg']) && $_POST['move_to_new_reg'] == '1') {
+            $user->setValue('usr_valid', '0');
+            $gDb->query("UPDATE adm_users SET usr_valid = 0 WHERE usr_id = $uapp_usr_id");
+        }
+    }
+
     // Store in User_Applications : Ends here
     $line = next($_SESSION['file_lines']);
 }
