@@ -59,7 +59,7 @@ else
 {
     $_SESSION['value_separator'] = ',';
 }
-
+$moveToNewReg = false;
 if(isset($_SESSION['import_csv_request']))
 {
     // durch fehlerhafte Eingabe ist der User zu diesem Formular zurueckgekehrt
@@ -165,9 +165,8 @@ $htmlFieldTable = '
     $htmlFieldTable .= '</tbody>
     </table>';
 $form->addDescription($htmlFieldTable);
-
-$form->addCheckbox('move_to_new_reg', 'Move to New Registrations', false, array('property'        => FIELD_DEFAULT,
-                                                                                'helpTextIdLabel' => 'MEM_IMPORT_ACTIVATE_DEF'));
+// print_r($form_values);
+$form->addInput('move_to_new_reg', '', $_SESSION['import_request']['move_to_new_reg'], array('property' => FIELD_HIDDEN));
 
 $form->addSubmitButton('btn_forward', $gL10n->get('MEM_IMPORT'), array('icon' => THEME_URL.'/icons/database_in.png'));
 

@@ -76,7 +76,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
 {
     $user->clear();
     $columnArray = explode($_SESSION['value_separator'], $line);
-
+    $emailFromCol = null;
     foreach($columnArray as $columnKey => $columnValue)
     {
         $thisIsNew = false;
@@ -149,8 +149,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             if(strValidCharacters($columnValue, 'email'))
                             {
                                 $user->setValue($field->getValue('usf_name_intern'), substr($columnValue, 0, 255));
-                                $user->setValue('usr_login_name', substr($columnValue, 0, 255));
-                                $gLogger->info('Took from sheet and added in adm_users as usr_login_name = '.$columnValue);
+                                $emailFromCol = $columnValue;
                             }
                             break;
                         case 'INTEGER':
@@ -280,6 +279,13 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
 
     // for registration
     if($thisIsNew){
+
+        try {
+            $user->setValue('usr_login_name', substr($emailFromCol, 0, 255));
+        } catch(\Exception $e) {
+            $gLogger->info('Took from sheet and added in adm_users as usr_login_name = '.$e->getMessage());
+        }
+
         $applicationType = 'member';
         $applicationSql = " INSERT INTO " . TBL_APPLICATIONS . "
                         (uapp_usr_id, application_type, message)
@@ -289,7 +295,12 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             '$message'
                         ) ";
         $gLogger->info('Inserting in adm_applications tbl. '. $applicationSql);
-        $privateDataSaved = $gDb->query($applicationSql);
+        try {
+            $privateDataSaved = $gDb->query($applicationSql);
+        } catch(\Exception $e) {
+            $gLogger->info('Failed! Inserting in adm_applications tbl. EXCEPTION: '. $e->getMessage());
+        }
+
         $reg_org_id = 1;
         $regSql = " INSERT INTO " . TBL_REGISTRATIONS . "
                         (reg_org_id, reg_usr_id)
@@ -298,11 +309,20 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             '$uapp_usr_id'
                         ) ";
         $gLogger->info('Inserting in adm_registrations tbl. '. $regSql);
-        $registered = $gDb->query($regSql);
+        try {
+            $registered = $gDb->query($regSql);
+        } catch(\Exception $e) {
+            $gLogger->info('Failed! Inserting in adm_registrations tbl. EXCEPTION: '. $e->getMessage());
+        }
 
         if(isset($_POST['move_to_new_reg']) && $_POST['move_to_new_reg'] == '1') {
             $toMoveQuery = "UPDATE adm_users SET usr_valid = 0 WHERE usr_id = $uapp_usr_id";
-            $gDb->query($toMoveQuery);
+            try {
+                $gDb->query($toMoveQuery);
+            } catch(\Exception $e) {
+                $gLogger->info('Failed! unable to move to new registrations. EXCEPTION: '. $e->getMessage());
+            }
+
             $gLogger->info('Changing user\'s flag to 0 for new registrations. '. $toMoveQuery);
         }
     }
@@ -318,5 +338,7 @@ $_SESSION['file_lines']       = '';
 $_SESSION['value_separator']  = '';
 
 $gMessage->setForwardUrl(ADMIDIO_URL.FOLDER_MODULES.'/members/members.php');
-$gMessage->show($gL10n->get('MEM_IMPORT_SUCCESSFUL', $countImportNewUser, $countImportEditUser, $countImportEditRole));
+$countMovedToNewReg = $countImportNewUser;
+$gMessage->show($gL10n->get('MEM_IMPORT_SUCCESSFUL', $countImportNewUser, $countImportEditUser, $countImportEditRole).'<br> '.$countMovedToNewReg.' users have been moved to \'New registrations\'');
+
 // => EXIT

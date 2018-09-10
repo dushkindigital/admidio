@@ -98,6 +98,13 @@ $form->addSelectBox('user_import_mode', $gL10n->get('MEM_EXISTING_USERS'), $sele
                                                                                                     'defaultValue'                   => $form_values['user_import_mode'],
                                                                                                     'showContextDependentFirstEntry' => false,
                                                                                                     'helpTextIdLabel'                => 'MEM_IDENTIFY_USERS'));
+$yesOrNo = [
+    1 => 'Yes',
+    0 => 'No',
+];
+$form->addSelectBox('move_to_new_reg', 'Move to New Registrations', $yesOrNo, array('property' => FIELD_REQUIRED,
+                                                                                    'defaultValue'    => $form_values['move_to_new_reg']));
+
 $form->addSubmitButton('btn_forward', $gL10n->get('SYS_NEXT'), array('icon' => THEME_URL.'/icons/forward.png', 'class' => ' col-sm-offset-3'));
 
 // add form to html page and show page
