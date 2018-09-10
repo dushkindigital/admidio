@@ -191,7 +191,8 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
         if($maxUserId > 0)
         {
             $duplicate_user = new User($gDb, $gProfileFields, $maxUserId);
-            $gLogger->info('Found duplicate user from adm_users, adm_user_data with matching name.');
+            $gLogger->info('Found duplicate user from adm_users, adm_user_data.');
+            $gLogger->info('Duplicate user: '.$duplicate_user->getValue('usr_login_name'));
         }
 
         if($maxUserId > 0)
