@@ -70,7 +70,8 @@ if($firstRowTitle)
     $line = next($_SESSION['file_lines']);
     $startRow = 1;
 }
-
+// Logging first
+$gLogger->info('BEGIN: Importing users from the sheet');
 for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
 {
     $user->clear();
@@ -149,6 +150,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             {
                                 $user->setValue($field->getValue('usf_name_intern'), substr($columnValue, 0, 255));
                                 $user->setValue('usr_login_name', substr($columnValue, 0, 255));
+                                $gLogger->info('Took from sheet and added in adm_users as usr_login_name = '.$columnValue);
                             }
                             break;
                         case 'INTEGER':
@@ -190,6 +192,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
         if($maxUserId > 0)
         {
             $duplicate_user = new User($gDb, $gProfileFields, $maxUserId);
+            $gLogger->info('Found duplicate user from adm_users, adm_user_data with matching name.');
         }
 
         if($maxUserId > 0)
@@ -198,6 +201,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
             {
                 // delete all user data of profile fields
                 $duplicate_user->deleteUserFieldData();
+                $gLogger->info('Deleted data from adm_user_data for exist user. '. $user->getValue('usr_login_name'));
             }
 
             if($_SESSION['user_import_mode'] == USER_IMPORT_COMPLETE
@@ -240,11 +244,13 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
             if($maxUserId === 0 || $_SESSION['user_import_mode'] == USER_IMPORT_DUPLICATE)
             {
                 $thisIsNew = true;
+                $gLogger->info('The new user is here. '. $user->getValue('usr_login_name'));
                 ++$countImportNewUser;
             }
             // existing users count as edited if mode is displace or complete
             elseif($maxUserId > 0 && $user->columnsValueChanged())
             {
+                $gLogger->info('Updated existed user. '. $user->getValue('usr_login_name'));
                 ++$countImportEditUser;
             }
 
@@ -282,6 +288,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             '$applicationType',
                             '$message'
                         ) ";
+        $gLogger->info('Inserting in adm_applications tbl. '. $applicationSql);
         $privateDataSaved = $gDb->query($applicationSql);
         $reg_org_id = 1;
         $regSql = " INSERT INTO " . TBL_REGISTRATIONS . "
@@ -290,11 +297,13 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                             '$reg_org_id',
                             '$uapp_usr_id'
                         ) ";
+        $gLogger->info('Inserting in adm_registrations tbl. '. $regSql);
         $registered = $gDb->query($regSql);
 
         if(isset($_POST['move_to_new_reg']) && $_POST['move_to_new_reg'] == '1') {
-            $user->setValue('usr_valid', '0');
-            $gDb->query("UPDATE adm_users SET usr_valid = 0 WHERE usr_id = $uapp_usr_id");
+            $toMoveQuery = "UPDATE adm_users SET usr_valid = 0 WHERE usr_id = $uapp_usr_id";
+            $gDb->query($toMoveQuery);
+            $gLogger->info('Changing user\'s flag to 0 for new registrations. '. $toMoveQuery);
         }
     }
 
