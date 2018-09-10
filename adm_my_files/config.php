@@ -22,21 +22,12 @@ $g_tbl_praefix = 'adm';
 // Access to the database of the MySQL-Server
 $g_adm_srv  = 's166-62-85-197.secureserver.net';      // Server
 $g_adm_port = 3306;        // Port
-$g_adm_usr  = 'admidiouser';        // User
-$g_adm_pw   = 'Adm!d!0';    // Password
-$g_adm_db   = 'admidio_dev';    // Database
+$g_adm_usr  = 'cantabnycuser';        // User
+$g_adm_pw   = 'C@nt@bNycUs3r';    // Password
+$g_adm_db   = 'cantabnyc_prod';    // Database
 // URL to this Admidio installation
 // Example: 'https://www.admidio.org/example'
 $g_root_path = 'https://members.cantabnyc.org';
-if($_SERVER['SERVER_NAME'] == 'localhost'){
-    // Access to the database of the MySQL-Server
-    $g_adm_srv  = 'localhost';      // Server
-    $g_adm_port = 3306;        // Port
-    $g_adm_usr  = 'root';        // User
-    $g_adm_pw   = 'root';    // Password
-    $g_adm_db   = 'admidio_dev';    // Database
-    $g_root_path = 'http://localhost/akshay/SO_FRVP_A1348/cantab';
-}
 
 // Short description of the organization that is running Admidio
 // This short description must correspond to your input in the installation wizard !!!
