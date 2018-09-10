@@ -26,3 +26,7 @@
 #login_forgot_password_link {
     margin-top: 10px;
 }
+#move_to_new_reg_group,
+#move_to_new_reg_group label {
+    font-weight: bold;
+}
