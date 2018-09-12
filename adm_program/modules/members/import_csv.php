@@ -101,6 +101,22 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                 {
                     $user->setValue($field->getValue('usf_name_intern'), $gL10n->getCountryByName($columnValue));
                 }
+                if($field->getValue('usf_name_intern') === 'COLLEGE' || $field->getValue('usf_name_intern') === 'SCHOOL')
+                {
+                    try {
+                        $colleges = $field->getValue('usf_value_list');
+                        $indexOfCollege = array_search($columnValue, $colleges, false);
+                        $collegeName = '';
+                        if(array_key_exists($indexOfCollege, $colleges)){
+                            $collegeName = $colleges[$indexOfCollege];
+                        } else {
+                            $gLogger->info('ERROR: Unable to get college name.\n Given name: '.$columnValue);
+                        }
+                        $user->setValue($field->getValue('usf_name_intern'), $collegeName);
+                    } catch(\Exception $e) {
+                        $gLogger->info('ERROR: Unable to get college name.\n Given name: '.$columnValue);
+                    }
+                }
                 else
                 {
                     switch ($field->getValue('usf_type'))
