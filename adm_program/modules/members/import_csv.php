@@ -333,6 +333,17 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
         }
 
         if(isset($_POST['move_to_new_reg']) && $_POST['move_to_new_reg'] == '1') {
+
+            $UpdateLoginQuery = "UPDATE adm_users SET usr_login_name = '".substr($emailFromCol, 0, 255)."' WHERE usr_id = $uapp_usr_id";
+            try {
+                $gDb->query($UpdateLoginQuery);
+            } catch(\Exception $e) {
+                $gLogger->info('Failed! unable to update username of new registrations. EXCEPTION: '. $e->getMessage());
+            }
+
+            $gLogger->info('Updating username to email for new registrations. '. $UpdateLoginQuery);
+
+
             $toMoveQuery = "UPDATE adm_users SET usr_valid = 0 WHERE usr_id = $uapp_usr_id";
             try {
                 $gDb->query($toMoveQuery);
