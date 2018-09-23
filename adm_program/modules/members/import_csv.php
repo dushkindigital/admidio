@@ -101,6 +101,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                 {
                     $user->setValue($field->getValue('usf_name_intern'), $gL10n->getCountryByName($columnValue));
                 }
+/*
                 if($field->getValue('usf_name_intern') === 'COLLEGE' || $field->getValue('usf_name_intern') === 'SCHOOL')
                 {
                     try {
@@ -119,6 +120,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                 }
                 else
                 {
+*/
                     switch ($field->getValue('usf_type'))
                     {
                         case 'CHECKBOX':
@@ -181,7 +183,7 @@ for($i = $startRow, $iMax = count($_SESSION['file_lines']); $i < $iMax; ++$i)
                         default:
                             $user->setValue($field->getValue('usf_name_intern'), substr($columnValue, 0, 255));
                     }
-                }
+                //}
 
             }
         }
