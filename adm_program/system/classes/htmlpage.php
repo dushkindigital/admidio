@@ -148,6 +148,20 @@ class HtmlPage
         }
     }
 
+public function getMenuParent($menuname)
+{
+global $gDb;
+
+$sql = "select (SELECT amm.men_name_intern FROM adm_menu amm WHERE amm.men_id = am.men_men_id_parent) as parentname FROM adm_menu am WHERE am.men_name_intern = '".$menuname."'";
+$statement = $gDb->query($sql);
+if($row = $statement->fetch())
+{
+    $parentname = $row['parentname'];
+}
+
+return "menu_item_".$parentname;
+
+}
     /**
      * Adds the default menu
      * @return void
@@ -159,23 +173,23 @@ class HtmlPage
         $this->menu->addItem('menu_item_modules', null, $gL10n->get('SYS_MODULES'), 'application_view_list.png', 'right', 'navbar', 'admidio-default-menu-item');
 
         $this->menu->addItem('menu_item_overview', '/adm_program/index.php',
-                            $gL10n->get('SYS_OVERVIEW'), 'home.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                            $gL10n->get('SYS_OVERVIEW'), 'home.png', 'right', $this->getMenuParent("overview"), 'admidio-default-menu-item');
 
         if($gPreferences['enable_announcements_module'] == 1
         || ($gPreferences['enable_announcements_module'] == 2 && $gValidLogin))
         {
             $this->menu->addItem('menu_item_announcements', FOLDER_MODULES . '/announcements/announcements.php',
-                                $gL10n->get('ANN_ANNOUNCEMENTS'), 'announcements.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('ANN_ANNOUNCEMENTS'), 'announcements.png', 'right', $this->getMenuParent("announcements"), 'admidio-default-menu-item');
         }
         if($gPreferences['enable_download_module'] == 1)
         {
             $this->menu->addItem('menu_item_download', FOLDER_MODULES . '/downloads/downloads.php',
-                                $gL10n->get('DOW_DOWNLOADS'), 'download.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('DOW_DOWNLOADS'), 'download.png', 'right', $this->getMenuParent("download"), 'admidio-default-menu-item');
         }
         if($gPreferences['enable_mail_module'] == 1 && !$gValidLogin)
         {
             $this->menu->addItem('menu_item_email', FOLDER_MODULES . '/messages/messages_write.php',
-                                $gL10n->get('SYS_EMAIL'), 'email.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('SYS_EMAIL'), 'email.png', 'right', $this->getMenuParent("mail"), 'admidio-default-menu-item');
         }
 
         if(($gPreferences['enable_pm_module'] == 1 || $gPreferences['enable_mail_module'] == 1) && $gValidLogin)
@@ -187,47 +201,47 @@ class HtmlPage
             if ($unread > 0)
             {
                 $this->menu->addItem('menu_item_private_message', FOLDER_MODULES . '/messages/messages.php',
-                                $gL10n->get('SYS_MESSAGES').'<span class="badge">'.$unread.'</span>', 'messages.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('SYS_MESSAGES').'<span class="badge">'.$unread.'</span>', 'messages.png', 'right', $this->getMenuParent("messages"), 'admidio-default-menu-item');
             }
             else
             {
                 $this->menu->addItem('menu_item_private_message', FOLDER_MODULES . '/messages/messages.php',
-                                $gL10n->get('SYS_MESSAGES'), 'messages.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('SYS_MESSAGES'), 'messages.png', 'right', $this->getMenuParent("messages"), 'admidio-default-menu-item');
             }
         }
         if($gPreferences['enable_photo_module'] == 1
         || ($gPreferences['enable_photo_module'] == 2 && $gValidLogin))
         {
             $this->menu->addItem('menu_item_photo', FOLDER_MODULES . '/photos/photos.php',
-                                $gL10n->get('PHO_PHOTOS'), 'photo.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('PHO_PHOTOS'), 'photo.png', 'right', $this->getMenuParent("photo"), 'admidio-default-menu-item');
         }
         if($gPreferences['enable_guestbook_module'] == 1
         || ($gPreferences['enable_guestbook_module'] == 2 && $gValidLogin))
         {
             $this->menu->addItem('menu_item_guestbook', FOLDER_MODULES . '/guestbook/guestbook.php',
-                                $gL10n->get('GBO_GUESTBOOK'), 'guestbook.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('GBO_GUESTBOOK'), 'guestbook.png', 'right', $this->getMenuParent("guestbook"), 'admidio-default-menu-item');
         }
 
         $this->menu->addItem('menu_item_lists', FOLDER_MODULES . '/lists/lists.php',
-                            $gL10n->get('LST_LISTS'), 'lists.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                            $gL10n->get('LST_LISTS'), 'lists.png', 'right', $this->getMenuParent("lists"), 'admidio-default-menu-item');
         if($gValidLogin)
         {
             $this->menu->addItem('menu_item_mylist', FOLDER_MODULES . '/lists/mylist.php',
-                                $gL10n->get('LST_MY_LIST'), 'mylist.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('LST_MY_LIST'), 'mylist.png', 'right', $this->getMenuParent("mylist"), 'admidio-default-menu-item');
         }
 
         if($gPreferences['enable_dates_module'] == 1
         || ($gPreferences['enable_dates_module'] == 2 && $gValidLogin))
         {
             $this->menu->addItem('menu_item_dates', FOLDER_MODULES . '/dates/dates.php',
-                                $gL10n->get('DAT_DATES'), 'dates.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('DAT_DATES'), 'dates.png', 'right', $this->getMenuParent("dates"), 'admidio-default-menu-item');
         }
 
         if($gPreferences['enable_weblinks_module'] == 1
         || ($gPreferences['enable_weblinks_module'] == 2 && $gValidLogin))
         {
             $this->menu->addItem('menu_item_links', FOLDER_MODULES . '/links/links.php',
-                                $gL10n->get('LNK_WEBLINKS'), 'weblinks.png', 'right', 'menu_item_modules', 'admidio-default-menu-item');
+                                $gL10n->get('LNK_WEBLINKS'), 'weblinks.png', 'right', $this->getMenuParent("weblinks"), 'admidio-default-menu-item');
         }
 
         if($gCurrentUser->isAdministrator() || $gCurrentUser->manageRoles() || $gCurrentUser->approveUsers() || $gCurrentUser->editUsers())
@@ -237,24 +251,24 @@ class HtmlPage
             if($gCurrentUser->approveUsers() && $gPreferences['registration_mode'] > 0)
             {
                 $this->menu->addItem('menu_item_registration', FOLDER_MODULES . '/registration/registration.php',
-                                    $gL10n->get('NWU_NEW_REGISTRATIONS'), 'new_registrations.png', 'right', 'menu_item_administration', 'admidio-default-menu-item');
+                                    $gL10n->get('NWU_NEW_REGISTRATIONS'), 'new_registrations.png', 'right', $this->getMenuParent("newreg"), 'admidio-default-menu-item');
             }
             if($gCurrentUser->editUsers())
             {
                 $this->menu->addItem('menu_item_members', FOLDER_MODULES . '/members/members.php',
-                                    $gL10n->get('MEM_USER_MANAGEMENT'), 'user_administration.png', 'right', 'menu_item_administration', 'admidio-default-menu-item');
+                                    $gL10n->get('MEM_USER_MANAGEMENT'), 'user_administration.png', 'right', $this->getMenuParent("usrmgt"), 'admidio-default-menu-item');
             }
             if($gCurrentUser->manageRoles())
             {
                 $this->menu->addItem('menu_item_roles', FOLDER_MODULES . '/roles/roles.php',
-                                    $gL10n->get('ROL_ROLE_ADMINISTRATION'), 'roles.png', 'right', 'menu_item_administration', 'admidio-default-menu-item');
+                                    $gL10n->get('ROL_ROLE_ADMINISTRATION'), 'roles.png', 'right', $this->getMenuParent("roladm"), 'admidio-default-menu-item');
             }
             if($gCurrentUser->isAdministrator())
             {
                 $this->menu->addItem('menu_item_backup', FOLDER_MODULES . '/backup/backup.php',
-                                    $gL10n->get('BAC_DATABASE_BACKUP'), 'backup.png', 'right', 'menu_item_administration', 'admidio-default-menu-item');
+                                    $gL10n->get('BAC_DATABASE_BACKUP'), 'backup.png', 'right', $this->getMenuParent("dbback"), 'admidio-default-menu-item');
                 $this->menu->addItem('menu_item_options', FOLDER_MODULES . '/preferences/preferences.php',
-                                    $gL10n->get('SYS_SETTINGS'), 'options.png', 'right', 'menu_item_administration', 'admidio-default-menu-item');
+                                    $gL10n->get('SYS_SETTINGS'), 'options.png', 'right', $this->getMenuParent("orgprop"), 'admidio-default-menu-item');
             }
         }
 
