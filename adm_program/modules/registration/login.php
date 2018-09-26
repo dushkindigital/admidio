@@ -51,8 +51,8 @@ if ($isEmbeded) {
 }
 
 // add back link to module menu
-$loginMenu = $page->getMenu();
-$loginMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
+//$loginMenu = $page->getMenu();
+//$loginMenu->addItem('menu_item_back', $gNavigation->getPreviousUrl(), $gL10n->get('SYS_BACK'), 'back.png');
 // show form
 $form = new HtmlForm('login_form', ADMIDIO_URL . '/adm_custom/login_check.php', $page, array('showRequiredFields' => false));
 
@@ -107,5 +107,8 @@ $page->addHtml('
     <div id="login_admidio_link">
         <small>Powered by <a href="' . ADMIDIO_HOMEPAGE . '">Admidio</a></small>
     </div>');
+
+$page->addHtml('<script>$(".navbar-toggle").hide();</script>');
+
 
 $page->show();

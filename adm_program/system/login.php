@@ -99,4 +99,5 @@ $page->addHtml('
         <small>Powered by <a href="'.ADMIDIO_HOMEPAGE.'">Admidio</a></small>
     </div>');
 
+$page->addHtml('<script>$(".navbar-toggle").hide();</script>');
 $page->show();
