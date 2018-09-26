@@ -1371,7 +1371,7 @@
   <string name="SYS_USER_RELATIONS">Relationships</string>
   <string name="SYS_USER_RELATION_TYPE">Relationship typ</string>
   <string name="SYS_USER_RELATION_TYPES">Relationship types</string>
-  <string name="SYS_USERNAME">Username</string>
+  <string name="SYS_USERNAME">Email Address</string>
   <string name="SYS_USERNAME_OR_EMAIL">Username or E-mail</string>
   <string name="SYS_USERS_FOUND">User found</string>
   <string name="SYS_UTF8">UTF-8</string>
