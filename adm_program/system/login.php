@@ -95,8 +95,8 @@ $page->addHtml('
     <div id="login_forgot_password_link">
         <small><a href="'.$forgotPasswordLink.'">'.$gL10n->get('SYS_FORGOT_MY_PASSWORD').'</a></small>
     </div>
-    <div id="login_admidio_link">
-        <small>Powered by <a href="'.ADMIDIO_HOMEPAGE.'">Admidio</a></small>
+    <div id="login_registration">
+  <small>Not a member?  <a href="https://www.cantabnyc.org/p/membership.html" target="_top">Join us!</a></small>
     </div>');
 
 $page->addHtml('<script>$(".navbar-toggle").hide();</script>');
